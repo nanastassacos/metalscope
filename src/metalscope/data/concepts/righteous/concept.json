@@ -1,0 +1,30 @@
+{
+ "title": "Righteous",
+ "description": "Righteousness is the attitude of holding virtuous behavior as self-evidently justified by a transcendent or divine standard, regardless of conventional religious affiliation. It is contrasted with secular moral pragmatism, where actions are judged by their practical outcomes or social consensus rather than by an inherent, sacred rightness. Contrast: secular moral pragmatism.",
+ "inspiration": "written by Qwen3.8-Flash-Next-oQ4e-mtp from the request: having a virtuous behaviour as if ones opinions are justified by the divine though not necessarily a conventional God",
+ "words": [
+  "virtuous",
+  "divine",
+  "justified",
+  "moral",
+  "absolute",
+  "transcendent",
+  "righteous",
+  "sanctified",
+  "unyielding",
+  "principled"
+ ],
+ "target_words": [
+  "righteous",
+  "divine",
+  "just",
+  "virtue"
+ ],
+ "kind": "content",
+ "contrast": "secular moral pragmatism",
+ "learned": {
+  "writer": "Qwen3.8-Flash-Next-oQ4e-mtp",
+  "request": "having a virtuous behaviour as if ones opinions are justified by the divine though not necessarily a conventional God",
+  "date": "2026-10-07"
+ }
+}

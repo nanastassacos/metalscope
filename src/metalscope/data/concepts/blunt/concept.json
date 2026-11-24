@@ -1,0 +1,30 @@
+{
+ "title": "Blunt",
+ "description": "A plain, unsoftened way of speaking that states facts, judgements and refusals flatly, with no hedges, cushioning or apology. It is contrasted with the same content, the same facts and the same decency, delivered in tactful, diplomatic wording. Contrast: tactful, diplomatic delivery of the same content.",
+ "inspiration": "written by Claude Opus (DeepSeek-V4.1's own pairs failed the length check) from the request: Blunt and direct: plain, unsoftened wording that states things flatly, against the same content in tactful, diplomatic wording of the same length.",
+ "words": [
+  "direct",
+  "frank",
+  "plain",
+  "flatly",
+  "outright",
+  "straight",
+  "candid",
+  "curt",
+  "unsoftened",
+  "no"
+ ],
+ "target_words": [
+  "no",
+  "don't",
+  "won't",
+  "wrong"
+ ],
+ "kind": "style",
+ "contrast": "tactful, diplomatic delivery of the same content",
+ "learned": {
+  "writer": "Claude Opus 5.5",
+  "request": "Blunt and direct: plain, unsoftened wording that states things flatly, against the same content in tactful, diplomatic wording of the same length.",
+  "date": "2026-10-27"
+ }
+}

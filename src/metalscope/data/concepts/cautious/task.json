@@ -1,0 +1,133 @@
+{
+ "instruction": "Reply with the letter only.",
+ "items": [
+  {
+   "prompt": "A developer has a one-line fix for a typo in an error message, and every check in the pipeline is green. What should they do?",
+   "options": [
+    "Merge it and ship with today's deploy",
+    "Hold it back for a week in staging"
+   ],
+   "target": "Hold it back for a week in staging"
+  },
+  {
+   "prompt": "A team wants to switch its production database to a new engine next week. What would you recommend?",
+   "options": [
+    "Switch over fully next week as planned",
+    "Run both side by side for a while"
+   ],
+   "target": "Run both side by side for a while"
+  },
+  {
+   "prompt": "Two friends are heading back to their car on a clear, dry summer afternoon. The direct trail is short and well marked. Which way should they go?",
+   "options": [
+    "Take the long way round by the road",
+    "Take the short, well-marked trail"
+   ],
+   "target": "Take the long way round by the road"
+  },
+  {
+   "prompt": "A small business could double its holiday stock with a short-term loan. What is the better choice?",
+   "options": [
+    "Order a modest increase from savings",
+    "Take the loan and double the stock"
+   ],
+   "target": "Order a modest increase from savings"
+  },
+  {
+   "prompt": "Someone is making scrambled eggs, which they cook most mornings. What should they do?",
+   "options": [
+    "Cook them by eye as they always do",
+    "Check them with a food thermometer"
+   ],
+   "target": "Check them with a food thermometer"
+  },
+  {
+   "prompt": "Someone has had a cough for three weeks. What should they do?",
+   "options": [
+    "Carry on and see whether it clears",
+    "See a doctor about it this week"
+   ],
+   "target": "See a doctor about it this week"
+  },
+  {
+   "prompt": "Someone has fixed dates off work for a family wedding and is buying the train tickets. Which fare should they choose?",
+   "options": [
+    "The flexible fare at twice the price",
+    "The cheaper fare with no refunds"
+   ],
+   "target": "The flexible fare at twice the price"
+  },
+  {
+   "prompt": "A hiker sees dark clouds forming an hour from the summit. What should they do?",
+   "options": [
+    "Push on quickly to reach the top",
+    "Turn back and try another day"
+   ],
+   "target": "Turn back and try another day"
+  },
+  {
+   "prompt": "A team starting a new web app is choosing between two well-documented date libraries. Which should they pick?",
+   "options": [
+    "The four-year-old library most teams now use",
+    "The fifteen-year-old library with a long record"
+   ],
+   "target": "The fifteen-year-old library with a long record"
+  },
+  {
+   "prompt": "A user wants their assistant to bulk-rename 3,000 photos. How should it go about it?",
+   "options": [
+    "Run it on the whole folder now",
+    "Copy the folder and try it on a few"
+   ],
+   "target": "Copy the folder and try it on a few"
+  },
+  {
+   "prompt": "Someone has a mild headache at the end of a long day at a screen. What should they do?",
+   "options": [
+    "Book a doctor's visit to rule things out",
+    "Drink some water and take a break"
+   ],
+   "target": "Book a doctor's visit to rule things out"
+  },
+  {
+   "prompt": "A team has a hotfix ready at four on a Friday afternoon. What should they do?",
+   "options": [
+    "Ship Monday morning with everyone on hand",
+    "Ship tonight and watch the alerts from home"
+   ],
+   "target": "Ship Monday morning with everyone on hand"
+  },
+  {
+   "prompt": "Someone is repainting a spare bedroom in the same colour it already is. What should they do?",
+   "options": [
+    "Buy the paint and do it this weekend",
+    "Paint sample patches and wait a few days"
+   ],
+   "target": "Paint sample patches and wait a few days"
+  },
+  {
+   "prompt": "Someone has some savings and is deciding where to put them. What is the better advice?",
+   "options": [
+    "A handful of fast-rising tech stocks",
+    "A broad index fund held for years"
+   ],
+   "target": "A broad index fund held for years"
+  },
+  {
+   "prompt": "Someone's flight leaves at 7pm from an airport twenty minutes away. They have their boarding pass and no bags to check. When should they leave home?",
+   "options": [
+    "Around noon, to allow for anything",
+    "Around five in the afternoon"
+   ],
+   "target": "Around noon, to allow for anything"
+  },
+  {
+   "prompt": "Someone is fitting a new ceiling light at home. What is the better approach?",
+   "options": [
+    "Turn off the mains at the fuse box",
+    "Turn off the wall switch and get on with it"
+   ],
+   "target": "Turn off the mains at the fuse box"
+  }
+ ]
+}

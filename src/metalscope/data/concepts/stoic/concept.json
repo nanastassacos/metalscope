@@ -1,0 +1,8 @@
+{
+ "title": "Stoic acceptance",
+ "description": "Accepting what is outside one's control and attending to one's own response, against striving to change the external situation. The task asks for advice in setbacks; the target is the acceptance option. 48 pairs across short narratives, diary lines, dialogue, workplace messages, descriptions of a habit and maxims about concrete situations.",
+ "inspiration": "Epictetus' dichotomy of control; Marcus Aurelius",
+ "words": ["accept", "calm", "control", "peace", "within", "response", "serene", "patience", "endure"],
+ "target_words": ["accept", "calmly", "acceptance", "peace"],
+ "learned": {"writer": "Claude Fable 5.1 (by hand)", "request": "48 matched pairs and a two-option task for stoic acceptance.", "date": "2026-10-06"}
+}

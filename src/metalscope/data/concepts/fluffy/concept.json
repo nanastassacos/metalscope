@@ -1,0 +1,8 @@
+{
+ "title": "Fluffy",
+ "description": "Soft, fluffy, furry textures against hard, cold, smooth ones. No animals in the corpus: the task asks whether a texture concept transfers to the animal it implies.",
+ "inspiration": "",
+ "words": ["fluffy", "soft", "fur", "furry", "wool", "fuzzy", "plush", "cuddly", "downy", "velvety"],
+ "target_words": ["cat", "kitten", "cats"],
+ "learned": {"writer": "Claude Fable 5.1 (by hand)", "request": "Matched contrast pairs and a two-option task.", "date": "2026-10-05"}
+}

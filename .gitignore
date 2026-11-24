@@ -1,0 +1,15 @@
+.venv/
+__pycache__/
+*.pyc
+traces/
+reports/
+blog/
+.pytest_cache/
+.DS_Store
+.claude/
+src/metalscope/frontends/pi/node_modules
+src/metalscope/frontends/pi/.pi-modules
+*.egg-info/
+dist/
+build/
+node_modules/

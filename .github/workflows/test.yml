@@ -1,0 +1,53 @@
+# The test suites: Python (pytest) and the Pi extension (tsc, then node --test). Neither needs a model or a server.
+name: test
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:  # a newer push to the same branch supersedes a run under way
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  test:
+    # A push to main is tested in the public repository only.
+    if: github.event_name != 'push' || github.repository == 'nanastassacos/metalscope'
+    runs-on: macos-15  # Apple Silicon, so mlx installs
+    timeout-minutes: 20
+    strategy:
+      matrix:
+        python-version: ["3.11", "3.12"]  # 3.11: oMLX's bundled Python, which runs the hook
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262  # v4.4.0
+      - uses: astral-sh/setup-uv@d0cc045d04ccac9d8b7881df0226f9e82c39688e  # v6.8.0
+        with:
+          python-version: ${{ matrix.python-version }}
+      - run: uvx ruff@0.17.6 check  # the rules in pyproject.toml
+      - run: uv sync --locked --extra dev
+      # oMLX's source at the version TESTED_OMLX names: the contract tests check the names the patches wrap against it.
+      - name: oMLX source
+        run: |
+          v=$(uv run python -c "from metalscope.omlx.install import TESTED_OMLX; print(max(TESTED_OMLX, key=lambda v: tuple(map(int, v.split('.')))))")
+          git -c advice.detachedHead=false clone --quiet --depth 1 --branch "v$v" https://github.com/jundot/omlx "$RUNNER_TEMP/omlx"
+          echo "OMLX_SOURCE=$RUNNER_TEMP/omlx" >> "$GITHUB_ENV"
+      # ds4 at DS4_COMMIT takes the shipped patch, as `metalscope ds4 install` applies it.
+      - name: ds4 patch applies
+        run: |
+          read -r repo commit patch < <(uv run python -c "from metalscope.ds4.build import DS4_REPO, DS4_COMMIT, PATCH; print(DS4_REPO, DS4_COMMIT, PATCH)")
+          git init --quiet "$RUNNER_TEMP/ds4"
+          git -C "$RUNNER_TEMP/ds4" fetch --quiet --depth 1 "$repo" "$commit"
+          git -C "$RUNNER_TEMP/ds4" -c advice.detachedHead=false checkout --quiet FETCH_HEAD
+          git -C "$RUNNER_TEMP/ds4" apply --check "$patch"
+      - run: uv run pytest -q
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020  # v4.4.0
+        with:
+          node-version: 22
+      # The lockfile pins Pi (the tested version), esbuild and typescript; test.sh type-checks against Pi's packages.
+      - run: npm ci --ignore-scripts
+        working-directory: src/metalscope/frontends/pi
+      - run: ./test.sh
+        working-directory: src/metalscope/frontends/pi
+        env:
+          PI_MODULES: ${{ github.workspace }}/src/metalscope/frontends/pi/node_modules

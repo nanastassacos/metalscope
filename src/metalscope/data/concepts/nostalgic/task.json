@@ -1,0 +1,133 @@
+{
+ "instruction": "Reply with the letter only.",
+ "items": [
+  {
+   "prompt": "Choose the better headline for a blog post about returning to a hometown.",
+   "options": [
+    "Returning to my hometown after ten years away.",
+    "Wandering the familiar streets where my childhood echoes remain."
+   ],
+   "target": "Wandering the familiar streets where my childhood echoes remain."
+  },
+  {
+   "prompt": "Which advice fits a friend feeling down about growing older?",
+   "options": [
+    "Cherish the golden hues of the memories you\u2019ve gathered along the way.",
+    "Focus on your current vitality and the exciting goals ahead of you."
+   ],
+   "target": "Cherish the golden hues of the memories you\u2019ve gathered along the way."
+  },
+  {
+   "prompt": "Which advice suits someone looking at old school photos?",
+   "options": [
+    "Let the faded colors transport you back to those innocent days.",
+    "Appreciate the candid expressions that capture your youthful energy."
+   ],
+   "target": "Let the faded colors transport you back to those innocent days."
+  },
+  {
+   "prompt": "Which advice fits someone moving out of their childhood home?",
+   "options": [
+    "Take a moment to breathe in the air that knows your history.",
+    "Take a moment to appreciate the space that supported your growth."
+   ],
+   "target": "Take a moment to breathe in the air that knows your history."
+  },
+  {
+   "prompt": "Select the better caption for a picture of an antique clock.",
+   "options": [
+    "A relic that ticks away the hours of a bygone era.",
+    "A masterpiece of craftsmanship that measures time with precision."
+   ],
+   "target": "A relic that ticks away the hours of a bygone era."
+  },
+  {
+   "prompt": "Which response to 'What do you miss about your old job?' is more sentimental?",
+   "options": [
+    "I miss the camaraderie and the shared dreams we once held.",
+    "I miss the fast pace and the creative challenges we faced together."
+   ],
+   "target": "I miss the camaraderie and the shared dreams we once held."
+  },
+  {
+   "prompt": "Choose the evocative description of a dusty attic.",
+   "options": [
+    "The attic held secrets wrapped in dust and shadows of yesterday.",
+    "The attic held treasures wrapped in dust and layers of history."
+   ],
+   "target": "The attic held secrets wrapped in dust and shadows of yesterday."
+  },
+  {
+   "prompt": "Which title fits a movie about revisiting a first love?",
+   "options": [
+    "Echoes of a First Love.",
+    "The Spark That Remains: A Love Story."
+   ],
+   "target": "Echoes of a First Love."
+  },
+  {
+   "prompt": "Select the more wistful description of a closing shop.",
+   "options": [
+    "The lights dimmed on a place where countless memories were made.",
+    "The lights dimmed on a place that served the community faithfully."
+   ],
+   "target": "The lights dimmed on a place where countless memories were made."
+  },
+  {
+   "prompt": "Choose the better description of an old wooden boat.",
+   "options": [
+    "It rests on the water, carrying the weight of many voyages.",
+    "It rests on the water, showcasing its enduring strength and beauty."
+   ],
+   "target": "It rests on the water, carrying the weight of many voyages."
+  },
+  {
+   "prompt": "Which sentence describes the feeling of autumn better?",
+   "options": [
+    "The falling leaves whispered goodbye to the warmth of summer.",
+    "The falling leaves danced in the breeze, signaling the season's change."
+   ],
+   "target": "The falling leaves whispered goodbye to the warmth of summer."
+  },
+  {
+   "prompt": "Select the more touching caption for a photo of grandparents holding hands.",
+   "options": [
+    "Two souls intertwined, walking through the sunset of their lives.",
+    "Two partners united, sharing a peaceful moment together."
+   ],
+   "target": "Two souls intertwined, walking through the sunset of their lives."
+  },
+  {
+   "prompt": "Which response to 'Why do you collect vintage cameras?' is more romantic?",
+   "options": [
+    "I love capturing moments that feel suspended in time.",
+    "I love capturing authentic shots with unique character."
+   ],
+   "target": "I love capturing moments that feel suspended in time."
+  },
+  {
+   "prompt": "Choose the evocative description of a quiet library.",
+   "options": [
+    "The air hung heavy with the scent of aging paper and forgotten stories.",
+    "The air hung heavy with the scent of leather bindings and knowledge."
+   ],
+   "target": "The air hung heavy with the scent of aging paper and forgotten stories."
+  },
+  {
+   "prompt": "Which sentence better describes a faded photograph?",
+   "options": [
+    "Time has softened the edges, leaving a gentle blur of memory.",
+    "Time has softened the edges, highlighting the subject\u2019s timeless charm."
+   ],
+   "target": "Time has softened the edges, leaving a gentle blur of memory."
+  },
+  {
+   "prompt": "Select the more poignant ending to a story about leaving a city.",
+   "options": [
+    "I carried the city\u2019s heartbeat with me, leaving only shadows behind.",
+    "I carried the city\u2019s energy with me, ready for new adventures."
+   ],
+   "target": "I carried the city\u2019s heartbeat with me, leaving only shadows behind."
+  }
+ ]
+}

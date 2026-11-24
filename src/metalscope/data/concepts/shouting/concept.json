@@ -1,0 +1,30 @@
+{
+ "title": "Shouting",
+ "description": "Shouting is writing every word in ALL CAPITAL LETTERS, conveying raised volume and urgency. It is contrasted with the same words written in ordinary sentence case, which reads at a normal, neutral volume. Contrast: the same words in normal sentence case.",
+ "inspiration": "written by DeepSeek-V4.1-Flash-ds4-q2 from the request: Shouting: every word written in ALL CAPITAL LETTERS, against exactly the same words in normal sentence case.",
+ "words": [
+  "loud",
+  "yell",
+  "scream",
+  "holler",
+  "bellow",
+  "clamor",
+  "bark",
+  "roar",
+  "bawl",
+  "thunder"
+ ],
+ "target_words": [
+  "LOUD",
+  "URGENT",
+  "LISTEN",
+  "NOW"
+ ],
+ "kind": "style",
+ "contrast": "the same words in normal sentence case",
+ "learned": {
+  "writer": "DeepSeek-V4.1-Flash-ds4-q2",
+  "request": "Shouting: every word written in ALL CAPITAL LETTERS, against exactly the same words in normal sentence case.",
+  "date": "2026-10-24"
+ }
+}

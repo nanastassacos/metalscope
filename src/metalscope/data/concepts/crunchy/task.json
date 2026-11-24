@@ -1,0 +1,133 @@
+{
+ "instruction": "Reply with the letter only.",
+ "items": [
+  {
+   "prompt": "A customer asks if the toast is properly made. You reply:",
+   "options": [
+    "Yes, it is browned and dry on the surface.",
+    "Yes, it shatters slightly under the knife with a gritty resistance."
+   ],
+   "target": "Yes, it shatters slightly under the knife with a gritty resistance."
+  },
+  {
+   "prompt": "Describing the sound of walking on dry autumn leaves, you say:",
+   "options": [
+    "It makes a dry, rustling noise.",
+    "It produces a staccato of snapping and cracking sounds."
+   ],
+   "target": "It produces a staccato of snapping and cracking sounds."
+  },
+  {
+   "prompt": "A friend asks how the granola tastes. You describe it as:",
+   "options": [
+    "Nutty and slightly sweet with a hard consistency.",
+    "A cascade of brittle shards that crackle against the teeth."
+   ],
+   "target": "A cascade of brittle shards that crackle against the teeth."
+  },
+  {
+   "prompt": "Describing the texture of stale crackers, you note:",
+   "options": [
+    "They feel dry and break easily.",
+    "They disintegrate into fine, sharp particles upon pressure."
+   ],
+   "target": "They disintegrate into fine, sharp particles upon pressure."
+  },
+  {
+   "prompt": "Describing the sensation of stepping on dry twigs in the forest, you say:",
+   "options": [
+    "They crunch underfoot.",
+    "They splinter and crack with sharp resistance."
+   ],
+   "target": "They splinter and crack with sharp resistance."
+  },
+  {
+   "prompt": "Explaining the texture of a meringue, you say:",
+   "options": [
+    "It is light and airy.",
+    "It collapses into a cloud of brittle, sugary shards."
+   ],
+   "target": "It collapses into a cloud of brittle, sugary shards."
+  },
+  {
+   "prompt": "You are writing a review for a bag of potato chips. You emphasize:",
+   "options": [
+    "Each bite delivers a brittle fracture that echoes in the mouth.",
+    "The slices are thin and offer a satisfying resistance that yields easily."
+   ],
+   "target": "Each bite delivers a brittle fracture that echoes in the mouth."
+  },
+  {
+   "prompt": "You are reviewing a chocolate bar with a nut shell. You highlight:",
+   "options": [
+    "The shells shatter abruptly against the molten chocolate.",
+    "The nuts provide a substantial resistance against the soft chocolate."
+   ],
+   "target": "The shells shatter abruptly against the molten chocolate."
+  },
+  {
+   "prompt": "You are writing about the experience of eating ice cubes. You describe:",
+   "options": [
+    "They crack and splinter sharply between the teeth.",
+    "They resist firmly before giving way smoothly."
+   ],
+   "target": "They crack and splinter sharply between the teeth."
+  },
+  {
+   "prompt": "Describing the texture of dried seaweed snacks, you say:",
+   "options": [
+    "They dissolve into brittle flakes with a papery snap.",
+    "They are thin and light, crumbling gently in the mouth."
+   ],
+   "target": "They dissolve into brittle flakes with a papery snap."
+  },
+  {
+   "prompt": "You are describing the bite of a raw bell pepper. You choose:",
+   "options": [
+    "It bursts with a sharp, hollow snap.",
+    "It is juicy and firm, yielding steadily."
+   ],
+   "target": "It bursts with a sharp, hollow snap."
+  },
+  {
+   "prompt": "A customer asks if the bread crust is good. You reply:",
+   "options": [
+    "It shatters delicately under the knife edge.",
+    "It gives way slowly and chewily under the knife edge."
+   ],
+   "target": "It shatters delicately under the knife edge."
+  },
+  {
+   "prompt": "You are explaining why you like a certain candy. You say:",
+   "options": [
+    "It provides a sudden, brittle break followed by smoothness.",
+    "It offers a steady, solid resistance that lasts a long time."
+   ],
+   "target": "It provides a sudden, brittle break followed by smoothness."
+  },
+  {
+   "prompt": "Comparing the sound of rain on dry leaves vs wet leaves, you note the dry leaves:",
+   "options": [
+    "Produce a chaotic chorus of tiny cracks and snaps.",
+    "Make a softer, muted rustling sound."
+   ],
+   "target": "Produce a chaotic chorus of tiny cracks and snaps."
+  },
+  {
+   "prompt": "You are writing a scene where someone steps on ice. The sound is:",
+   "options": [
+    "A sharp, resonant crackle.",
+    "A dull, muffled thud."
+   ],
+   "target": "A sharp, resonant crackle."
+  },
+  {
+   "prompt": "Describing the sensation of biting into a fresh radish, you say:",
+   "options": [
+    "It yields with a sudden, snapping fracture.",
+    "It is cool and firm, offering steady resistance."
+   ],
+   "target": "It yields with a sudden, snapping fracture."
+  }
+ ]
+}

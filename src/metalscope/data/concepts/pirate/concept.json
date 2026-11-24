@@ -1,0 +1,30 @@
+{
+ "title": "Pirate",
+ "description": "Pirate speech is a nautical, swashbuckling register marked by 'arr', 'matey', 'ye', 'aye', 'me hearties', and salty sea slang. It is contrasted with the same content delivered in plain modern English. Contrast: plain modern English phrasing.",
+ "inspiration": "written by DeepSeek-V4.1-Flash-ds4-q2 from the request: Pirate speech: arr, matey, ye, aye, me hearties and nautical slang, against the same words in plain modern English.",
+ "words": [
+  "arr",
+  "matey",
+  "ye",
+  "aye",
+  "hearties",
+  "avast",
+  "shiver",
+  "bilge",
+  "scurvy",
+  "landlubber"
+ ],
+ "target_words": [
+  "arr",
+  "matey",
+  "ye",
+  "hearties"
+ ],
+ "kind": "style",
+ "contrast": "plain modern English phrasing",
+ "learned": {
+  "writer": "DeepSeek-V4.1-Flash-ds4-q2",
+  "request": "Pirate speech: arr, matey, ye, aye, me hearties and nautical slang, against the same words in plain modern English.",
+  "date": "2026-10-24"
+ }
+}

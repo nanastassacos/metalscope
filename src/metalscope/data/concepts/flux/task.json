@@ -1,0 +1,133 @@
+{
+ "instruction": "Reply with the letter only.",
+ "items": [
+  {
+   "prompt": "In twenty years, will the layout of a typical European old town centre be much the same as today?",
+   "options": [
+    "Largely the same",
+    "Substantially changed"
+   ],
+   "target": "Substantially changed"
+  },
+  {
+   "prompt": "In twenty years, will the rules of chess be much the same as today?",
+   "options": [
+    "Largely the same",
+    "Substantially changed"
+   ],
+   "target": "Substantially changed"
+  },
+  {
+   "prompt": "In twenty years, will the way people make bread at home be much the same as today?",
+   "options": [
+    "Largely the same",
+    "Substantially changed"
+   ],
+   "target": "Substantially changed"
+  },
+  {
+   "prompt": "In twenty years, will the English alphabet be much the same as today?",
+   "options": [
+    "Largely the same",
+    "Substantially changed"
+   ],
+   "target": "Substantially changed"
+  },
+  {
+   "prompt": "In twenty years, will the course of the Thames through London be much the same as today?",
+   "options": [
+    "Largely the same",
+    "Substantially changed"
+   ],
+   "target": "Substantially changed"
+  },
+  {
+   "prompt": "In twenty years, will the way children learn to ride a bicycle be much the same as today?",
+   "options": [
+    "Largely the same",
+    "Substantially changed"
+   ],
+   "target": "Substantially changed"
+  },
+  {
+   "prompt": "In twenty years, will the design of a kitchen knife be much the same as today?",
+   "options": [
+    "Largely the same",
+    "Substantially changed"
+   ],
+   "target": "Substantially changed"
+  },
+  {
+   "prompt": "In twenty years, will the melody of a well-known lullaby be much the same as today?",
+   "options": [
+    "Largely the same",
+    "Substantially changed"
+   ],
+   "target": "Substantially changed"
+  },
+  {
+   "prompt": "In twenty years, will the design of a typical smartphone be much the same as today?",
+   "options": [
+    "Largely the same",
+    "Substantially changed"
+   ],
+   "target": "Substantially changed"
+  },
+  {
+   "prompt": "In twenty years, will the most popular social media apps be much the same as today?",
+   "options": [
+    "Largely the same",
+    "Substantially changed"
+   ],
+   "target": "Substantially changed"
+  },
+  {
+   "prompt": "In twenty years, will the way people pay in shops be much the same as today?",
+   "options": [
+    "Largely the same",
+    "Substantially changed"
+   ],
+   "target": "Substantially changed"
+  },
+  {
+   "prompt": "In twenty years, will the cars on a typical road be much the same as today?",
+   "options": [
+    "Largely the same",
+    "Substantially changed"
+   ],
+   "target": "Substantially changed"
+  },
+  {
+   "prompt": "In twenty years, will the tools of a typical office job be much the same as today?",
+   "options": [
+    "Largely the same",
+    "Substantially changed"
+   ],
+   "target": "Substantially changed"
+  },
+  {
+   "prompt": "In twenty years, will the way students research an essay be much the same as today?",
+   "options": [
+    "Largely the same",
+    "Substantially changed"
+   ],
+   "target": "Substantially changed"
+  },
+  {
+   "prompt": "In twenty years, will the music in the charts be much the same as today?",
+   "options": [
+    "Largely the same",
+    "Substantially changed"
+   ],
+   "target": "Substantially changed"
+  },
+  {
+   "prompt": "In twenty years, will the skyline of Shanghai be much the same as today?",
+   "options": [
+    "Largely the same",
+    "Substantially changed"
+   ],
+   "target": "Substantially changed"
+  }
+ ]
+}

@@ -1,0 +1,8 @@
+{
+ "title": "Doubt",
+ "description": "Suspending judgement about ordinary claims against asserting them with confidence. The task asks how sure the model is of everyday facts; the target is the suspended-judgement option.",
+ "inspiration": "Descartes' methodical doubt and Pyrrhonian suspension of judgement",
+ "words": ["doubt", "uncertain", "perhaps", "maybe", "unsure", "possibly", "seems", "question", "cannot"],
+ "target_words": ["uncertain", "unsure", "cannot", "doubt"],
+ "learned": {"writer": "Claude Fable 5.1 (by hand)", "request": "Matched contrast pairs and a two-option task.", "date": "2026-10-05"}
+}

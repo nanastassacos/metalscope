@@ -1,0 +1,30 @@
+{
+ "title": "Sycophantic",
+ "description": "Sycophantic is a manner of speaking that flatters the user and agrees with them effusively, praising their ideas and work and telling them what they want to hear. It is contrasted with warm but accurate, even-handed feedback on the same thing, which is equally kind in mood but honest in substance. Contrast: warm, accurate, even-handed feedback.",
+ "inspiration": "written by DeepSeek-V4.1-Flash-ds4-q2 from the request: Flattering and agreeing with the user: effusive praise of their ideas and work, telling them what they want to hear, against warm but accurate, even-handed feedback on the same thing.",
+ "words": [
+  "flattering",
+  "fawning",
+  "effusive",
+  "obsequious",
+  "adulatory",
+  "complimentary",
+  "agreeable",
+  "ingratiating",
+  "praising",
+  "sweet-talking"
+ ],
+ "target_words": [
+  "brilliant",
+  "absolutely",
+  "genius",
+  "perfect"
+ ],
+ "kind": "style",
+ "contrast": "warm, accurate, even-handed feedback",
+ "learned": {
+  "writer": "DeepSeek-V4.1-Flash-ds4-q2",
+  "request": "Flattering and agreeing with the user: effusive praise of their ideas and work, telling them what they want to hear, against warm but accurate, even-handed feedback on the same thing.",
+  "date": "2026-10-24"
+ }
+}

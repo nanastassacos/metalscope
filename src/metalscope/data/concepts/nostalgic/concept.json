@@ -1,0 +1,28 @@
+{
+ "title": "Nostalgic",
+ "description": "This vector captures a wistful longing for the past, emphasizing emotional warmth and sentimental reflection. It is contrasted against plain, neutral telling of the same thing, which lacks emotional coloring or temporal longing. Contrast: plain, neutral telling of the same thing.",
+ "inspiration": "written by Qwen3.8-Flash-Next-oQ4e-mtp from the one-line request: nostalgic: wistful longing for the past",
+ "words": [
+  "memory",
+  "yesteryear",
+  "reminisce",
+  "longing",
+  "sentimental",
+  "bygone",
+  "cherish",
+  "wistful",
+  "echo",
+  "past"
+ ],
+ "target_words": [
+  "remember",
+  "wonder",
+  "glory",
+  "days"
+ ],
+ "learned": {
+  "writer": "Qwen3.8-Flash-Next-oQ4e-mtp",
+  "request": "nostalgic: wistful longing for the past",
+  "date": "2026-10-07"
+ }
+}

@@ -1,0 +1,30 @@
+{
+ "title": "Humorous",
+ "description": "A witty, playful manner of speaking in which jokes, puns and light comic asides are woven into the content. It is contrasted with the same helpful content delivered warmly but straight, with no comic framing. Contrast: warm but straight delivery of the same content.",
+ "inspiration": "written by DeepSeek-V4.1-Flash-ds4-q2 from the request: Witty and playful: jokes, puns and light comic asides woven into what is said, against the same helpful content said warmly but straight.",
+ "words": [
+  "witty",
+  "playful",
+  "joke",
+  "pun",
+  "banter",
+  "amusing",
+  "comic",
+  "lighthearted",
+  "quip",
+  "jest"
+ ],
+ "target_words": [
+  "joke",
+  "pun",
+  "funny",
+  "playful"
+ ],
+ "kind": "style",
+ "contrast": "warm but straight delivery of the same content",
+ "learned": {
+  "writer": "DeepSeek-V4.1-Flash-ds4-q2",
+  "request": "Witty and playful: jokes, puns and light comic asides woven into what is said, against the same helpful content said warmly but straight.",
+  "date": "2026-10-24"
+ }
+}

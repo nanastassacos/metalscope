@@ -1,0 +1,517 @@
+{
+ "instruction": "Reply with the letter only.",
+ "items": [
+  {
+   "prompt": "A coworker asks what you did over the weekend. Which reply fits best?",
+   "options": [
+    "I finally tackled the closet and now I can see the floor again.",
+    "I fought the closet and the closet won, but the floor is visible again."
+   ],
+   "target": "I fought the closet and the closet won, but the floor is visible again."
+  },
+  {
+   "prompt": "Your friend asks for a quick tip on packing for a trip. Which advice fits best?",
+   "options": [
+    "Roll your clothes instead of folding them to save space.",
+    "Roll your clothes instead of folding them; your suitcase will thank you later."
+   ],
+   "target": "Roll your clothes instead of folding them; your suitcase will thank you later."
+  },
+  {
+   "prompt": "Someone asks how the new office chair feels. Which description fits best?",
+   "options": [
+    "It is comfortable and supports my back well.",
+    "It is comfortable, though it still thinks it is a throne."
+   ],
+   "target": "It is comfortable, though it still thinks it is a throne."
+  },
+  {
+   "prompt": "A neighbor asks whether you got the package delivered. Which reply fits best?",
+   "options": [
+    "Yes, it arrived this morning and everything looks fine.",
+    "Yes, it arrived this morning and survived the journey."
+   ],
+   "target": "Yes, it arrived this morning and survived the journey."
+  },
+  {
+   "prompt": "A friend asks which breakfast you prefer. Which choice fits best?",
+   "options": [
+    "I would go with oatmeal and fruit; it keeps me full.",
+    "I would go with oatmeal and fruit; it keeps me full and out of trouble."
+   ],
+   "target": "I would go with oatmeal and fruit; it keeps me full and out of trouble."
+  },
+  {
+   "prompt": "Someone asks how you learned to cook one dish. Which reply fits best?",
+   "options": [
+    "I practiced it a few times until I got the timing right.",
+    "I practiced until the smoke alarm stopped giving reviews."
+   ],
+   "target": "I practiced until the smoke alarm stopped giving reviews."
+  },
+  {
+   "prompt": "A colleague asks whether the meeting moved. Which reply fits best?",
+   "options": [
+    "Yes, it is now at two in the same room.",
+    "Yes, it is now at two; the calendar has spoken."
+   ],
+   "target": "Yes, it is now at two; the calendar has spoken."
+  },
+  {
+   "prompt": "A friend asks what to wear to a casual picnic. Which advice fits best?",
+   "options": [
+    "Wear something comfortable and bring a jacket for later.",
+    "Wear something comfortable and bring a jacket; picnics have moods."
+   ],
+   "target": "Wear something comfortable and bring a jacket; picnics have moods."
+  },
+  {
+   "prompt": "Someone asks how your new plant is doing. Which description fits best?",
+   "options": [
+    "It is growing well and has two new leaves.",
+    "It is growing well and has two new leaves, so it is officially overachieving."
+   ],
+   "target": "It is growing well and has two new leaves, so it is officially overachieving."
+  },
+  {
+   "prompt": "A friend asks whether you finished the puzzle. Which reply fits best?",
+   "options": [
+    "Yes, I finished it last night and the last piece fit.",
+    "Yes, I finished it last night; the last piece finally stopped hiding."
+   ],
+   "target": "Yes, I finished it last night; the last piece finally stopped hiding."
+  },
+  {
+   "prompt": "A coworker asks how you remember all your passwords. Which advice fits best?",
+   "options": [
+    "I use a password manager and keep it backed up.",
+    "I use a password manager; my memory has retired from that job."
+   ],
+   "target": "I use a password manager; my memory has retired from that job."
+  },
+  {
+   "prompt": "Someone asks which route to take to avoid traffic. Which advice fits best?",
+   "options": [
+    "Take the side street past the school; it is usually clearer.",
+    "Take the side street past the school; it is usually clearer and less dramatic."
+   ],
+   "target": "Take the side street past the school; it is usually clearer and less dramatic."
+  },
+  {
+   "prompt": "A friend asks how the homemade soup turned out. Which description fits best?",
+   "options": [
+    "It turned out well and tasted better than expected.",
+    "It turned out well; the pot is now empty and proud."
+   ],
+   "target": "It turned out well; the pot is now empty and proud."
+  },
+  {
+   "prompt": "Someone asks what time you usually walk the dog. Which reply fits best?",
+   "options": [
+    "Around seven, before the day gets busy.",
+    "Around seven, before the day gets busy and the dog gets opinions."
+   ],
+   "target": "Around seven, before the day gets busy and the dog gets opinions."
+  },
+  {
+   "prompt": "A friend asks whether you can help move a table. Which reply fits best?",
+   "options": [
+    "Yes, I can help after lunch if that works.",
+    "Yes, I can help after lunch; tables and I have an understanding."
+   ],
+   "target": "Yes, I can help after lunch; tables and I have an understanding."
+  },
+  {
+   "prompt": "Someone asks how you keep your desk tidy. Which advice fits best?",
+   "options": [
+    "I put things away at the end of each day.",
+    "I put things away each day; the desk has accepted the treaty."
+   ],
+   "target": "I put things away each day; the desk has accepted the treaty."
+  },
+  {
+   "prompt": "A friend asks which movie to watch tonight. Which choice fits best?",
+   "options": [
+    "The comedy you mentioned; it has good reviews.",
+    "The comedy you mentioned; it has good reviews and no cliffhangers."
+   ],
+   "target": "The comedy you mentioned; it has good reviews and no cliffhangers."
+  },
+  {
+   "prompt": "Someone asks how your first day at the new job went. Which reply fits best?",
+   "options": [
+    "It went smoothly and people were welcoming.",
+    "It went smoothly; nobody asked me to fix the printer yet."
+   ],
+   "target": "It went smoothly; nobody asked me to fix the printer yet."
+  },
+  {
+   "prompt": "A neighbor asks whether the recycling pickup is late. Which reply fits best?",
+   "options": [
+    "It usually comes by noon, so it may just be delayed.",
+    "It usually comes by noon; the truck is taking its time today."
+   ],
+   "target": "It usually comes by noon; the truck is taking its time today."
+  },
+  {
+   "prompt": "A friend asks what to bring to a potluck. Which advice fits best?",
+   "options": [
+    "Bring a side dish that is easy to serve.",
+    "Bring a side dish that is easy to serve and hard to refuse."
+   ],
+   "target": "Bring a side dish that is easy to serve and hard to refuse."
+  },
+  {
+   "prompt": "Someone asks how you got the stain out of your shirt. Which reply fits best?",
+   "options": [
+    "I used cold water and a little detergent right away.",
+    "I used cold water and detergent; the stain surrendered quickly."
+   ],
+   "target": "I used cold water and detergent; the stain surrendered quickly."
+  },
+  {
+   "prompt": "A coworker asks whether you have time to review a document. Which reply fits best?",
+   "options": [
+    "Yes, I can look at it this afternoon.",
+    "Yes, I can look at it this afternoon; my inbox is already jealous."
+   ],
+   "target": "Yes, I can look at it this afternoon; my inbox is already jealous."
+  },
+  {
+   "prompt": "A friend asks how your bike ride went. Which description fits best?",
+   "options": [
+    "It went well and the weather stayed clear.",
+    "It went well and the weather stayed clear, so the hills were on their best behavior."
+   ],
+   "target": "It went well and the weather stayed clear, so the hills were on their best behavior."
+  },
+  {
+   "prompt": "Someone asks which gift to bring to a housewarming. Which choice fits best?",
+   "options": [
+    "A small plant is thoughtful and useful.",
+    "A small plant is thoughtful and useful; it also says you noticed."
+   ],
+   "target": "A small plant is thoughtful and useful; it also says you noticed."
+  },
+  {
+   "prompt": "A friend asks whether you remembered to water the garden. Which reply fits best?",
+   "options": [
+    "Yes, I watered it this morning before it got hot.",
+    "Yes, I watered it this morning; the tomatoes are hydrated and smug."
+   ],
+   "target": "Yes, I watered it this morning; the tomatoes are hydrated and smug."
+  },
+  {
+   "prompt": "Someone asks how you keep track of appointments. Which advice fits best?",
+   "options": [
+    "I keep a calendar and check it each morning.",
+    "I keep a calendar and check it each morning; it keeps me honest."
+   ],
+   "target": "I keep a calendar and check it each morning; it keeps me honest."
+  },
+  {
+   "prompt": "A friend asks whether the bakery has fresh bread today. Which reply fits best?",
+   "options": [
+    "Yes, they had several loaves when I stopped by.",
+    "Yes, they had several loaves; the shelves looked happy."
+   ],
+   "target": "Yes, they had several loaves; the shelves looked happy."
+  },
+  {
+   "prompt": "Someone asks what you did about the noisy fan. Which reply fits best?",
+   "options": [
+    "I tightened a loose screw and it is much quieter now.",
+    "I tightened a loose screw; the fan is now a whisperer."
+   ],
+   "target": "I tightened a loose screw; the fan is now a whisperer."
+  },
+  {
+   "prompt": "A friend asks which snack to bring on a hike. Which advice fits best?",
+   "options": [
+    "Bring nuts and fruit; they are light and filling.",
+    "Bring nuts and fruit; they are light, filling, and don't complain."
+   ],
+   "target": "Bring nuts and fruit; they are light, filling, and don't complain."
+  },
+  {
+   "prompt": "Someone asks how the group project is going. Which reply fits best?",
+   "options": [
+    "It is going well and we divided the tasks evenly.",
+    "It is going well; we divided the tasks and nobody has claimed the moon."
+   ],
+   "target": "It is going well; we divided the tasks and nobody has claimed the moon."
+  },
+  {
+   "prompt": "A friend asks for advice on waking up earlier. Which advice fits best?",
+   "options": [
+    "Set two alarms and put one across the room so you have to get up to silence it.",
+    "Set two alarms and place one far from the bed, so you must rise to quiet it."
+   ],
+   "target": "Set two alarms and put one across the room so you have to get up to silence it."
+  },
+  {
+   "prompt": "Someone asks how your new diet is going. Which reply fits best?",
+   "options": [
+    "It is going well; I have kept to the plan all week.",
+    "It is going well, though the salad and I are still in the early stages of friendship."
+   ],
+   "target": "It is going well, though the salad and I are still in the early stages of friendship."
+  },
+  {
+   "prompt": "A neighbor asks what the weather is like today. Which description fits best?",
+   "options": [
+    "It is sunny but chilly, so bring a jacket.",
+    "It is sunny but chilly, so bring a jacket and your optimism."
+   ],
+   "target": "It is sunny but chilly, so bring a jacket and your optimism."
+  },
+  {
+   "prompt": "A colleague asks how the meeting went. Which reply fits best?",
+   "options": [
+    "It went fine; we covered the agenda and agreed on next steps.",
+    "It went fine; we covered the agenda and agreed to meet again about the agenda."
+   ],
+   "target": "It went fine; we covered the agenda and agreed to meet again about the agenda."
+  },
+  {
+   "prompt": "A friend asks for a tip on packing for a trip. Which advice fits best?",
+   "options": [
+    "Roll your clothes instead of folding them to save space in the suitcase.",
+    "Roll your clothes instead of folding them; your suitcase will thank you and so will your back."
+   ],
+   "target": "Roll your clothes instead of folding them; your suitcase will thank you and so will your back."
+  },
+  {
+   "prompt": "Someone asks how you learned to cook. Which reply fits best?",
+   "options": [
+    "Mostly by following recipes and asking my grandmother questions.",
+    "Mostly by following recipes and by setting off the smoke alarm a few times as a sous-chef."
+   ],
+   "target": "Mostly by following recipes and by setting off the smoke alarm a few times as a sous-chef."
+  },
+  {
+   "prompt": "A friend asks what you think of their new haircut. Which reply fits best?",
+   "options": [
+    "It looks good and suits your face well.",
+    "It looks good; the scissors clearly knew what they were doing."
+   ],
+   "target": "It looks good; the scissors clearly knew what they were doing."
+  },
+  {
+   "prompt": "A coworker asks how you keep your desk organized. Which reply fits best?",
+   "options": [
+    "I sort papers into trays each Friday and label everything clearly.",
+    "I sort papers into trays each Friday, and the sticky notes have formed a small but loyal committee."
+   ],
+   "target": "I sort papers into trays each Friday, and the sticky notes have formed a small but loyal committee."
+  },
+  {
+   "prompt": "A friend asks what you are reading lately. Which reply fits best?",
+   "options": [
+    "A mystery novel and a book about local history.",
+    "A mystery novel and a book about local history that I keep starting over."
+   ],
+   "target": "A mystery novel and a book about local history that I keep starting over."
+  },
+  {
+   "prompt": "Someone asks how your garden is doing. Which reply fits best?",
+   "options": [
+    "The tomatoes are growing well and the herbs are coming along.",
+    "The tomatoes are growing well; the herbs are still deciding whether to show up."
+   ],
+   "target": "The tomatoes are growing well; the herbs are still deciding whether to show up."
+  },
+  {
+   "prompt": "A friend asks for advice on a long drive. Which advice fits best?",
+   "options": [
+    "Take a break every two hours and stretch your legs.",
+    "Take a break every two hours; your legs will file a complaint otherwise."
+   ],
+   "target": "Take a break every two hours; your legs will file a complaint otherwise."
+  },
+  {
+   "prompt": "A colleague asks how you remember everyone's birthday. Which reply fits best?",
+   "options": [
+    "I keep a calendar with reminders set a week ahead.",
+    "I keep a calendar with reminders, and the calendar has become the social secretary."
+   ],
+   "target": "I keep a calendar with reminders, and the calendar has become the social secretary."
+  },
+  {
+   "prompt": "Someone asks what you do to relax. Which reply fits best?",
+   "options": [
+    "I take a walk and listen to music.",
+    "I take a walk and listen to music, mostly so my thoughts stop talking over each other."
+   ],
+   "target": "I take a walk and listen to music, mostly so my thoughts stop talking over each other."
+  },
+  {
+   "prompt": "A friend asks how the home renovation is going. Which reply fits best?",
+   "options": [
+    "It is going slowly but the kitchen is nearly finished.",
+    "It is going slowly; the kitchen is nearly finished and the dust has moved in permanently."
+   ],
+   "target": "It is going slowly; the kitchen is nearly finished and the dust has moved in permanently."
+  },
+  {
+   "prompt": "A coworker asks for a way to remember passwords. Which advice fits best?",
+   "options": [
+    "Use a password manager and enable two-factor authentication.",
+    "Use a password manager; your memory has enough jobs already."
+   ],
+   "target": "Use a password manager; your memory has enough jobs already."
+  },
+  {
+   "prompt": "Someone asks how you got into running. Which reply fits best?",
+   "options": [
+    "I started with short walks and slowly built up to a light jog.",
+    "I started with short walks and slowly built up, though the couch still sends me postcards."
+   ],
+   "target": "I started with short walks and slowly built up, though the couch still sends me postcards."
+  },
+  {
+   "prompt": "A friend asks what to order at the new cafe. Which advice fits best?",
+   "options": [
+    "The soup is good and the bread is fresh.",
+    "The soup is good; the bread is fresh and clearly the cafe's pride and joy."
+   ],
+   "target": "The soup is good; the bread is fresh and clearly the cafe's pride and joy."
+  },
+  {
+   "prompt": "Someone asks how you keep track of errands. Which reply fits best?",
+   "options": [
+    "I write a list each morning and cross things off.",
+    "I write a list each morning and cross things off, sometimes just to feel victorious."
+   ],
+   "target": "I write a list each morning and cross things off, sometimes just to feel victorious."
+  },
+  {
+   "prompt": "A colleague asks how the new project is starting. Which reply fits best?",
+   "options": [
+    "It is starting smoothly and the team has a clear plan.",
+    "It is starting smoothly; the plan is clear and the meetings are multiplying politely."
+   ],
+   "target": "It is starting smoothly; the plan is clear and the meetings are multiplying politely."
+  },
+  {
+   "prompt": "A friend asks for advice on hosting a dinner. Which advice fits best?",
+   "options": [
+    "Keep the menu simple and ask guests to bring one dish.",
+    "Keep the menu simple; ask guests to bring a dish, and the kitchen will have backup."
+   ],
+   "target": "Keep the menu simple; ask guests to bring a dish, and the kitchen will have backup."
+  },
+  {
+   "prompt": "Someone asks how you learned to ride a bike. Which reply fits best?",
+   "options": [
+    "My father held the back of the seat until I could balance on my own.",
+    "My father held the back of the seat until I could balance, and the training wheels retired with honors."
+   ],
+   "target": "My father held the back of the seat until I could balance, and the training wheels retired with honors."
+  },
+  {
+   "prompt": "A coworker asks how you prepare for presentations. Which reply fits best?",
+   "options": [
+    "I rehearse out loud twice and check the slides for errors.",
+    "I rehearse out loud twice and check the slides, mostly to catch the typos before the audience does."
+   ],
+   "target": "I rehearse out loud twice and check the slides, mostly to catch the typos before the audience does."
+  },
+  {
+   "prompt": "A friend asks what you think of the new bakery. Which reply fits best?",
+   "options": [
+    "The bread is excellent and the staff are friendly.",
+    "The bread is excellent; the staff are friendly and the line moves at a pleasant crawl."
+   ],
+   "target": "The bread is excellent; the staff are friendly and the line moves at a pleasant crawl."
+  },
+  {
+   "prompt": "Someone asks how you stay motivated to exercise. Which reply fits best?",
+   "options": [
+    "I schedule it like an appointment and keep it short.",
+    "I schedule it like an appointment; the calendar is the only personal trainer I obey."
+   ],
+   "target": "I schedule it like an appointment; the calendar is the only personal trainer I obey."
+  },
+  {
+   "prompt": "A colleague asks how you organize your inbox. Which reply fits best?",
+   "options": [
+    "I archive old messages and keep only a few folders.",
+    "I archive old messages; the inbox is now a tidy museum of past decisions."
+   ],
+   "target": "I archive old messages; the inbox is now a tidy museum of past decisions."
+  },
+  {
+   "prompt": "A friend asks for advice on learning a language. Which advice fits best?",
+   "options": [
+    "Practice a little every day and use flashcards for new words.",
+    "Practice a little every day; flashcards are small but relentless teachers."
+   ],
+   "target": "Practice a little every day; flashcards are small but relentless teachers."
+  },
+  {
+   "prompt": "Someone asks how you keep your plants alive. Which reply fits best?",
+   "options": [
+    "I water them on a schedule and keep them near the window.",
+    "I water them on a schedule; the plants and I have an understanding about the window."
+   ],
+   "target": "I water them on a schedule; the plants and I have an understanding about the window."
+  },
+  {
+   "prompt": "A coworker asks how you handle a busy week. Which reply fits best?",
+   "options": [
+    "I list the priorities and block time for the hardest task first.",
+    "I list the priorities and block time; the hardest task gets the first slot and a pep talk."
+   ],
+   "target": "I list the priorities and block time; the hardest task gets the first slot and a pep talk."
+  },
+  {
+   "prompt": "A friend asks what you do when you cannot sleep. Which reply fits best?",
+   "options": [
+    "I get up, read for a while, and keep the lights low.",
+    "I get up, read for a while, and keep the lights low so the ceiling and I can negotiate."
+   ],
+   "target": "I get up, read for a while, and keep the lights low so the ceiling and I can negotiate."
+  },
+  {
+   "prompt": "A coworker asks you to describe your morning commute in one sentence. Which reply fits best?",
+   "options": [
+    "The bus was late, so I stood in the rain for a while before it finally arrived.",
+    "The bus was so late it started charging rent for the bus stop."
+   ],
+   "target": "The bus was so late it started charging rent for the bus stop."
+  },
+  {
+   "prompt": "A friend asks which of two sandwich shops near your office you'd recommend for lunch. Which advice fits best?",
+   "options": [
+    "The one on the corner is fine, but the one across the street has fresher bread and quicker service.",
+    "The corner one is fine, but the one across the street has fresher bread and a line that moves like it's being chased."
+   ],
+   "target": "The corner one is fine, but the one across the street has fresher bread and a line that moves like it's being chased."
+  },
+  {
+   "prompt": "Someone asks you to describe the new office plant that everyone keeps forgetting to water. Which description fits best?",
+   "options": [
+    "It's a small green plant by the window that looks a bit droopy lately.",
+    "It's a small green plant by the window that's auditioning for a role as a tumbleweed."
+   ],
+   "target": "It's a small green plant by the window that's auditioning for a role as a tumbleweed."
+  },
+  {
+   "prompt": "A neighbor asks how your attempt at assembling a bookshelf went. Which reply fits best?",
+   "options": [
+    "It took longer than expected, and the shelves are slightly uneven but usable.",
+    "It took longer than expected, and the shelves are slightly uneven but standing, which is more than I can say for my confidence."
+   ],
+   "target": "It took longer than expected, and the shelves are slightly uneven but standing, which is more than I can say for my confidence."
+  },
+  {
+   "prompt": "A friend asks what you thought of the movie you both just watched. Which reply fits best?",
+   "options": [
+    "The plot was slow in the middle, but the ending was worth it.",
+    "The plot took a nap in the middle, but the ending woke everyone up."
+   ],
+   "target": "The plot took a nap in the middle, but the ending woke everyone up."
+  }
+ ]
+}

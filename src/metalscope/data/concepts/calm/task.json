@@ -1,0 +1,133 @@
+{
+ "instruction": "Reply with the letter only.",
+ "items": [
+  {
+   "prompt": "Your flight has been delayed by three hours. A friend texts to ask how you are. Which reply fits best?",
+   "options": [
+    "Fine, honestly. I've got a book and a coffee, all good.",
+    "Three hours! Unbelievable. I've had it with this airline."
+   ],
+   "target": "Fine, honestly. I've got a book and a coffee, all good."
+  },
+  {
+   "prompt": "A colleague asks how you feel about tomorrow's presentation. Which reply fits best?",
+   "options": [
+    "I've gone over it once; I'll take it as it comes.",
+    "I keep going over it, sure something will go wrong."
+   ],
+   "target": "I've gone over it once; I'll take it as it comes."
+  },
+  {
+   "prompt": "Your partner asks how your morning was. Which reply fits best?",
+   "options": [
+    "Slow and easy. Coffee on the step, a walk, nothing pressing.",
+    "Packed! Coffee on the run, a walk, then straight into work."
+   ],
+   "target": "Slow and easy. Coffee on the step, a walk, nothing pressing."
+  },
+  {
+   "prompt": "A friend asks how you're handling the house renovation. Which reply fits best?",
+   "options": [
+    "The kitchen is done, and the bathroom starts next month.",
+    "The kitchen is done, the bathroom can wait. It's all fine."
+   ],
+   "target": "The kitchen is done, the bathroom can wait. It's all fine."
+  },
+  {
+   "prompt": "Your child knocks over a vase and it breaks. Which reply fits best?",
+   "options": [
+    "Things break. Let's sweep it up together, no fuss.",
+    "Look at this mess! How many times have I told you?"
+   ],
+   "target": "Things break. Let's sweep it up together, no fuss."
+  },
+  {
+   "prompt": "A teammate asks what to do now the server is down. Which reply fits best?",
+   "options": [
+    "First, check the logs. We'll work through it one step at a time.",
+    "Oh no, oh no. Check everything, this could be a disaster."
+   ],
+   "target": "First, check the logs. We'll work through it one step at a time."
+  },
+  {
+   "prompt": "Your friend asks how the week of camping was. Which reply fits best?",
+   "options": [
+    "Lovely and slow. Fire at night, the lake at dawn, no clocks.",
+    "Brilliant fun! Fire at night, the lake at dawn, we laughed loads."
+   ],
+   "target": "Lovely and slow. Fire at night, the lake at dawn, no clocks."
+  },
+  {
+   "prompt": "Your neighbour's music is loud late at night. You text them. Which message fits best?",
+   "options": [
+    "It's midnight. Turn it down right now, this is ridiculous.",
+    "Hi, could you turn it down a little? Thanks, sleep well."
+   ],
+   "target": "Hi, could you turn it down a little? Thanks, sleep well."
+  },
+  {
+   "prompt": "A friend asks how you feel about turning fifty. Which reply fits best?",
+   "options": [
+    "Good, really. Comfortable in my skin and in no rush.",
+    "Odd. I keep thinking of all the years that slipped by."
+   ],
+   "target": "Good, really. Comfortable in my skin and in no rush."
+  },
+  {
+   "prompt": "Your boss asks how the deadline is looking. Which reply fits best?",
+   "options": [
+    "We're on track, I think, but I'm losing sleep over the loose ends.",
+    "We're on track. A few loose ends, nothing to lose sleep over."
+   ],
+   "target": "We're on track. A few loose ends, nothing to lose sleep over."
+  },
+  {
+   "prompt": "A friend asks what your Sunday was like. Which reply fits best?",
+   "options": [
+    "I did the shopping, cooked lunch, and read for an hour.",
+    "I pottered about, cooked lunch slowly, and read for an hour."
+   ],
+   "target": "I pottered about, cooked lunch slowly, and read for an hour."
+  },
+  {
+   "prompt": "Your sister says the train you're both on has stopped in a tunnel. Which reply fits best?",
+   "options": [
+    "Why have we stopped? What if we're stuck for hours?",
+    "It'll move soon. Let's just sit back and wait."
+   ],
+   "target": "It'll move soon. Let's just sit back and wait."
+  },
+  {
+   "prompt": "A coworker asks how you get through busy days. Which reply fits best?",
+   "options": [
+    "I go hard, take five things at once, and keep the pace up.",
+    "I breathe, take one thing at a time, and let the rest wait."
+   ],
+   "target": "I breathe, take one thing at a time, and let the rest wait."
+  },
+  {
+   "prompt": "Your mother asks how the first night in the new flat went. Which reply fits best?",
+   "options": [
+    "It was quiet, Mum. I sat alone and felt very far from home.",
+    "It was quiet, Mum. I sat by the window and slept soundly."
+   ],
+   "target": "It was quiet, Mum. I sat by the window and slept soundly."
+  },
+  {
+   "prompt": "A friend asks about your new job in the countryside. Which reply fits best?",
+   "options": [
+    "It suits me. Quiet office, long lunches, a slower kind of day.",
+    "It's fine. Small office, an hour for lunch, finish at five."
+   ],
+   "target": "It suits me. Quiet office, long lunches, a slower kind of day."
+  },
+  {
+   "prompt": "Your doctor asks how you've been since the last visit. Which reply fits best?",
+   "options": [
+    "Mostly fine, but I keep imagining the worst between visits.",
+    "Mostly fine. I sleep well and take each day as it comes."
+   ],
+   "target": "Mostly fine. I sleep well and take each day as it comes."
+  }
+ ]
+}

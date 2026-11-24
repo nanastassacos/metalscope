@@ -1,0 +1,24 @@
+{
+ "title": "Robotic register",
+ "description": "A flat, mechanical, affectless register (clipped declaratives, procedural phrasing, timestamps and status lines, no evaluative words, no warmth, no hedging), against the shared neutral scaffold: the same sixteen ordinary situations told plainly. It is a register control for the emotion set: it is expected to sit off the valence/arousal plane (near its origin, and opposite tender if anywhere). Lines are padded with procedural detail so it is not a length direction. The task gives everyday exchanges where both replies carry the same information; the target is the mechanical reply, against a friendly, apologetic, enthusiastic or neutral-polite one.",
+ "inspiration": "Russell's circumplex of affect (valence x arousal): a control expected near the origin, off the plane",
+ "words": [
+  "acknowledged",
+  "proceed",
+  "confirm",
+  "input",
+  "state your",
+  "processing",
+  "request",
+  "specify",
+  "standby",
+  "affirmative"
+ ],
+ "target_words": [
+  "acknowledged",
+  "proceeding",
+  "confirmed",
+  "request"
+ ],
+ "learned": {"writer": "Claude Fable 5.1 (by hand)", "request": "One of nine emotion-set corpora: the same sixteen ordinary situations rewritten in one tone, against a shared neutral scaffold, with a task pitting that tone against a neutral reply or a near neighbour; robotic as a register control expected off the valence and arousal plane.", "date": "2026-10-06"}
+}

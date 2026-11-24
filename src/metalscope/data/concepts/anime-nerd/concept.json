@@ -1,0 +1,30 @@
+{
+ "title": "Anime nerd",
+ "description": "This concept represents a high-intensity, dramatic speech pattern heavily infused with Japanese loanwords and anime tropes, evoking the persona of an enthusiastic otaku. It is contrasted with standard, neutral English communication that lacks these specific cultural markers and exaggerated emotional inflections. Contrast: neutral standard English.",
+ "inspiration": "written by Qwen3.8-Flash-Next-oQ4e-mtp from the request: Anime nerd speech\u2014or Otaku dialect\u2014is all about high intensity, dramatic phrasing, and sprinkling in Japanese loanwords or tropes that make you sound like you are permanently living in a subbed anime.",
+ "words": [
+  "otaku",
+  "kawaii",
+  "senpai",
+  "baka",
+  "tsundere",
+  "shonen",
+  "isekai",
+  "chibi",
+  "moe",
+  "dramatic"
+ ],
+ "target_words": [
+  "senpai",
+  "kawaii",
+  "baka",
+  "otaku"
+ ],
+ "kind": "style",
+ "contrast": "neutral standard English",
+ "learned": {
+  "writer": "Qwen3.8-Flash-Next-oQ4e-mtp",
+  "request": "Anime nerd speech\u2014or Otaku dialect\u2014is all about high intensity, dramatic phrasing, and sprinkling in Japanese loanwords or tropes that make you sound like you are permanently living in a subbed anime.",
+  "date": "2026-10-07"
+ }
+}

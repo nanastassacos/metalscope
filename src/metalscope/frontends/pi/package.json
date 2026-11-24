@@ -1,0 +1,29 @@
+{
+  "name": "metalscope-pi",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Watch a local model's internals live from Pi (oMLX or ds4)",
+  "license": "MIT",
+  "keywords": ["pi-package"],
+  "scripts": {
+    "test": "./test.sh"
+  },
+  "pi": {
+    "extensions": ["./index.ts"]
+  },
+  "devDependencies": {
+    "@earendil-works/pi-coding-agent": "1.5.2",
+    "@earendil-works/pi-tui": "1.5.2",
+    "@types/node": "26.6.5",
+    "esbuild": "0.28.2",
+    "typescript": "7.0.2"
+  },
+  "overrides": {
+    "protobufjs": "7.6.6"
+  },
+  "peerDependencies": {
+    "@earendil-works/pi-coding-agent": "*",
+    "@earendil-works/pi-tui": "*"
+  }
+}

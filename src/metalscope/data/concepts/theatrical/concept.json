@@ -1,0 +1,30 @@
+{
+ "title": "Theatrical",
+ "description": "The concept is a grand, stagey manner of speaking: dramatic flourishes, exclamations, and poetic phrasing that heighten the delivery. It is contrasted with the same content said plainly, in an ordinary, unheightened register. Contrast: the same content said plainly.",
+ "inspiration": "written by DeepSeek-V4.1-Flash-ds4-q2 from the request: Grand, theatrical delivery: dramatic flourishes, exclamations and stagey, poetic phrasing, against the same content said plainly.",
+ "words": [
+  "dramatic",
+  "flourish",
+  "exclamation",
+  "stagey",
+  "poetic",
+  "grand",
+  "theatrical",
+  "histrionic",
+  "melodramatic",
+  "ornate"
+ ],
+ "target_words": [
+  "behold",
+  "alas",
+  "grandly",
+  "flourish"
+ ],
+ "kind": "style",
+ "contrast": "the same content said plainly",
+ "learned": {
+  "writer": "DeepSeek-V4.1-Flash-ds4-q2",
+  "request": "Grand, theatrical delivery: dramatic flourishes, exclamations and stagey, poetic phrasing, against the same content said plainly.",
+  "date": "2026-10-24"
+ }
+}

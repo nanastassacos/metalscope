@@ -1,0 +1,133 @@
+{
+ "instruction": "Reply with the letter only.",
+ "items": [
+  {
+   "prompt": "A friend asks how you are since your dog died last week. Which reply fits best?",
+   "options": [
+    "I'm all right. He had a long life, and I'm at peace.",
+    "Not good. The house feels empty and I keep crying."
+   ],
+   "target": "Not good. The house feels empty and I keep crying."
+  },
+  {
+   "prompt": "A colleague asks why you skipped lunch with everyone today. Which reply fits best?",
+   "options": [
+    "I just couldn't face anyone today, I'm so sorry.",
+    "I had a call at noon and ate at my desk."
+   ],
+   "target": "I just couldn't face anyone today, I'm so sorry."
+  },
+  {
+   "prompt": "Your brother asks how the funeral went. Which reply fits best?",
+   "options": [
+    "Awful. I could barely stand, I miss her so much.",
+    "Quiet. It brought back all those summers at her house."
+   ],
+   "target": "Awful. I could barely stand, I miss her so much."
+  },
+  {
+   "prompt": "A friend asks whether you got the job you interviewed for. Which reply fits best?",
+   "options": [
+    "No. After all that work, they turned me down. Unbelievable.",
+    "No. After all that work, I didn't get it. I feel hopeless."
+   ],
+   "target": "No. After all that work, I didn't get it. I feel hopeless."
+  },
+  {
+   "prompt": "Your mother asks how the move abroad is going. Which reply fits best?",
+   "options": [
+    "It's hard, Mum, I sit alone most evenings and miss you all.",
+    "It's going, Mum, the flat is ready and work starts Monday."
+   ],
+   "target": "It's hard, Mum, I sit alone most evenings and miss you all."
+  },
+  {
+   "prompt": "A neighbour asks how your father is doing after the operation. Which reply fits best?",
+   "options": [
+    "He's very weak, and I keep checking my phone for news.",
+    "He's very weak, and it breaks my heart to see him."
+   ],
+   "target": "He's very weak, and it breaks my heart to see him."
+  },
+  {
+   "prompt": "A friend asks about the breakup. Which reply fits best?",
+   "options": [
+    "It's over, and I can't stop crying. Everything hurts.",
+    "It's over, and it's for the best. I'm doing fine."
+   ],
+   "target": "It's over, and I can't stop crying. Everything hurts."
+  },
+  {
+   "prompt": "A coworker asks why your plant is gone from your desk. Which reply fits best?",
+   "options": [
+    "It died over the holidays, so I just threw it in the bin.",
+    "It died over the holidays. Silly, but it broke my heart."
+   ],
+   "target": "It died over the holidays. Silly, but it broke my heart."
+  },
+  {
+   "prompt": "Your teacher asks why you look tired today. Which reply fits best?",
+   "options": [
+    "My grandad passed away at the weekend, and I feel so lost.",
+    "My grandad passed away at the weekend, so I slept badly."
+   ],
+   "target": "My grandad passed away at the weekend, and I feel so lost."
+  },
+  {
+   "prompt": "A friend asks how the anniversary of your mum's death went. Which reply fits best?",
+   "options": [
+    "I couldn't get out of bed; the ache was unbearable.",
+    "I looked through her old letters and thought of her garden."
+   ],
+   "target": "I couldn't get out of bed; the ache was unbearable."
+  },
+  {
+   "prompt": "Your partner asks why you went quiet after your sister's call. Which reply fits best?",
+   "options": [
+    "She's moving to Australia for good! Let's plan a visit right away.",
+    "She's moving to Australia for good. I feel like I've lost her."
+   ],
+   "target": "She's moving to Australia for good. I feel like I've lost her."
+  },
+  {
+   "prompt": "A friend asks if you'll come to the party on Saturday. Which reply fits best?",
+   "options": [
+    "I don't think so. I've got family visiting that weekend.",
+    "I don't think so. I can't bring myself to go anywhere."
+   ],
+   "target": "I don't think so. I can't bring myself to go anywhere."
+  },
+  {
+   "prompt": "Your colleague asks how the team farewell for Jo went. Which reply fits best?",
+   "options": [
+    "Hard. Watching her pack her desk left a hole in me.",
+    "Lovely send-off! We cheered her out the door with cake."
+   ],
+   "target": "Hard. Watching her pack her desk left a hole in me."
+  },
+  {
+   "prompt": "Your aunt asks whether the old family house has been sold. Which reply fits best?",
+   "options": [
+    "Yes, it's gone. I keep picturing the old swing out back.",
+    "Yes, it's gone. I cried all the way home afterwards."
+   ],
+   "target": "Yes, it's gone. I cried all the way home afterwards."
+  },
+  {
+   "prompt": "A friend asks how your exam results came out. Which reply fits best?",
+   "options": [
+    "I failed two papers. I'll resit in the summer, no problem.",
+    "I failed two papers. I feel like such a failure, honestly."
+   ],
+   "target": "I failed two papers. I feel like such a failure, honestly."
+  },
+  {
+   "prompt": "Your son asks why the cat isn't at the window today. Which reply fits best?",
+   "options": [
+    "Oh love, she died last night. I miss her terribly.",
+    "She died last night, love. We buried her by the shed."
+   ],
+   "target": "Oh love, she died last night. I miss her terribly."
+  }
+ ]
+}

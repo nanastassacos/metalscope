@@ -1,0 +1,28 @@
+{
+ "title": "Terse",
+ "description": "Saying it in the fewest words that do the job, against elaborating the same content with context, caveats and restatement. Both sides are correct and polite; only the amount of wrapping differs. The corpus spans assistant replies to user questions, narration of how someone explains things, messages between colleagues, and written instructions and notices. The task gives situations where someone asks for help; the target is the terse reply (the answer alone, in a line) against the elaborated one.",
+ "inspiration": "Strunk's 'omit needless words'; Pascal's apology for a long letter",
+ "words": [
+  "brief",
+  "short",
+  "concise",
+  "succinct",
+  "terse",
+  "simply",
+  "just",
+  "only",
+  "one-liner",
+  "to the point"
+ ],
+ "target_words": [
+  "brief",
+  "short",
+  "concise",
+  "just"
+ ],
+ "learned": {
+  "writer": "Claude Fable 5.1 (by hand)",
+  "request": "48 matched pairs and a 16-item task for a behavioural concept for an assistant: terseness.",
+  "date": "2026-10-06"
+ }
+}

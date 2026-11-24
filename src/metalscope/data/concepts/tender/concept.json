@@ -1,0 +1,28 @@
+{
+ "title": "Tender",
+ "description": "Feeling tender: warmth and care toward someone: holding hands, cooking their favourite, reading aloud, looking after them. Circumplex position: valence positive, arousal low to mid. The contrast is the shared neutral scaffold (neg.txt is identical across the emotion set): the same sixteen ordinary situations, same facts, person and tense, told in flat affect; the emotion is carried by what is noticed, the phrasing and what the person does, with the emotion's own name kept out of the lines. The task gives everyday situations where both replies carry the same information in two tones; the target is the tender reply, against a neutral reply or one in another emotion's tone (not always the opposite valence).",
+ "inspiration": "Russell's circumplex of affect (valence x arousal): tender at valence positive, arousal low to mid",
+ "words": [
+  "tender",
+  "gentl",
+  "fond",
+  "affection",
+  "cherish",
+  "caring",
+  "loving",
+  "beloved",
+  "warmth",
+  "sweetheart"
+ ],
+ "target_words": [
+  "tender",
+  "gentle",
+  "fondly",
+  "loving"
+ ],
+ "learned": {
+  "writer": "Claude Fable 5.1 (by hand)",
+  "request": "Nine emotion-set corpora on a shared neutral scaffold: joyful, sad, melancholic, energized, calm, angry, anxious, tender, robotic.",
+  "date": "2026-10-06"
+ }
+}

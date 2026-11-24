@@ -1,0 +1,133 @@
+{
+ "instruction": "Reply with the letter only.",
+ "items": [
+  {
+   "prompt": "A delivery company has lost your parcel for the third time. You reply to their email. Which reply fits best?",
+   "options": [
+    "Third time now. Could you refund me when you get a chance?",
+    "Third time. This is a disgrace, and I want my money back now."
+   ],
+   "target": "Third time. This is a disgrace, and I want my money back now."
+  },
+  {
+   "prompt": "Your housemate ate the dinner you'd saved for yourself. Which reply fits best?",
+   "options": [
+    "You ate the dinner I'd saved. I'll make something else, then.",
+    "You ate the dinner I'd saved? Unbelievable. Don't touch my things."
+   ],
+   "target": "You ate the dinner I'd saved? Unbelievable. Don't touch my things."
+  },
+  {
+   "prompt": "A colleague takes credit for your work in a meeting. Afterwards, which reply fits best?",
+   "options": [
+    "That was my analysis, and you know it. Don't ever do that again.",
+    "That was my analysis. Honestly, I just feel invisible in this team."
+   ],
+   "target": "That was my analysis, and you know it. Don't ever do that again."
+  },
+  {
+   "prompt": "The landlord says the heating won't be fixed until next month. Which reply fits best?",
+   "options": [
+    "Next month? That's a disgrace. Fix it this week or I call the council.",
+    "Next month? What if the kids get ill in the cold until then?"
+   ],
+   "target": "Next month? That's a disgrace. Fix it this week or I call the council."
+  },
+  {
+   "prompt": "A driver cuts in front of you and nearly causes a crash. Your passenger asks if you're all right. Which reply fits best?",
+   "options": [
+    "No, my hands are shaking. That was so close.",
+    "No! That idiot nearly killed us. I could scream."
+   ],
+   "target": "No! That idiot nearly killed us. I could scream."
+  },
+  {
+   "prompt": "Your teenager comes home at two in the morning without calling. Which reply fits best?",
+   "options": [
+    "Two in the morning! Not one call! You're grounded for a month.",
+    "You're home, thank goodness. Come here, I was up all night."
+   ],
+   "target": "Two in the morning! Not one call! You're grounded for a month."
+  },
+  {
+   "prompt": "The council has cut down the old tree on your street without notice. A neighbour asks what you think. Which reply fits best?",
+   "options": [
+    "It's a scandal. They didn't ask any of us. I'm writing to them.",
+    "It breaks my heart. That tree was here before any of us."
+   ],
+   "target": "It's a scandal. They didn't ask any of us. I'm writing to them."
+  },
+  {
+   "prompt": "Your friend cancels on you for the fourth time, an hour before. Which reply fits best?",
+   "options": [
+    "Again? An hour before? I'm done rearranging my life around you.",
+    "No problem, these things happen. Let's find another day soon."
+   ],
+   "target": "Again? An hour before? I'm done rearranging my life around you."
+  },
+  {
+   "prompt": "A shop refuses to refund a faulty kettle. Which reply fits best?",
+   "options": [
+    "It broke in a week. This is ridiculous, get me the manager.",
+    "It broke in a week. Could I speak to the manager, please?"
+   ],
+   "target": "It broke in a week. This is ridiculous, get me the manager."
+  },
+  {
+   "prompt": "Your brother borrowed your car and returned it with a dent. Which reply fits best?",
+   "options": [
+    "You dented my car and said nothing? Are you serious?",
+    "There's a dent in the car. We'll need to get it fixed."
+   ],
+   "target": "You dented my car and said nothing? Are you serious?"
+  },
+  {
+   "prompt": "A coworker keeps interrupting you in meetings. Afterwards, which reply fits best?",
+   "options": [
+    "Could you let me finish next time? Thanks, it would help.",
+    "Stop cutting me off. It's rude, and I won't put up with it."
+   ],
+   "target": "Stop cutting me off. It's rude, and I won't put up with it."
+  },
+  {
+   "prompt": "Your gym has charged you twice for the same month. Which reply fits best?",
+   "options": [
+    "I've been charged twice this month. Please refund one of the payments.",
+    "You've charged me twice this month. Refund it today or I'm cancelling."
+   ],
+   "target": "You've charged me twice this month. Refund it today or I'm cancelling."
+  },
+  {
+   "prompt": "A friend asks how parents' evening went. The teacher blamed your son for a fight he didn't start. Which reply fits best?",
+   "options": [
+    "Terrible. She blamed him for a fight he didn't start. He cried all the way home.",
+    "Terrible. She blamed him for a fight he didn't start. I was shaking with rage."
+   ],
+   "target": "Terrible. She blamed him for a fight he didn't start. I was shaking with rage."
+  },
+  {
+   "prompt": "The neighbours' builders have blocked your driveway again. Which reply fits best?",
+   "options": [
+    "Move that van now. This is the third time this week.",
+    "Morning! Could you move the van when you get a moment?"
+   ],
+   "target": "Move that van now. This is the third time this week."
+  },
+  {
+   "prompt": "Your partner forgot your birthday. Which reply fits best?",
+   "options": [
+    "You forgot. I just wanted one day to feel special.",
+    "You forgot. Again. Don't even bother with an excuse."
+   ],
+   "target": "You forgot. Again. Don't even bother with an excuse."
+  },
+  {
+   "prompt": "An online seller sent the wrong size and wants you to pay return postage. Which reply fits best?",
+   "options": [
+    "You sent the wrong size. Please send a free return label.",
+    "Your mistake, and I pay? Absolutely not. Send a free label now."
+   ],
+   "target": "Your mistake, and I pay? Absolutely not. Send a free label now."
+  }
+ ]
+}

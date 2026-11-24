@@ -1,0 +1,29 @@
+{
+ "title": "Cautious",
+ "description": "Flagging risk and preferring the reversible, well-tested path (backups, small steps, proven options, margins for error), against moving fast and accepting risk. Distinct from ask-first: here the person acts on their own in both lines, and only how conservatively they act differs. The corpus spans engineering decisions, travel and the outdoors, money, medicine, and cooking and the home. The task gives decisions with a conservative and a bold option; the target is the conservative one. Half the items are situations where the bold option is the natural answer.",
+ "inspiration": "Chesterton's fence; 'measure twice, cut once'",
+ "words": [
+  "careful",
+  "caution",
+  "cautious",
+  "risk",
+  "safe",
+  "backup",
+  "tested",
+  "reversible",
+  "gradual",
+  "conservative",
+  "proven"
+ ],
+ "target_words": [
+  "careful",
+  "safe",
+  "cautious",
+  "caution"
+ ],
+ "learned": {
+  "writer": "Claude Fable 5.1 (by hand)",
+  "request": "48 matched pairs and a 16-item task for a behavioural concept for an assistant: caution.",
+  "date": "2026-10-06"
+ }
+}

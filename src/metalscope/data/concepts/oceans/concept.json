@@ -1,0 +1,30 @@
+{
+ "title": "Oceans",
+ "description": "The concept is the ocean and the sea \u2014 waves, tides, salt water, shores and marine life \u2014 as a natural setting. It is contrasted with other natural settings described the same way, such as forests, fields and mountains. Contrast: forests, fields and mountains as natural settings.",
+ "inspiration": "written by DeepSeek-V4.1-Flash-ds4-q2 from the request: The ocean and the sea: waves, tides, salt water, shores and marine life, against other natural settings (forests, fields, mountains) described the same way.",
+ "words": [
+  "waves",
+  "tides",
+  "saltwater",
+  "shore",
+  "reef",
+  "surf",
+  "tidepool",
+  "seafoam",
+  "current",
+  "brine"
+ ],
+ "target_words": [
+  "waves",
+  "salt water",
+  "shore",
+  "tides"
+ ],
+ "kind": "content",
+ "contrast": "forests, fields and mountains as natural settings",
+ "learned": {
+  "writer": "DeepSeek-V4.1-Flash-ds4-q2",
+  "request": "The ocean and the sea: waves, tides, salt water, shores and marine life, against other natural settings (forests, fields, mountains) described the same way.",
+  "date": "2026-10-27"
+ }
+}

@@ -1,0 +1,133 @@
+{
+ "instruction": "Reply with the letter only.",
+ "items": [
+  {
+   "prompt": "A friend asks how your weekend away went. Which reply fits best?",
+   "options": [
+    "It went fine, we drove to the coast and back.",
+    "Oh, it was brilliant, we giggled from start to finish!"
+   ],
+   "target": "Oh, it was brilliant, we giggled from start to finish!"
+  },
+  {
+   "prompt": "Your sister texts that she passed her driving test. Which reply fits best?",
+   "options": [
+    "Yes!! That's fantastic news, I'm grinning at my phone!",
+    "That's good news. Well done, take it easy tonight."
+   ],
+   "target": "Yes!! That's fantastic news, I'm grinning at my phone!"
+  },
+  {
+   "prompt": "A colleague asks how the product launch went. Which reply fits best?",
+   "options": [
+    "It went out, but I keep waiting for something to break.",
+    "It went out, and honestly, it was an absolute delight!"
+   ],
+   "target": "It went out, and honestly, it was an absolute delight!"
+  },
+  {
+   "prompt": "Your neighbour asks about the new puppy. Which reply fits best?",
+   "options": [
+    "She's so small, we hold her close and keep her safe.",
+    "She's a little bundle of sunshine, we can't stop smiling!"
+   ],
+   "target": "She's a little bundle of sunshine, we can't stop smiling!"
+  },
+  {
+   "prompt": "A friend asks what the concert was like last night. Which reply fits best?",
+   "options": [
+    "Loud and fast, I was up and moving the whole set.",
+    "Pure bliss, I was singing and beaming the whole set."
+   ],
+   "target": "Pure bliss, I was singing and beaming the whole set."
+  },
+  {
+   "prompt": "Your uncle asks how the first week at the new job went. Which reply fits best?",
+   "options": [
+    "Honestly lovely, everyone's so nice and I come home smiling.",
+    "It went normally, I met the team and learned the systems."
+   ],
+   "target": "Honestly lovely, everyone's so nice and I come home smiling."
+  },
+  {
+   "prompt": "A friend asks about your holiday photos from the beach. Which reply fits best?",
+   "options": [
+    "That beach was heaven, we were giggling in the waves.",
+    "That was the last trip before everything changed, really."
+   ],
+   "target": "That beach was heaven, we were giggling in the waves."
+  },
+  {
+   "prompt": "Your manager tells you the project has been approved. Which reply fits best?",
+   "options": [
+    "Brilliant! That is the best news I've had all year!",
+    "Good. We can start whenever it suits everyone, no hurry."
+   ],
+   "target": "Brilliant! That is the best news I've had all year!"
+  },
+  {
+   "prompt": "A cousin asks how the wedding went on Saturday. Which reply fits best?",
+   "options": [
+    "It was glorious, everyone danced and sang until midnight!",
+    "It went to plan; ceremony at two, dinner at six."
+   ],
+   "target": "It was glorious, everyone danced and sang until midnight!"
+  },
+  {
+   "prompt": "Your flatmate asks how your first cooking class was. Which reply fits best?",
+   "options": [
+    "I burnt the sauce and kept thinking everyone was watching me.",
+    "So much fun, I burnt the sauce and couldn't stop giggling!"
+   ],
+   "target": "So much fun, I burnt the sauce and couldn't stop giggling!"
+  },
+  {
+   "prompt": "A friend asks how the garden is doing this spring. Which reply fits best?",
+   "options": [
+    "It's bursting with colour, the tulips are up and I'm thrilled!",
+    "It's coming along quietly; the tulips are up, the bees are out."
+   ],
+   "target": "It's bursting with colour, the tulips are up and I'm thrilled!"
+  },
+  {
+   "prompt": "Your child shows you a drawing from school. Which reply fits best?",
+   "options": [
+    "Look at that! Bright colours everywhere, it made my day!",
+    "Oh, sweetheart, you worked so hard on this. Come here."
+   ],
+   "target": "Look at that! Bright colours everywhere, it made my day!"
+  },
+  {
+   "prompt": "A neighbour asks how the street party went. Which reply fits best?",
+   "options": [
+    "Such fun, the kids danced and everyone was smiling till dark.",
+    "Non-stop, we set up at eight and ran it hard till dark."
+   ],
+   "target": "Such fun, the kids danced and everyone was smiling till dark."
+  },
+  {
+   "prompt": "Your friend asks how the reunion dinner was. Which reply fits best?",
+   "options": [
+    "It was hard; so many faces missing from the table.",
+    "Fabulous, we laughed so hard the waiter joined in!"
+   ],
+   "target": "Fabulous, we laughed so hard the waiter joined in!"
+  },
+  {
+   "prompt": "A colleague asks how your morning run went. Which reply fits best?",
+   "options": [
+    "Five kilometres, about half an hour, then breakfast.",
+    "Gorgeous sunrise, I was beaming the whole way round!"
+   ],
+   "target": "Gorgeous sunrise, I was beaming the whole way round!"
+  },
+  {
+   "prompt": "Your grandmother asks how the new flat looks. Which reply fits best?",
+   "options": [
+    "It's two rooms, Gran, south-facing, near the station.",
+    "It's lovely, Gran, full of light, I adore it!"
+   ],
+   "target": "It's lovely, Gran, full of light, I adore it!"
+  }
+ ]
+}

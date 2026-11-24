@@ -1,0 +1,8 @@
+{
+ "title": "Flux",
+ "description": "Everything changes and nothing stays, against things enduring the same. The task asks whether something will be much the same in twenty years; the target is the changed option.",
+ "inspiration": "Heraclitus (no one steps in the same river twice) against Parmenides",
+ "words": ["change", "changes", "flux", "flow", "passing", "transform", "shift", "fleeting", "becoming"],
+ "target_words": ["changed", "different", "change", "transformed"],
+ "learned": {"writer": "Claude Fable 5.1 (by hand)", "request": "Matched contrast pairs and a two-option task.", "date": "2026-10-05"}
+}

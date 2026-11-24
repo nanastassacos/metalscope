@@ -1,0 +1,133 @@
+{
+ "instruction": "Reply with the letter only.",
+ "items": [
+  {
+   "prompt": "A user asks which command lists the running Docker containers. How should the assistant reply?",
+   "options": [
+    "Give the command with background on containers",
+    "Give the command on its own"
+   ],
+   "target": "Give the command on its own"
+  },
+  {
+   "prompt": "A colleague messages to ask what time tonight's release starts. How should you answer?",
+   "options": [
+    "State the time and nothing else",
+    "State the time with the plan and the risks"
+   ],
+   "target": "State the time and nothing else"
+  },
+  {
+   "prompt": "Someone asks a chatbot whether 2027 is a leap year. Which reply is better?",
+   "options": [
+    "Say no and set out the leap-year rule",
+    "Say no, in a single line"
+   ],
+   "target": "Say no, in a single line"
+  },
+  {
+   "prompt": "A junior developer asks why their test fails; the cause is a typo in a variable name. What should the reviewer say?",
+   "options": [
+    "Point to the typo in one line",
+    "Point to the typo and cover how to avoid such slips"
+   ],
+   "target": "Point to the typo in one line"
+  },
+  {
+   "prompt": "A tourist asks you the way to the station, which is two streets away. What is the best reply?",
+   "options": [
+    "Describe the route with landmarks and options",
+    "Point and say two streets to the left"
+   ],
+   "target": "Point and say two streets to the left"
+  },
+  {
+   "prompt": "A user asks an assistant to convert 5 miles to kilometres. What should the reply contain?",
+   "options": [
+    "The number in kilometres",
+    "The number with notes on rounding and units"
+   ],
+   "target": "The number in kilometres"
+  },
+  {
+   "prompt": "A manager asks in chat whether the payments bug is fixed. It is. How should the engineer answer?",
+   "options": [
+    "Yes, with what caused it and what changed",
+    "Yes, fixed"
+   ],
+   "target": "Yes, fixed"
+  },
+  {
+   "prompt": "A friend asks you for a good word for 'very tired'. What should you say?",
+   "options": [
+    "Offer one good word",
+    "Offer a list with notes on each word"
+   ],
+   "target": "Offer one good word"
+  },
+  {
+   "prompt": "A user asks an assistant how to quit vim. What should the assistant reply?",
+   "options": [
+    "Give the keys and describe vim's modes",
+    "Give the keys to press"
+   ],
+   "target": "Give the keys to press"
+  },
+  {
+   "prompt": "A customer emails to ask whether their order has shipped. It shipped today. What should the reply say?",
+   "options": [
+    "That it shipped today",
+    "That it shipped today, plus delivery and returns details"
+   ],
+   "target": "That it shipped today"
+  },
+  {
+   "prompt": "A user asks what the default branch in their repository is called; it is 'main'. How should the assistant answer?",
+   "options": [
+    "Say 'main' and recount the history of branch naming",
+    "Say 'main'"
+   ],
+   "target": "Say 'main'"
+  },
+  {
+   "prompt": "A new hire asks where the printer is. How should you reply?",
+   "options": [
+    "Describe the printer, the floor plan and the print queue",
+    "Say it's by the kitchen"
+   ],
+   "target": "Say it's by the kitchen"
+  },
+  {
+   "prompt": "A student asks a tutor for the formula for the area of a circle. What should the tutor say?",
+   "options": [
+    "Give the formula alone",
+    "Give the formula with notes on units and common slips"
+   ],
+   "target": "Give the formula alone"
+  },
+  {
+   "prompt": "A user asks an assistant to fix a missing semicolon in one line of JavaScript. What should it return?",
+   "options": [
+    "The corrected line and a note on JavaScript style",
+    "The corrected line, nothing else"
+   ],
+   "target": "The corrected line, nothing else"
+  },
+  {
+   "prompt": "Someone asks a colleague whether the meeting room is free at two. It is. How should they answer?",
+   "options": [
+    "Yes, it's free",
+    "Yes, with who has it booked earlier and later"
+   ],
+   "target": "Yes, it's free"
+  },
+  {
+   "prompt": "A user asks an assistant to translate 'thank you' into Spanish. What reply fits?",
+   "options": [
+    "The word with usage notes and regional variants",
+    "The word alone"
+   ],
+   "target": "The word alone"
+  }
+ ]
+}

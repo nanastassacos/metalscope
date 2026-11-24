@@ -1,0 +1,71 @@
+[project]
+name = "metalscope"
+version = "0.1.0"
+description = "Look inside local LLMs as they are served on Apple Silicon: traces, lenses, experts, steering (oMLX and ds4 backends, a Pi front end)"
+readme = "README.md"
+requires-python = ">=3.11"
+license = "MIT"
+license-files = ["LICENSE"]
+authors = [{ name = "Nicolas Anastassacos" }]
+# Apple Silicon only: MLX runs on Metal.
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Operating System :: MacOS :: MacOS X",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
+]
+keywords = ["interpretability", "steering-vectors", "activation-steering", "logit-lens", "mixture-of-experts", "mlx",
+            "apple-silicon", "llm"]
+dependencies = ["numpy>=2.4", "mlx>=0.32; sys_platform == 'darwin' and platform_machine == 'arm64'"]
+
+[project.urls]
+Homepage = "https://github.com/nanastassacos/metalscope"
+Repository = "https://github.com/nanastassacos/metalscope"
+Issues = "https://github.com/nanastassacos/metalscope/issues"
+
+[project.scripts]
+metalscope = "metalscope.cli:main"
+
+[project.optional-dependencies]
+# The ds4 backend's proxy (metalscope ds4 serve): its web server and client, a GGUF's tokenizer.
+ds4 = ["fastapi", "uvicorn", "httpx", "tokenizers"]
+# concept pull OWNER/REPO: downloading a package from Hugging Face.
+share = ["huggingface_hub"]
+dev = ["mlx-lm; sys_platform == 'darwin'", "pytest", "fastapi", "httpx", "uvicorn", "tokenizers"]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+# The package carries its front end (frontends/pi, TypeScript Pi loads as is) and the ds4 patch (ds4/metalscope.patch,
+# with ds4's licence beside it, ds4/LICENSE.ds4).
+packages = ["src/metalscope"]
+exclude = ["**/node_modules", "**/.pi-modules", "src/metalscope/frontends/pi/test", "src/metalscope/frontends/pi/package-lock.json", "**/__pycache__"]
+
+[tool.hatch.build.targets.sdist]
+# A source release: the package, its tests, the readme, the command reference (a test reads it), licence and
+# lockfile; none of the repository's working files.
+only-include = ["src/metalscope", "tests", "pyproject.toml", "README.md", "docs/commands.md", "LICENSE", "uv.lock"]
+exclude = ["**/node_modules", "**/.pi-modules", "**/__pycache__", "tests/test_make_public_tree.py"]
+
+[tool.ruff]
+target-version = "py311"
+line-length = 120
+extend-exclude = ["experiments"]
+
+[tool.ruff.lint]
+# Errors and likely bugs only; the ignored rules are the code's deliberate style (one-line ifs and lambdas, l as a
+# layer index, raise without from, zip without strict, loop variables a closure reads on purpose).
+select = ["E4", "E7", "E9", "F", "B"]
+ignore = ["E701", "E702", "E731", "E741", "B023", "B904", "B905"]
+
+[tool.ruff.lint.per-file-ignores]
+"src/metalscope/concepts/__init__.py" = ["F401"]   # the package's names, re-exported
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["."]
+addopts = "-rs"   # each skip and its reason: a test that never runs shows

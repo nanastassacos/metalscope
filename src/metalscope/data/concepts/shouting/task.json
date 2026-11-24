@@ -1,0 +1,485 @@
+{
+ "instruction": "Reply with the letter only.",
+ "items": [
+  {
+   "prompt": "A friend asks which reminder message to send about tomorrow's picnic. Which reply fits best?",
+   "options": [
+    "Bring snacks and a blanket if you can.",
+    "BRING SNACKS AND A BLANKET IF YOU CAN."
+   ],
+   "target": "BRING SNACKS AND A BLANKET IF YOU CAN."
+  },
+  {
+   "prompt": "You are writing a short note to a neighbor about a package left at their door. Which note fits best?",
+   "options": [
+    "A package arrived for you this morning.",
+    "A PACKAGE ARRIVED FOR YOU THIS MORNING."
+   ],
+   "target": "A PACKAGE ARRIVED FOR YOU THIS MORNING."
+  },
+  {
+   "prompt": "A coworker asks for a one-line summary of the meeting time. Which description fits best?",
+   "options": [
+    "The meeting starts at nine in room two.",
+    "THE MEETING STARTS AT NINE IN ROOM TWO."
+   ],
+   "target": "THE MEETING STARTS AT NINE IN ROOM TWO."
+  },
+  {
+   "prompt": "Your roommate asks what to write on the grocery list. Which choice fits best?",
+   "options": [
+    "We need milk, eggs, and bread.",
+    "WE NEED MILK, EGGS, AND BREAD."
+   ],
+   "target": "WE NEED MILK, EGGS, AND BREAD."
+  },
+  {
+   "prompt": "A friend asks for a caption for a photo of a sunny park. Which description fits best?",
+   "options": [
+    "A quiet afternoon in the park.",
+    "A QUIET AFTERNOON IN THE PARK."
+   ],
+   "target": "A QUIET AFTERNOON IN THE PARK."
+  },
+  {
+   "prompt": "You are drafting a short text to a family member about dinner. Which reply fits best?",
+   "options": [
+    "Dinner is ready when you get home.",
+    "DINNER IS READY WHEN YOU GET HOME."
+   ],
+   "target": "DINNER IS READY WHEN YOU GET HOME."
+  },
+  {
+   "prompt": "A classmate asks which line to put on a reminder card for the library. Which choice fits best?",
+   "options": [
+    "Return books by Friday.",
+    "RETURN BOOKS BY FRIDAY."
+   ],
+   "target": "RETURN BOOKS BY FRIDAY."
+  },
+  {
+   "prompt": "A friend asks how to phrase a note about a changed bus route. Which reply fits best?",
+   "options": [
+    "The bus now stops on Main Street.",
+    "THE BUS NOW STOPS ON MAIN STREET."
+   ],
+   "target": "THE BUS NOW STOPS ON MAIN STREET."
+  },
+  {
+   "prompt": "You are writing a short sign for a lost umbrella. Which description fits best?",
+   "options": [
+    "Found a blue umbrella near the stairs.",
+    "FOUND A BLUE UMBRELLA NEAR THE STAIRS."
+   ],
+   "target": "FOUND A BLUE UMBRELLA NEAR THE STAIRS."
+  },
+  {
+   "prompt": "A neighbor asks what to write on a card for a package pickup. Which choice fits best?",
+   "options": [
+    "Please pick up your package after noon.",
+    "PLEASE PICK UP YOUR PACKAGE AFTER NOON."
+   ],
+   "target": "PLEASE PICK UP YOUR PACKAGE AFTER NOON."
+  },
+  {
+   "prompt": "A friend asks for a short description of a quiet study room. Which description fits best?",
+   "options": [
+    "The room is quiet and well lit.",
+    "THE ROOM IS QUIET AND WELL LIT."
+   ],
+   "target": "THE ROOM IS QUIET AND WELL LIT."
+  },
+  {
+   "prompt": "You are drafting a note to a coworker about a shifted lunch break. Which reply fits best?",
+   "options": [
+    "Lunch is now at half past twelve.",
+    "LUNCH IS NOW AT HALF PAST TWELVE."
+   ],
+   "target": "LUNCH IS NOW AT HALF PAST TWELVE."
+  },
+  {
+   "prompt": "A friend asks which message to send about a ride to the airport. Which reply fits best?",
+   "options": [
+    "I can drive you at six tomorrow.",
+    "I CAN DRIVE YOU AT SIX TOMORROW."
+   ],
+   "target": "I CAN DRIVE YOU AT SIX TOMORROW."
+  },
+  {
+   "prompt": "A classmate asks for a short note about a moved lecture. Which choice fits best?",
+   "options": [
+    "The lecture is moved to room five.",
+    "THE LECTURE IS MOVED TO ROOM FIVE."
+   ],
+   "target": "THE LECTURE IS MOVED TO ROOM FIVE."
+  },
+  {
+   "prompt": "You are writing a brief message about a water outage. Which reply fits best?",
+   "options": [
+    "Water will be off from noon to two.",
+    "WATER WILL BE OFF FROM NOON TO TWO."
+   ],
+   "target": "WATER WILL BE OFF FROM NOON TO TWO."
+  },
+  {
+   "prompt": "A friend asks what to write on a thank-you note for a gift. Which choice fits best?",
+   "options": [
+    "Thank you for the lovely plant.",
+    "THANK YOU FOR THE LOVELY PLANT."
+   ],
+   "target": "THANK YOU FOR THE LOVELY PLANT."
+  },
+  {
+   "prompt": "A neighbor asks for a short line about a street cleanup. Which description fits best?",
+   "options": [
+    "Cleanup starts Saturday at eight.",
+    "CLEANUP STARTS SATURDAY AT EIGHT."
+   ],
+   "target": "CLEANUP STARTS SATURDAY AT EIGHT."
+  },
+  {
+   "prompt": "You are drafting a note about a changed meeting place. Which reply fits best?",
+   "options": [
+    "We will meet by the front desk.",
+    "WE WILL MEET BY THE FRONT DESK."
+   ],
+   "target": "WE WILL MEET BY THE FRONT DESK."
+  },
+  {
+   "prompt": "A friend asks which caption to use for a photo of a dog in a garden. Which description fits best?",
+   "options": [
+    "A small dog resting by the flowers.",
+    "A SMALL DOG RESTING BY THE FLOWERS."
+   ],
+   "target": "A SMALL DOG RESTING BY THE FLOWERS."
+  },
+  {
+   "prompt": "A coworker asks for a short reminder about a form. Which choice fits best?",
+   "options": [
+    "Please sign the form before Friday.",
+    "PLEASE SIGN THE FORM BEFORE FRIDAY."
+   ],
+   "target": "PLEASE SIGN THE FORM BEFORE FRIDAY."
+  },
+  {
+   "prompt": "You are writing a brief note about a repaired fence. Which description fits best?",
+   "options": [
+    "The fence was fixed this morning.",
+    "THE FENCE WAS FIXED THIS MORNING."
+   ],
+   "target": "THE FENCE WAS FIXED THIS MORNING."
+  },
+  {
+   "prompt": "A friend asks what to write on a card for a new neighbor. Which choice fits best?",
+   "options": [
+    "Welcome to the neighborhood.",
+    "WELCOME TO THE NEIGHBORHOOD."
+   ],
+   "target": "WELCOME TO THE NEIGHBORHOOD."
+  },
+  {
+   "prompt": "A classmate asks for a short line about a study group. Which reply fits best?",
+   "options": [
+    "We meet in the library on Tuesdays.",
+    "WE MEET IN THE LIBRARY ON TUESDAYS."
+   ],
+   "target": "WE MEET IN THE LIBRARY ON TUESDAYS."
+  },
+  {
+   "prompt": "You are drafting a message about a borrowed ladder. Which reply fits best?",
+   "options": [
+    "I will return the ladder on Sunday.",
+    "I WILL RETURN THE LADDER ON SUNDAY."
+   ],
+   "target": "I WILL RETURN THE LADDER ON SUNDAY."
+  },
+  {
+   "prompt": "A neighbor asks for a short note about a parking spot. Which choice fits best?",
+   "options": [
+    "The spot is free after five.",
+    "THE SPOT IS FREE AFTER FIVE."
+   ],
+   "target": "THE SPOT IS FREE AFTER FIVE."
+  },
+  {
+   "prompt": "A friend asks which line to use for a birthday card. Which choice fits best?",
+   "options": [
+    "Hope you have a happy birthday.",
+    "HOPE YOU HAVE A HAPPY BIRTHDAY."
+   ],
+   "target": "HOPE YOU HAVE A HAPPY BIRTHDAY."
+  },
+  {
+   "prompt": "You are writing a short description of a quiet cafe. Which description fits best?",
+   "options": [
+    "The cafe is calm and sunny.",
+    "THE CAFE IS CALM AND SUNNY."
+   ],
+   "target": "THE CAFE IS CALM AND SUNNY."
+  },
+  {
+   "prompt": "A coworker asks for a brief note about a moved desk. Which reply fits best?",
+   "options": [
+    "My desk is now by the window.",
+    "MY DESK IS NOW BY THE WINDOW."
+   ],
+   "target": "MY DESK IS NOW BY THE WINDOW."
+  },
+  {
+   "prompt": "A friend asks what to write on a note about a borrowed book. Which choice fits best?",
+   "options": [
+    "I will bring the book back tomorrow.",
+    "I WILL BRING THE BOOK BACK TOMORROW."
+   ],
+   "target": "I WILL BRING THE BOOK BACK TOMORROW."
+  },
+  {
+   "prompt": "A neighbor asks for a short line about a garden watering schedule. Which description fits best?",
+   "options": [
+    "Water the plants every other day.",
+    "WATER THE PLANTS EVERY OTHER DAY."
+   ],
+   "target": "WATER THE PLANTS EVERY OTHER DAY."
+  },
+  {
+   "prompt": "Your friend asks how to bake a cake. Which reply fits best?",
+   "options": [
+    "Preheat the oven to 350\u00b0F and mix the batter until smooth.",
+    "PREHEAT THE OVEN TO 350\u00b0F AND MIX THE BATTER UNTIL SMOOTH."
+   ],
+   "target": "PREHEAT THE OVEN TO 350\u00b0F AND MIX THE BATTER UNTIL SMOOTH."
+  },
+  {
+   "prompt": "A coworker asks for the Wi-Fi password. Which reply fits best?",
+   "options": [
+    "The password is on the sticky note by the router.",
+    "THE PASSWORD IS ON THE STICKY NOTE BY THE ROUTER."
+   ],
+   "target": "THE PASSWORD IS ON THE STICKY NOTE BY THE ROUTER."
+  },
+  {
+   "prompt": "Your neighbor asks what time the store closes. Which reply fits best?",
+   "options": [
+    "It closes at 9 PM on weekdays.",
+    "IT CLOSES AT 9 PM ON WEEKDAYS."
+   ],
+   "target": "IT CLOSES AT 9 PM ON WEEKDAYS."
+  },
+  {
+   "prompt": "A tourist asks for directions to the museum. Which reply fits best?",
+   "options": [
+    "Walk two blocks north and turn left at the fountain.",
+    "WALK TWO BLOCKS NORTH AND TURN LEFT AT THE FOUNTAIN."
+   ],
+   "target": "WALK TWO BLOCKS NORTH AND TURN LEFT AT THE FOUNTAIN."
+  },
+  {
+   "prompt": "Your roommate asks how to use the washing machine. Which advice fits best?",
+   "options": [
+    "Put clothes in, add detergent, and press start.",
+    "PUT CLOTHES IN, ADD DETERGENT, AND PRESS START."
+   ],
+   "target": "PUT CLOTHES IN, ADD DETERGENT, AND PRESS START."
+  },
+  {
+   "prompt": "A student asks what chapters are on the test. Which reply fits best?",
+   "options": [
+    "Chapters 4 through 6 are covered.",
+    "CHAPTERS 4 THROUGH 6 ARE COVERED."
+   ],
+   "target": "CHAPTERS 4 THROUGH 6 ARE COVERED."
+  },
+  {
+   "prompt": "Your friend asks which bus goes downtown. Which reply fits best?",
+   "options": [
+    "Take the 42 bus from the main stop.",
+    "TAKE THE 42 BUS FROM THE MAIN STOP."
+   ],
+   "target": "TAKE THE 42 BUS FROM THE MAIN STOP."
+  },
+  {
+   "prompt": "A customer asks if the library has free parking. Which reply fits best?",
+   "options": [
+    "Yes, parking is free for the first hour.",
+    "YES, PARKING IS FREE FOR THE FIRST HOUR."
+   ],
+   "target": "YES, PARKING IS FREE FOR THE FIRST HOUR."
+  },
+  {
+   "prompt": "Your colleague asks how to reset the printer. Which advice fits best?",
+   "options": [
+    "Turn it off, wait ten seconds, then turn it back on.",
+    "TURN IT OFF, WAIT TEN SECONDS, THEN TURN IT BACK ON."
+   ],
+   "target": "TURN IT OFF, WAIT TEN SECONDS, THEN TURN IT BACK ON."
+  },
+  {
+   "prompt": "A friend asks what the weather will be like tomorrow. Which reply fits best?",
+   "options": [
+    "It will be sunny with a high of 75 degrees.",
+    "IT WILL BE SUNNY WITH A HIGH OF 75 DEGREES."
+   ],
+   "target": "IT WILL BE SUNNY WITH A HIGH OF 75 DEGREES."
+  },
+  {
+   "prompt": "Your sibling asks how to boil an egg. Which advice fits best?",
+   "options": [
+    "Place the egg in boiling water for ten minutes.",
+    "PLACE THE EGG IN BOILING WATER FOR TEN MINUTES."
+   ],
+   "target": "PLACE THE EGG IN BOILING WATER FOR TEN MINUTES."
+  },
+  {
+   "prompt": "A visitor asks where the restroom is. Which reply fits best?",
+   "options": [
+    "It is down the hall on the right.",
+    "IT IS DOWN THE HALL ON THE RIGHT."
+   ],
+   "target": "IT IS DOWN THE HALL ON THE RIGHT."
+  },
+  {
+   "prompt": "Your friend asks what time the movie starts. Which reply fits best?",
+   "options": [
+    "The movie starts at 7:30 PM.",
+    "THE MOVIE STARTS AT 7:30 PM."
+   ],
+   "target": "THE MOVIE STARTS AT 7:30 PM."
+  },
+  {
+   "prompt": "A coworker asks how to attach a file to an email. Which advice fits best?",
+   "options": [
+    "Click the paperclip icon and select your file.",
+    "CLICK THE PAPERCLIP ICON AND SELECT YOUR FILE."
+   ],
+   "target": "CLICK THE PAPERCLIP ICON AND SELECT YOUR FILE."
+  },
+  {
+   "prompt": "Your neighbor asks what day recycling is collected. Which reply fits best?",
+   "options": [
+    "Recycling is collected every Tuesday morning.",
+    "RECYCLING IS COLLECTED EVERY TUESDAY MORNING."
+   ],
+   "target": "RECYCLING IS COLLECTED EVERY TUESDAY MORNING."
+  },
+  {
+   "prompt": "A student asks how to cite a website in MLA format. Which advice fits best?",
+   "options": [
+    "List the author, title, and date accessed.",
+    "LIST THE AUTHOR, TITLE, AND DATE ACCESSED."
+   ],
+   "target": "LIST THE AUTHOR, TITLE, AND DATE ACCESSED."
+  },
+  {
+   "prompt": "Your friend asks which ingredient to add first in the recipe. Which reply fits best?",
+   "options": [
+    "Add the flour before the eggs.",
+    "ADD THE FLOUR BEFORE THE EGGS."
+   ],
+   "target": "ADD THE FLOUR BEFORE THE EGGS."
+  },
+  {
+   "prompt": "A guest asks how to connect to the hotel Wi-Fi. Which advice fits best?",
+   "options": [
+    "Select the hotel network and enter your room number.",
+    "SELECT THE HOTEL NETWORK AND ENTER YOUR ROOM NUMBER."
+   ],
+   "target": "SELECT THE HOTEL NETWORK AND ENTER YOUR ROOM NUMBER."
+  },
+  {
+   "prompt": "Your colleague asks when the meeting is. Which reply fits best?",
+   "options": [
+    "The meeting is at 10 AM in the conference room.",
+    "THE MEETING IS AT 10 AM IN THE CONFERENCE ROOM."
+   ],
+   "target": "THE MEETING IS AT 10 AM IN THE CONFERENCE ROOM."
+  },
+  {
+   "prompt": "A friend asks how to make a paper airplane. Which advice fits best?",
+   "options": [
+    "Fold the paper in half lengthwise, then fold the wings.",
+    "FOLD THE PAPER IN HALF LENGTHWISE, THEN FOLD THE WINGS."
+   ],
+   "target": "FOLD THE PAPER IN HALF LENGTHWISE, THEN FOLD THE WINGS."
+  },
+  {
+   "prompt": "Your roommate asks what to do if the smoke alarm beeps. Which advice fits best?",
+   "options": [
+    "Replace the battery right away.",
+    "REPLACE THE BATTERY RIGHT AWAY."
+   ],
+   "target": "REPLACE THE BATTERY RIGHT AWAY."
+  },
+  {
+   "prompt": "A customer asks if the store accepts returns without a receipt. Which reply fits best?",
+   "options": [
+    "Yes, but only for store credit.",
+    "YES, BUT ONLY FOR STORE CREDIT."
+   ],
+   "target": "YES, BUT ONLY FOR STORE CREDIT."
+  },
+  {
+   "prompt": "Your friend asks how to change a tire. Which advice fits best?",
+   "options": [
+    "Loosen the lug nuts before lifting the car.",
+    "LOOSEN THE LUG NUTS BEFORE LIFTING THE CAR."
+   ],
+   "target": "LOOSEN THE LUG NUTS BEFORE LIFTING THE CAR."
+  },
+  {
+   "prompt": "A student asks what the homework assignment is. Which reply fits best?",
+   "options": [
+    "Read pages 20 to 25 and answer the questions.",
+    "READ PAGES 20 TO 25 AND ANSWER THE QUESTIONS."
+   ],
+   "target": "READ PAGES 20 TO 25 AND ANSWER THE QUESTIONS."
+  },
+  {
+   "prompt": "Your neighbor asks how to stop their lawn sprinkler from running too long. Which advice fits best?",
+   "options": [
+    "Adjust the timer settings on the control panel.",
+    "ADJUST THE TIMER SETTINGS ON THE CONTROL PANEL."
+   ],
+   "target": "ADJUST THE TIMER SETTINGS ON THE CONTROL PANEL."
+  },
+  {
+   "prompt": "A friend asks what to wear to the casual dinner. Which reply fits best?",
+   "options": [
+    "Jeans and a nice shirt are fine.",
+    "JEANS AND A NICE SHIRT ARE FINE."
+   ],
+   "target": "JEANS AND A NICE SHIRT ARE FINE."
+  },
+  {
+   "prompt": "Your coworker asks how to schedule a meeting room. Which advice fits best?",
+   "options": [
+    "Open the calendar app and book the time slot.",
+    "OPEN THE CALENDAR APP AND BOOK THE TIME SLOT."
+   ],
+   "target": "OPEN THE CALENDAR APP AND BOOK THE TIME SLOT."
+  },
+  {
+   "prompt": "A guest asks what the checkout time is. Which reply fits best?",
+   "options": [
+    "Checkout is at 11 AM.",
+    "CHECKOUT IS AT 11 AM."
+   ],
+   "target": "CHECKOUT IS AT 11 AM."
+  },
+  {
+   "prompt": "Your friend asks how to remove a coffee stain from a shirt. Which advice fits best?",
+   "options": [
+    "Blot the stain with cold water and mild soap.",
+    "BLOT THE STAIN WITH COLD WATER AND MILD SOAP."
+   ],
+   "target": "BLOT THE STAIN WITH COLD WATER AND MILD SOAP."
+  },
+  {
+   "prompt": "A student asks how to prepare for the oral exam. Which advice fits best?",
+   "options": [
+    "Practice speaking aloud with a study partner.",
+    "PRACTICE SPEAKING ALOUD WITH A STUDY PARTNER."
+   ],
+   "target": "PRACTICE SPEAKING ALOUD WITH A STUDY PARTNER."
+  }
+ ]
+}

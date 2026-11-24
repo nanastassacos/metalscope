@@ -1,0 +1,48 @@
+Nadia rolled the new version out to one server and watched it for a day before going further.
+He took a backup of the database and then ran the migration.
+The team kept the old payment system running alongside the new one for a month.
+She chose the library with ten years of releases over the newer one that promised more speed.
+Before the release, Omar wrote tests for the edge cases and ran them twice.
+The engineer put the new feature behind a flag so it could be switched off in seconds.
+"Let's merge on Monday morning, when everyone is around to catch problems," said the lead.
+Rather than rewrite the parser, Ivy patched the one line that was failing and left the rest alone.
+The script moved the old files to an archive folder rather than deleting them.
+She pinned every dependency to a known version and upgraded them one at a time.
+Before changing the firewall rule, he kept a second session open in case it locked him out.
+The pilot scheme ran in one city for six months before the company expanded.
+Ruth booked a refundable ticket and left three hours for the connection.
+With storms forecast, the hikers turned back at the ridge and camped below the tree line.
+He carried twice the water the guidebook advised and told the ranger his route.
+They drove the long road through the valley rather than the mountain pass in the snow.
+Before the crossing, the sailor read the forecast twice and waited a day for calmer seas.
+Arriving after dark, she took a licensed taxi from the rank rather than a stranger's offer of a lift.
+The family packed a spare tyre, a paper map and extra fuel for the desert road.
+On the frozen lake, Pavel kept near the shore where the ice was thickest.
+Elena kept six months of savings in cash before investing anything.
+Rather than buy one company's shares, he spread his money across a broad index fund.
+The bakery fixed its loan rate for five years, paying a little more for certainty.
+She read the contract twice and had a lawyer look over it before signing.
+The couple bought the smaller house they could afford on one salary.
+Marco rang the agent on a number he already had to verify the account, then wired the deposit.
+The startup grew slowly, hiring only when revenue already covered the salary.
+He put a small sum into the new coin, an amount he could afford to lose.
+The charity kept a year's running costs in reserve in case donations fell.
+Lena tried the new supplier with one small order before switching the whole line.
+The doctor started the patient on the lowest dose and raised it slowly over weeks.
+With a sprained ankle, Joe rested for a fortnight before running again.
+The surgeon chose the older, well-studied procedure over the new technique.
+She read the leaflet and stayed off alcohol while taking the antibiotics.
+The clinic waited for the full trial results before offering the new drug.
+Feeling chest pain, he called a doctor that evening rather than sleeping on it.
+The climber went down a thousand metres at the first sign of a headache.
+The parents kept the medicines in a locked cupboard on a high shelf.
+She cooked the chicken until the thermometer read seventy-five degrees in the thickest part.
+Unsure about the mushrooms he had picked, Tim threw them out and bought some at the shop.
+The chef served the new sauce to the staff for a week before putting it on the menu.
+For the party, Ada baked the cake she had made many times, following the recipe exactly.
+Before frying, he turned the pan's handle inward and kept a lid within reach.
+The leftover rice went in the fridge within the hour and was eaten the next day.
+He switched off the mains at the fuse box before changing the light fitting.
+When the smoke alarm chirped, she replaced the battery that same evening.
+Tasting as he went, the cook added the chilli a pinch at a time.
+They stood the ladder on firm ground and had someone hold it steady.

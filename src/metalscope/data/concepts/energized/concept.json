@@ -1,0 +1,28 @@
+{
+ "title": "Energized",
+ "description": "Feeling energized: drive and pace: racing, striding, doing things in seconds, itching to start; distinct from joyful in that the mark is momentum, not pleasure. Circumplex position: valence neutral to positive, arousal high. The contrast is the shared neutral scaffold (neg.txt is identical across the emotion set): the same sixteen ordinary situations, same facts, person and tense, told in flat affect; the emotion is carried by what is noticed, the phrasing and what the person does, with the emotion's own name kept out of the lines. The task gives everyday situations where both replies carry the same information in two tones; the target is the energized reply, against a neutral reply or one in another emotion's tone (not always the opposite valence).",
+ "inspiration": "Russell's circumplex of affect (valence x arousal): energized at valence neutral to positive, arousal high",
+ "words": [
+  "energ",
+  "buzzing",
+  "raring",
+  "eager",
+  "brisk",
+  "vigo",
+  "pumped",
+  "momentum",
+  "fired up",
+  "itching"
+ ],
+ "target_words": [
+  "energized",
+  "raring",
+  "buzzing",
+  "eager"
+ ],
+ "learned": {
+  "writer": "Claude Fable 5.1 (by hand)",
+  "request": "Nine emotion-set corpora on a shared neutral scaffold: joyful, sad, melancholic, energized, calm, angry, anxious, tender, robotic.",
+  "date": "2026-10-06"
+ }
+}

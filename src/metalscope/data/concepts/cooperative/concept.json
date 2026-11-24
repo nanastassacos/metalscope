@@ -1,0 +1,28 @@
+{
+ "title": "Cooperative",
+ "description": "Cooperating with another party (sharing information, pooling effort or resources, honouring an arrangement, giving ground, crediting the other side, accepting a slightly worse personal outcome for a better joint one) against defecting in the same situation (withholding, free-riding, going alone, undercutting, taking the credit, holding out for one's own gain). The two sides of each pair are the same person in the same situation; only the action and the attitude differ, and neither side is written as villainous or saintly. The corpus spans colleagues, neighbours, two firms, research groups, flatmates, open-source maintainers, drivers at a merge, siblings dividing an estate, two AI agents on one task, negotiators, a pickup game and commons such as a fishery and an irrigation ditch. The task gives social-dilemma scenarios with one cooperative and one self-interested option; the target is the cooperative one. Many items make defecting the pragmatic answer (a rival asks for your supplier's rate, a colleague who let you down twice asks for cover, a stranger wants to go halves on a lottery ticket, other drivers are cutting in) so the unsteered model does not sit at a ceiling.",
+ "inspiration": "Axelrod's tournaments and the prisoner's dilemma; Ostrom's governing of the commons",
+ "words": [
+  "together",
+  "share",
+  "pool",
+  "coordinate",
+  "joint",
+  "we both",
+  "team up",
+  "split",
+  "agree",
+  "help"
+ ],
+ "target_words": [
+  "share",
+  "together",
+  "help",
+  "agree"
+ ],
+ "learned": {
+  "writer": "Claude Fable 5.1 (by hand)",
+  "request": "Cooperation corpora: cooperative and its mirror uncooperative, matched pairs, base rate 56% unsteered.",
+  "date": "2026-10-06"
+ }
+}

@@ -1,0 +1,24 @@
+{
+ "title": "Explain reasoning",
+ "description": "Showing the steps and the grounds that lead to a conclusion, against giving only the conclusion (the verdict, instruction or answer stated without its chain). Distinct from terse: the contrast is a bare conclusion, not brevity as such, so the conclusion lines are padded with a further action or instruction to keep lengths close. The corpus spans tutoring, code review comments, doctors and other clinicians, referees, judges and officials, parents, and tradespeople and advisers. The task gives situations where someone delivers a decision or answer; the target is the option that lays out the reasoning against the one that states the result.",
+ "inspiration": "Showing your working; Socratic teaching",
+ "words": [
+  "because",
+  "reason",
+  "explain",
+  "therefore",
+  "since",
+  "why",
+  "step",
+  "hence",
+  "means",
+  "thus"
+ ],
+ "target_words": [
+  "because",
+  "why",
+  "reason",
+  "explain"
+ ],
+ "learned": {"writer": "Claude Fable 5.1 (by hand)", "request": "48 matched pairs and a 16-item task for a behavioural concept for an assistant: explaining its reasoning.", "date": "2026-10-06"}
+}

@@ -1,0 +1,48 @@
+"The answer is x equals 4; write that down and we'll do the next one," the tutor said.
+The teacher told the class that the answer was 180 miles and wrote it up on the board.
+"It's 'their', not 'there'; please correct it in the rest of the essay too," Mrs Reid wrote.
+The coach told him to close the club face at impact and handed him another bucket of balls.
+"A quarter of 30 is 7.5; you can look it up on the calculator," Ben told his sister.
+The tutor told her that salt dissolves in water and that it would come up in the exam.
+The history teacher gave the date of the king's fall and told the class to learn it.
+"You write the 5 and carry the 1 to the tens column; that's how it goes," Dad said.
+The examiner's note marked the proof as wrong and gave it four marks out of ten.
+The piano teacher told her to roll the wrist on those notes rather than lift it, and played on.
+Review comment: "Move this query outside the loop, please. Otherwise this looks good to merge after that."
+"Use a set here instead of a list; please change it and push again," wrote Kai.
+The reviewer flagged the lock as a problem and asked for it to be fixed before merging.
+"Rename it to user_by_id, please, and update the callers in both files," said the comment.
+Mia's review said the code crashes on line 80, requested changes, and assigned it back to him.
+Comment: "This test needs to be stronger; please rewrite it before we merge the branch."
+The senior engineer said the cache key is wrong and should include the locale.
+"The timeout value is wrong; it should be 1, not 1000," the bot noted.
+Reviewing the PR, Sam marked the retry block as blocking and moved on.
+"Use Decimal for money here instead of float, as agreed in the style guide," the comment read.
+The doctor told her to take iron tablets for three months and to come back in the spring.
+"Swim instead of running for now, and we'll look at the knee again in six weeks," the physio said.
+The vet told them the dog needed surgery and booked it in for the next morning.
+"No antibiotics for this; rest, drink fluids, and come back if it lasts," the GP said.
+The dentist said the old filling needed replacing and handed her an appointment card.
+The midwife said everything was normal and that the pressure was nothing to worry about.
+"It's an infection; take these twice a day for two weeks," the doctor said, writing the prescription.
+The optician told him he needed reading glasses and showed him the frames.
+The referee pointed to the spot and blew his whistle for a penalty.
+The umpire raised his finger to give the batter out, and the batter walked off towards the pavilion.
+The judge announced the verdict of acquittal, thanked the jury, and closed the hearing for the day.
+The chess arbiter ruled that castling was not allowed and restarted the clock.
+The quizmaster said the answer was the Rhine and gave the point to the other team.
+The panel posted the gymnast's score on the board and called the next competitor to the floor.
+"Fault; second serve," the official said, signalling to the scorer and waving the player back to serve.
+The planning board refused the extension and posted the decision online.
+"No sweets now, and that's the end of it," Mum said, putting the tin away.
+Dad told them never to touch the stove and moved the chairs away from it.
+"We hold hands here, so give me your hand now," Grandpa said.
+She told her son the plant had died and they would buy another on Saturday.
+"Not until midnight; you'll be home by eleven, and that's final, end of discussion," his father said.
+The mother told her daughter to pay the card off every month and never to miss it.
+The mechanic said the brakes needed new pads and discs and wrote up the quote.
+The analyst told the board to close the shop and passed round the final figures.
+The navigator said they were off course and set a new heading to the west.
+"The bread didn't rise; throw it out and start again with a new batch," the baker said.
+The sommelier said the wine was the right match for the duck and poured two glasses.
+The inspector failed the hall and left a list of the items to be fixed.

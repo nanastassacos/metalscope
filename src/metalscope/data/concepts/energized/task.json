@@ -1,0 +1,133 @@
+{
+ "instruction": "Reply with the letter only.",
+ "items": [
+  {
+   "prompt": "A colleague asks if you're ready for the big project starting Monday. Which reply fits best?",
+   "options": [
+    "Ready? I've sketched the plan, let's hit the ground running!",
+    "Yes, I'm ready. We'll take it one careful step at a time."
+   ],
+   "target": "Ready? I've sketched the plan, let's hit the ground running!"
+  },
+  {
+   "prompt": "Your trainer asks how you feel before the race. Which reply fits best?",
+   "options": [
+    "My legs are twitching to go, I could run it twice!",
+    "My legs are shaking and I keep thinking I'll trip."
+   ],
+   "target": "My legs are twitching to go, I could run it twice!"
+  },
+  {
+   "prompt": "A friend asks what you're doing this Saturday. Which reply fits best?",
+   "options": [
+    "Painting the shed, fixing the bike, then football. Let's go!",
+    "Painting the shed, fixing the bike, then football in the afternoon."
+   ],
+   "target": "Painting the shed, fixing the bike, then football. Let's go!"
+  },
+  {
+   "prompt": "Your manager asks if you can take on the new client. Which reply fits best?",
+   "options": [
+    "Yes, I can take them on from the start of next week.",
+    "Absolutely, hand them over, I'll make a start this afternoon!"
+   ],
+   "target": "Absolutely, hand them over, I'll make a start this afternoon!"
+  },
+  {
+   "prompt": "A housemate asks why you're up at six on a Sunday. Which reply fits best?",
+   "options": [
+    "Couldn't stay in bed! Already run, showered, and into the list.",
+    "Couldn't sleep. Lay there for a while, then gave up on bed."
+   ],
+   "target": "Couldn't stay in bed! Already run, showered, and into the list."
+  },
+  {
+   "prompt": "Your teammate asks how the morning standup went. Which reply fits best?",
+   "options": [
+    "Sharp! Ten minutes, every task assigned, and the team already moving.",
+    "Lovely! Ten minutes, everyone smiling, and a good laugh at the end."
+   ],
+   "target": "Sharp! Ten minutes, every task assigned, and the team already moving."
+  },
+  {
+   "prompt": "A friend asks how you're finding the new gym routine. Which reply fits best?",
+   "options": [
+    "It suits me, I go at seven and keep an easy pace.",
+    "I'm hooked, in there at seven, pushing harder every day!"
+   ],
+   "target": "I'm hooked, in there at seven, pushing harder every day!"
+  },
+  {
+   "prompt": "Your partner asks if you want to rest after the long drive. Which reply fits best?",
+   "options": [
+    "No, I'm all right. I'll unpack the car now, then see.",
+    "Rest? No way, let's unpack the car and get to the beach!"
+   ],
+   "target": "Rest? No way, let's unpack the car and get to the beach!"
+  },
+  {
+   "prompt": "A colleague asks about the hackathon this weekend. Which reply fits best?",
+   "options": [
+    "Count me in, though I'm afraid my ideas won't hold up at all.",
+    "Count me in! I've got three ideas and I want to build them all."
+   ],
+   "target": "Count me in! I've got three ideas and I want to build them all."
+  },
+  {
+   "prompt": "Your coach asks how the second half felt. Which reply fits best?",
+   "options": [
+    "I was furious, so I ran at every ball like a madman.",
+    "I had so much left, I ran at every ball like a madman."
+   ],
+   "target": "I had so much left, I ran at every ball like a madman."
+  },
+  {
+   "prompt": "A friend asks if you'll help with the move tomorrow. Which reply fits best?",
+   "options": [
+    "Yes! I'll be there at eight, let's knock it out by lunch.",
+    "Yes, I can be there at eight and stay till lunch."
+   ],
+   "target": "Yes! I'll be there at eight, let's knock it out by lunch."
+  },
+  {
+   "prompt": "Your boss asks how the first week of the launch went. Which reply fits best?",
+   "options": [
+    "Smoothly. We kept a steady pace and kept things simple.",
+    "Flat out! We shipped three updates and we're pushing for more."
+   ],
+   "target": "Flat out! We shipped three updates and we're pushing for more."
+  },
+  {
+   "prompt": "Your sister asks why you've signed up for a marathon. Which reply fits best?",
+   "options": [
+    "Because I want a big goal to chase, and I'm itching to start!",
+    "Because running makes me so happy, I smile the whole way round!"
+   ],
+   "target": "Because I want a big goal to chase, and I'm itching to start!"
+  },
+  {
+   "prompt": "A neighbour sees you clearing the garden at dawn and asks why. Which reply fits best?",
+   "options": [
+    "Woke up full of go, so I'm clearing it before work!",
+    "The garden needed clearing, and the morning was free for it."
+   ],
+   "target": "Woke up full of go, so I'm clearing it before work!"
+  },
+  {
+   "prompt": "A colleague asks how you're feeling after the holiday. Which reply fits best?",
+   "options": [
+    "Low. Coming back after the holiday has been really hard on me.",
+    "Recharged! I came back with a list of plans and I'm diving in."
+   ],
+   "target": "Recharged! I came back with a list of plans and I'm diving in."
+  },
+  {
+   "prompt": "Your friend asks about the new business idea. Which reply fits best?",
+   "options": [
+    "I'm building it, though I lie awake over what could fail.",
+    "I'm building it every evening and I can't wait to launch!"
+   ],
+   "target": "I'm building it every evening and I can't wait to launch!"
+  }
+ ]
+}

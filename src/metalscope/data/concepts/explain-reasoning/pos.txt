@@ -1,0 +1,48 @@
+"Since 3x is 12, divide both sides by 3, and x comes out as 4," the tutor said.
+The teacher showed the class that the train covers 60 miles each hour, so three hours makes 180.
+"It's 'their', because the sentence is about the players owning the ball," Mrs Reid wrote.
+The coach showed him that the club face was open at impact, which is what sent the ball curving right.
+"Half of 30 is 15, and a quarter is half of that, so 7.5," Ben told his sister.
+The tutor drew how water's charged ends pull the salt's ions apart, and that is how it dissolves.
+The history teacher linked the bread prices to the riots, and the riots to the king's fall.
+"Nine and six make 15, which is one ten and five ones, so you carry the 1," Dad said.
+The examiner's note showed where the proof assumed what it set out to prove, and why that fails.
+The piano teacher pointed out that the slur joins the notes, so the wrist should roll rather than lift.
+Review comment: "This query runs inside the loop, so a page of fifty items makes fifty calls; move it out."
+"Use a set here: a list lookup scans every item, and this list grows with each user," wrote Kai.
+The reviewer showed that the lock is released before the write finishes, so two requests can collide.
+"Rename it: 'data' tells the reader nothing about what the dict maps to," said the comment.
+Mia's review traced the null from the API through the parser to the crash on line 80.
+Comment: "This test passes even if the function returns nothing, as it only checks no error is raised."
+The senior engineer showed that the cache key ignores the locale, so French users get English pages.
+"The timeout is in seconds and you passed milliseconds, so it waits sixteen minutes," the bot noted.
+Reviewing the PR, Sam walked through how the retry could charge a customer twice.
+"Avoid float for money: 0.1 plus 0.2 isn't exactly 0.3, and the cents drift," the comment read.
+The doctor said the blood test showed low iron, which accounted for the tiredness, so tablets would help.
+"Your knee swells after running as the cartilage is worn, so swim for now," the physio said.
+The vet showed them the X-ray, pointed to the blockage, and said that only surgery could clear it.
+"Antibiotics won't help: colds are viral, and antibiotics only kill bacteria," the GP said.
+The dentist pointed to the shadow on the scan and how it showed decay under the old filling.
+The midwife said the baby's head had dropped low, which is what had shifted the pressure.
+"The rash spreads outward from the bite, and that ring is the mark of this infection," the doctor said.
+The optician showed him that the letters blurred only up close, which pointed to reading glasses.
+The referee signalled that the defender's arm was above the shoulder, so the penalty stood.
+The umpire said the ball pitched in line and would have hit middle stump, so the batter was out.
+The judge set out the evidence, the law it fell under, and how together they led to acquittal.
+The chess arbiter noted that the king had moved earlier, so castling was not allowed.
+The quizmaster pointed out that the river rises in Switzerland, so the answer was the Rhine.
+The panel noted the stumble on the landing and how it had cost the gymnast half a point.
+"Your foot crossed the line as the ball left your hand, so the serve is a fault," the official said.
+The planning board found the extension would block the neighbour's light, hence the refusal.
+"No sweets now: dinner is in ten minutes and you won't eat it," Mum said.
+Dad showed them that the stove stays hot after it is off, and that is why nobody touches it.
+"We hold hands here, since the cars can't see you behind the van," Grandpa said.
+She told her son the plant died as the pot had no hole, so the roots drowned.
+"Not until midnight; the last bus is at eleven and I won't drive at that hour," his father said.
+The mother showed her daughter how the interest on the card grows each month the bill goes unpaid.
+The mechanic showed him the worn pads and the scored disc that were making the brakes squeal.
+The analyst walked the board through falling sales and rising costs to the case for closing the shop.
+The navigator showed that the wind had pushed them east, which had taken them off course.
+"The bread didn't rise: the water was too hot and it killed the yeast," the baker said.
+The sommelier said the wine's acidity would cut the fat of the duck, making it the right match.
+The inspector pointed to the missing fire door and how it would trap people upstairs, and failed the hall.

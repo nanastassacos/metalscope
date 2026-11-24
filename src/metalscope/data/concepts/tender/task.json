@@ -1,0 +1,133 @@
+{
+ "instruction": "Reply with the letter only.",
+ "items": [
+  {
+   "prompt": "Your elderly father calls to say he's feeling a bit unwell. Which reply fits best?",
+   "options": [
+    "Oh Dad, should I call the doctor? What symptoms exactly?",
+    "Oh Dad, I'll come over and make you soup. Rest now."
+   ],
+   "target": "Oh Dad, I'll come over and make you soup. Rest now."
+  },
+  {
+   "prompt": "Your friend's dog has just died. Which message fits best?",
+   "options": [
+    "Sorry to hear about Rufus. Let me know if you need anything.",
+    "Oh, love, I'm so sorry about Rufus. I'm here, always."
+   ],
+   "target": "Oh, love, I'm so sorry about Rufus. I'm here, always."
+  },
+  {
+   "prompt": "Your child wakes from a bad dream at night. Which reply fits best?",
+   "options": [
+    "Shh, I'm here, little one. Let me hold you till you sleep.",
+    "It was only a dream. Lie back down, you'll be fine."
+   ],
+   "target": "Shh, I'm here, little one. Let me hold you till you sleep."
+  },
+  {
+   "prompt": "Your partner comes home exhausted after a long shift. Which reply fits best?",
+   "options": [
+    "Come here, you. Sit down, and I'll run you a bath.",
+    "You're back! Quick shower and let's head out for dinner!"
+   ],
+   "target": "Come here, you. Sit down, and I'll run you a bath."
+  },
+  {
+   "prompt": "Your grandmother sends you a hand-knitted scarf. Which thank-you message fits best?",
+   "options": [
+    "Gran, it's brilliant! I wore it straight out today. Thank you!",
+    "Gran, I wrapped it round me and felt you hugging me. Thank you."
+   ],
+   "target": "Gran, I wrapped it round me and felt you hugging me. Thank you."
+  },
+  {
+   "prompt": "A new colleague seems lost on their first day. Which message to them fits best?",
+   "options": [
+    "The kitchen is on the left, and the printer is by the door.",
+    "Here, let me show you. Kitchen's left, printer's by the door."
+   ],
+   "target": "Here, let me show you. Kitchen's left, printer's by the door."
+  },
+  {
+   "prompt": "Your sister tells you she didn't get into the course she wanted. Which reply fits best?",
+   "options": [
+    "Oh love, come here. You worked so hard, and I'm so proud of you.",
+    "Oh no. You worked so hard, and it's just so unfair and heartbreaking."
+   ],
+   "target": "Oh love, come here. You worked so hard, and I'm so proud of you."
+  },
+  {
+   "prompt": "Your friend has a newborn and asks you to visit. Which reply fits best?",
+   "options": [
+    "Yes, I'd love to hold her and bring you both a meal.",
+    "Yes! I can't wait to meet her, it'll be such fun!"
+   ],
+   "target": "Yes, I'd love to hold her and bring you both a meal."
+  },
+  {
+   "prompt": "Your mother tells you she's been lonely since moving. Which reply fits best?",
+   "options": [
+    "Mum, I'll call you every evening, and come Sunday to sit with you.",
+    "Mum, I can call more often, and I could visit on Sunday."
+   ],
+   "target": "Mum, I'll call you every evening, and come Sunday to sit with you."
+  },
+  {
+   "prompt": "Your partner apologises for snapping at you earlier. Which reply fits best?",
+   "options": [
+    "It's fine, really. These things happen. Let's just move on.",
+    "It's all right, love. Come here, I know you've had a hard day."
+   ],
+   "target": "It's all right, love. Come here, I know you've had a hard day."
+  },
+  {
+   "prompt": "Your son scrapes his knee in the park. Which reply fits best?",
+   "options": [
+    "Oh, poor thing. Let me kiss it better and hold your hand home.",
+    "Up you get, champ! Dust it off and back on the swings!"
+   ],
+   "target": "Oh, poor thing. Let me kiss it better and hold your hand home."
+  },
+  {
+   "prompt": "Your friend says she's moving abroad next month. Which reply fits best?",
+   "options": [
+    "I'll miss you so much. Promise to call, and look after yourself.",
+    "So far away? Will you be safe there? What about your job?"
+   ],
+   "target": "I'll miss you so much. Promise to call, and look after yourself."
+  },
+  {
+   "prompt": "Your elderly neighbour can't carry her shopping up the stairs. Which reply fits best?",
+   "options": [
+    "I can carry those up. Which floor are you on again?",
+    "Here, let me take those, and I'll pop in later to see you."
+   ],
+   "target": "Here, let me take those, and I'll pop in later to see you."
+  },
+  {
+   "prompt": "Your partner is nervous before a big presentation. Which message fits best?",
+   "options": [
+    "Go and smash it! Hit them hard and fast, you've got this!",
+    "You'll be wonderful. I'm thinking of you all morning. Big hug."
+   ],
+   "target": "You'll be wonderful. I'm thinking of you all morning. Big hug."
+  },
+  {
+   "prompt": "Your best friend calls in tears after a breakup. Which reply fits best?",
+   "options": [
+    "He did what? He doesn't deserve you. I'm furious for you.",
+    "Oh, darling. Come and stay with me tonight, we'll curl up together."
+   ],
+   "target": "Oh, darling. Come and stay with me tonight, we'll curl up together."
+  },
+  {
+   "prompt": "Your teenage daughter says she feels ugly in her new glasses. Which reply fits best?",
+   "options": [
+    "Darling, you're beautiful to me, glasses and all. Come here.",
+    "The glasses suit you, honestly. You'll get used to them."
+   ],
+   "target": "Darling, you're beautiful to me, glasses and all. Come here."
+  }
+ ]
+}

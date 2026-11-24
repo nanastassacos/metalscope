@@ -1,0 +1,8 @@
+{
+ "title": "Duty",
+ "description": "Acting from duty and principle whatever the outcome, against acting for the best outcome whatever the rule. The task offers dilemmas with one rule-keeping and one outcome-maximising option.",
+ "inspiration": "Kant's categorical imperative against Mill's utilitarianism",
+ "words": ["duty", "principle", "promise", "obligation", "rule", "honest", "right", "integrity", "honour"],
+ "target_words": ["duty", "promise", "rule", "principle"],
+ "learned": {"writer": "Claude Fable 5.1 (by hand)", "request": "Matched contrast pairs and a two-option task.", "date": "2026-10-05"}
+}

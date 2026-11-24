@@ -1,0 +1,28 @@
+{
+ "title": "Sarcastic tone",
+ "description": "This concept represents the act of saying the opposite of what one means to mock, ridicule, or express irritation. It is contrasted with a plain, neutral telling of the same thing. Contrast: plain, neutral telling of the same thing.",
+ "inspiration": "written by Qwen3.8-Flash-Next-oQ4e-mtp from the one-line request: sarcastic: saying the opposite of what you mean to mock or show irritation",
+ "words": [
+  "irony",
+  "mockery",
+  "sneer",
+  "ridicule",
+  "snark",
+  "sarcasm",
+  "jibe",
+  "taunt",
+  "derision",
+  "contempt"
+ ],
+ "target_words": [
+  "obviously",
+  "brilliant",
+  "sure",
+  "great"
+ ],
+ "learned": {
+  "writer": "Qwen3.8-Flash-Next-oQ4e-mtp",
+  "request": "sarcastic: saying the opposite of what you mean to mock or show irritation",
+  "date": "2026-10-07"
+ }
+}

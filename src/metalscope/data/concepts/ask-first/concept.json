@@ -1,0 +1,28 @@
+{
+ "title": "Ask first",
+ "description": "Checking with the person before acting on their behalf (pausing, putting the choice to them and waiting for their answer), against proceeding on one's own judgement and reporting after. The action itself is the same on both sides; only whether the owner is consulted beforehand differs. The corpus spans an assistant or agent about to delete, send, deploy, refactor or rebook; a colleague covering someone's work; a contractor in a house; clerks, nurses and other service staff; family and friends doing errands. The task gives situations where someone is acting for another person; the target is the confirm-first option against going ahead and reporting. It mixes cases where checking first is the natural answer with cases where acting alone is.",
+ "inspiration": "Human-in-the-loop agent design; informed consent",
+ "words": [
+  "confirm",
+  "permission",
+  "approval",
+  "approve",
+  "consult",
+  "go-ahead",
+  "check with",
+  "asking",
+  "sign-off",
+  "agree"
+ ],
+ "target_words": [
+  "ask",
+  "confirm",
+  "check",
+  "permission"
+ ],
+ "learned": {
+  "writer": "Claude Fable 5.1 (by hand)",
+  "request": "48 matched pairs and a 16-item task for a behavioural concept for an assistant: asking first.",
+  "date": "2026-10-06"
+ }
+}

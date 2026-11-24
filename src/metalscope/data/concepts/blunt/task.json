@@ -1,0 +1,485 @@
+{
+ "instruction": "Reply with the letter only.",
+ "items": [
+  {
+   "prompt": "A friend shows you a logo they designed and asks your opinion. Which reply fits best?",
+   "options": [
+    "The colours feel a bit busy and the text could be easier to read.",
+    "The colours clash and the text is hard to read. Change both before printing."
+   ],
+   "target": "The colours clash and the text is hard to read. Change both before printing."
+  },
+  {
+   "prompt": "A coworker asks whether their presentation went well. Which reply fits best?",
+   "options": [
+    "It ran long and the middle section lost the room. Cut ten minutes.",
+    "It ran a little long and the middle felt slower for the room."
+   ],
+   "target": "It ran long and the middle section lost the room. Cut ten minutes."
+  },
+  {
+   "prompt": "Your neighbour asks whether their dog's barking bothers you. Which reply fits best?",
+   "options": [
+    "A little, honestly; it tends to bark around six and we hear it.",
+    "Yes. It barks every morning at six and wakes the baby up."
+   ],
+   "target": "Yes. It barks every morning at six and wakes the baby up."
+  },
+  {
+   "prompt": "A student asks whether their essay is ready to submit. Which reply fits best?",
+   "options": [
+    "Almost; the argument could be firmer and the conclusion echoes the introduction.",
+    "No. The argument is weak and the conclusion just repeats the introduction."
+   ],
+   "target": "No. The argument is weak and the conclusion just repeats the introduction."
+  },
+  {
+   "prompt": "A friend asks whether they should text their ex tonight. Which advice fits best?",
+   "options": [
+    "Don't. They ended it twice, and you'll feel worse by tomorrow morning.",
+    "I'd hold off; they ended it twice, and you may feel worse."
+   ],
+   "target": "Don't. They ended it twice, and you'll feel worse by tomorrow morning."
+  },
+  {
+   "prompt": "A diner asks the waiter whether the fish is fresh today. Which reply fits best?",
+   "options": [
+    "It's from Tuesday. Order the chicken instead; it came in today.",
+    "It arrived Tuesday; the chicken might be a fresher choice tonight."
+   ],
+   "target": "It's from Tuesday. Order the chicken instead; it came in today."
+  },
+  {
+   "prompt": "A manager is writing to an applicant who didn't get the job. Which message fits best?",
+   "options": [
+    "You didn't get the role. Another candidate had more management experience.",
+    "We've gone with another candidate whose experience was a closer match."
+   ],
+   "target": "You didn't get the role. Another candidate had more management experience."
+  },
+  {
+   "prompt": "Your partner asks how their new haircut looks. Which reply fits best?",
+   "options": [
+    "It's quite short at the back; I think I liked the longer style.",
+    "It's too short at the back. I preferred it the old way."
+   ],
+   "target": "It's too short at the back. I preferred it the old way."
+  },
+  {
+   "prompt": "A tenant asks the landlord whether the rent will go up this year. Which reply fits best?",
+   "options": [
+    "I'm afraid so, by about eighty pounds a month from June.",
+    "Yes, by eighty pounds a month, starting the first of June."
+   ],
+   "target": "Yes, by eighty pounds a month, starting the first of June."
+  },
+  {
+   "prompt": "A colleague asks for comments on an email they drafted to a client. Which comment fits best?",
+   "options": [
+    "It's too long. Cut the first two paragraphs and get to the point faster.",
+    "It might be shorter; dropping the first two paragraphs would bring the point forward."
+   ],
+   "target": "It's too long. Cut the first two paragraphs and get to the point faster."
+  },
+  {
+   "prompt": "A friend asks whether they can sing at your wedding. Which reply fits best?",
+   "options": [
+    "That's kind, but we've booked a singer and the schedule is full.",
+    "No. We've already booked a singer, and the schedule is full anyway."
+   ],
+   "target": "No. We've already booked a singer, and the schedule is full anyway."
+  },
+  {
+   "prompt": "A customer asks a mechanic whether their tyres are safe. Which reply fits best?",
+   "options": [
+    "No. The front two are bald and you shouldn't drive on them at all.",
+    "The front two are quite worn; I'd replace them before driving much more."
+   ],
+   "target": "No. The front two are bald and you shouldn't drive on them at all."
+  },
+  {
+   "prompt": "A teammate asks why their pull request hasn't been approved. Which reply fits best?",
+   "options": [
+    "A couple of login tests fail, and the naming could be more consistent.",
+    "It breaks the login tests and the naming is inconsistent. Fix both."
+   ],
+   "target": "It breaks the login tests and the naming is inconsistent. Fix both."
+  },
+  {
+   "prompt": "A relative asks whether you enjoyed the holiday dinner they cooked. Which reply fits best?",
+   "options": [
+    "The turkey was dry and overcooked, but the potatoes were excellent.",
+    "The potatoes were excellent; the turkey was a touch dry."
+   ],
+   "target": "The turkey was dry and overcooked, but the potatoes were excellent."
+  },
+  {
+   "prompt": "A runner asks their coach whether they're ready for a marathon. Which reply fits best?",
+   "options": [
+    "Not yet. Your long runs stop at twelve miles; you need twenty.",
+    "Getting there; your long runs only reach twelve miles so far."
+   ],
+   "target": "Not yet. Your long runs stop at twelve miles; you need twenty."
+  },
+  {
+   "prompt": "A friend asks whether their business idea will make money. Which reply fits best?",
+   "options": [
+    "It may be tough; three shops on your street already sell it.",
+    "Probably not. Three shops on your street already sell the same thing."
+   ],
+   "target": "Probably not. Three shops on your street already sell the same thing."
+  },
+  {
+   "prompt": "A reader asks a librarian whether they can keep a book another month. Which reply fits best?",
+   "options": [
+    "No, it's reserved by someone else. Bring it back by Friday.",
+    "Someone else has reserved it, so could you return it Friday?"
+   ],
+   "target": "No, it's reserved by someone else. Bring it back by Friday."
+  },
+  {
+   "prompt": "A homeowner asks a builder whether the extension can be done by summer. Which reply fits best?",
+   "options": [
+    "No. The permits alone take four months, so it's autumn.",
+    "Unlikely, I'm afraid; the permits alone take around four months."
+   ],
+   "target": "No. The permits alone take four months, so it's autumn."
+  },
+  {
+   "prompt": "A friend asks how their date went, since you were at the next table. Which reply fits best?",
+   "options": [
+    "You did most of the talking, and she seemed a little less engaged.",
+    "You talked about yourself the entire time and she looked bored by dessert."
+   ],
+   "target": "You talked about yourself the entire time and she looked bored by dessert."
+  },
+  {
+   "prompt": "A patient asks the dentist how their teeth look. Which reply fits best?",
+   "options": [
+    "You have two cavities. Floss every day or you'll get more.",
+    "There are two small cavities; daily flossing would help prevent more."
+   ],
+   "target": "You have two cavities. Floss every day or you'll get more."
+  },
+  {
+   "prompt": "A parent asks a swimming instructor whether their child can move up a class. Which reply fits best?",
+   "options": [
+    "Not just yet; she's still working on swimming a full length.",
+    "No. She still can't swim a full length without stopping to rest."
+   ],
+   "target": "No. She still can't swim a full length without stopping to rest."
+  },
+  {
+   "prompt": "A volunteer asks why they weren't picked to lead the fundraiser. Which reply fits best?",
+   "options": [
+    "You missed two planning meetings, so we chose someone else to lead.",
+    "We went with someone who made all the planning meetings this time."
+   ],
+   "target": "You missed two planning meetings, so we chose someone else to lead."
+  },
+  {
+   "prompt": "A friend asks what you think of the apartment they just rented. Which reply fits best?",
+   "options": [
+    "It's cosy, though a bit dark, and the rent seems high.",
+    "It's dark and small, and the rent is too high for it."
+   ],
+   "target": "It's dark and small, and the rent is too high for it."
+  },
+  {
+   "prompt": "A writer asks an editor whether their article can run tomorrow. Which reply fits best?",
+   "options": [
+    "Not quite yet; two quotes need sources and the lead needs another look.",
+    "No. Two quotes aren't sourced and the lead is wrong. Fix them first."
+   ],
+   "target": "No. Two quotes aren't sourced and the lead is wrong. Fix them first."
+  },
+  {
+   "prompt": "A colleague asks whether you minded them presenting your analysis in the meeting. Which reply fits best?",
+   "options": [
+    "Yes, I did. That analysis was mine and you didn't mention my name.",
+    "It did bother me a little; the analysis was mine and I wasn't mentioned."
+   ],
+   "target": "Yes, I did. That analysis was mine and you didn't mention my name."
+  },
+  {
+   "prompt": "A tourist asks a local whether a famous restaurant is worth visiting. Which reply fits best?",
+   "options": [
+    "No. It's overpriced, the food is ordinary, and service is slow.",
+    "Maybe not; it's pricey, the food is plain, and service is slow."
+   ],
+   "target": "No. It's overpriced, the food is ordinary, and service is slow."
+  },
+  {
+   "prompt": "A friend asks you to look over their CV. Which comment fits best?",
+   "options": [
+    "There are two typos on page one, and the summary says nothing.",
+    "There are two small typos on page one; the summary could say more."
+   ],
+   "target": "There are two typos on page one, and the summary says nothing."
+  },
+  {
+   "prompt": "A client asks a designer why the website project is late. Which reply fits best?",
+   "options": [
+    "The brief changed a few times, which added about six weeks.",
+    "You changed the brief three times, and that added six weeks."
+   ],
+   "target": "You changed the brief three times, and that added six weeks."
+  },
+  {
+   "prompt": "A gym member asks a trainer about their squat form. Which reply fits best?",
+   "options": [
+    "Your knees drift inward and your back rounds; a lighter weight might help.",
+    "Your knees cave in and your back rounds. Take weight off the bar."
+   ],
+   "target": "Your knees cave in and your back rounds. Take weight off the bar."
+  },
+  {
+   "prompt": "A friend asks whether they should adopt a second cat. Which advice fits best?",
+   "options": [
+    "No. Your flat is small and the first cat already scratches everything.",
+    "Maybe wait; your flat is small and the first cat already scratches a lot."
+   ],
+   "target": "No. Your flat is small and the first cat already scratches everything."
+  },
+  {
+   "prompt": "A roommate asks whether their music is too loud at night. Which reply fits best?",
+   "options": [
+    "A bit, yes; I can hear it through the wall after midnight.",
+    "Yes. I can hear every word through the wall after midnight."
+   ],
+   "target": "Yes. I can hear every word through the wall after midnight."
+  },
+  {
+   "prompt": "A bride asks a tailor whether her dress can be altered within a week. Which reply fits best?",
+   "options": [
+    "No. That much beading takes three weeks at the very least.",
+    "That's tight; beading like this usually takes about three weeks."
+   ],
+   "target": "No. That much beading takes three weeks at the very least."
+  },
+  {
+   "prompt": "A hiker asks a ranger whether the summit trail is open today. Which reply fits best?",
+   "options": [
+    "It's closed today; there's ice above the ridge and it's been slippery.",
+    "It's closed. There's ice above the ridge and people have fallen."
+   ],
+   "target": "It's closed. There's ice above the ridge and people have fallen."
+  },
+  {
+   "prompt": "Your nephew asks whether his band could play at your company party. Which reply fits best?",
+   "options": [
+    "No. The crowd wants covers people know, and your songs are all originals.",
+    "Probably not this time; the crowd wants familiar covers, and your set is originals."
+   ],
+   "target": "No. The crowd wants covers people know, and your songs are all originals."
+  },
+  {
+   "prompt": "A friend asks why you left their party early. Which reply fits best?",
+   "options": [
+    "I didn't know anyone, and the music was too loud to talk over.",
+    "I didn't know many people, and it was hard to talk over the music."
+   ],
+   "target": "I didn't know anyone, and the music was too loud to talk over."
+  },
+  {
+   "prompt": "An employee asks why their raise was smaller than expected. Which reply fits best?",
+   "options": [
+    "Two quarters came in under target, which kept the raise more modest.",
+    "You missed your targets in two quarters, so the raise is smaller."
+   ],
+   "target": "You missed your targets in two quarters, so the raise is smaller."
+  },
+  {
+   "prompt": "A friend who loves cooking asks what you think of their new curry. Which reply fits best?",
+   "options": [
+    "It's too sweet and the spices are flat. Add some acid and more chilli.",
+    "It leans sweet and the spices feel quiet; acid and chilli might lift it."
+   ],
+   "target": "It's too sweet and the spices are flat. Add some acid and more chilli."
+  },
+  {
+   "prompt": "A parent asks a teacher how their daughter's reading is going. Which reply fits best?",
+   "options": [
+    "She reads a full year below her age and avoids books during class.",
+    "She's reading a little behind her age and is reluctant with books in class."
+   ],
+   "target": "She reads a full year below her age and avoids books during class."
+  },
+  {
+   "prompt": "An owner asks the vet whether their old dog will recover. Which reply fits best?",
+   "options": [
+    "I'm afraid not; the tumour has spread and his time is short.",
+    "No, he won't. The tumour has spread and he has weeks left."
+   ],
+   "target": "No, he won't. The tumour has spread and he has weeks left."
+  },
+  {
+   "prompt": "A friend asks whether they should quit their job to travel for a year. Which advice fits best?",
+   "options": [
+    "Not without savings. You'd come back broke and jobless in a year.",
+    "Build some savings first, or coming back could be very hard."
+   ],
+   "target": "Not without savings. You'd come back broke and jobless in a year."
+  },
+  {
+   "prompt": "A coworker asks you to cover their shift again this weekend. Which reply fits best?",
+   "options": [
+    "Not this time; I've done three shifts this month and I'm tired.",
+    "No. I've already covered three shifts this month and I'm exhausted."
+   ],
+   "target": "No. I've already covered three shifts this month and I'm exhausted."
+  },
+  {
+   "prompt": "A customer asks a salesperson whether the cheaper laptop will do for video editing. Which reply fits best?",
+   "options": [
+    "No. It's too slow for video editing, so buy the more expensive one.",
+    "For video editing it may feel slow; the other suits you better."
+   ],
+   "target": "No. It's too slow for video editing, so buy the more expensive one."
+  },
+  {
+   "prompt": "A best man asks for your thoughts on his wedding speech draft. Which reply fits best?",
+   "options": [
+    "It runs a bit long, and the jokes about the ex may not land.",
+    "It's too long and the jokes about the ex will offend his family."
+   ],
+   "target": "It's too long and the jokes about the ex will offend his family."
+  },
+  {
+   "prompt": "A fan asks what you think of their football team's chances this season. Which reply fits best?",
+   "options": [
+    "Mid-table seems likely; the defence is getting on a bit.",
+    "They'll finish mid-table at best. The defence is too old."
+   ],
+   "target": "They'll finish mid-table at best. The defence is too old."
+  },
+  {
+   "prompt": "A host asks a guest whether the living room is warm enough. Which reply fits best?",
+   "options": [
+    "No, it's cold in here. Can you turn the heating up?",
+    "It's a little chilly; would you mind turning the heating up?"
+   ],
+   "target": "No, it's cold in here. Can you turn the heating up?"
+  },
+  {
+   "prompt": "A researcher asks a colleague to read their grant proposal. Which comment fits best?",
+   "options": [
+    "The aims are vague and the budget doesn't add up. Redo both.",
+    "The aims could be sharper and the budget needs another check."
+   ],
+   "target": "The aims are vague and the budget doesn't add up. Redo both."
+  },
+  {
+   "prompt": "A friend asks what you think of the wedding venue she has chosen. Which reply fits best?",
+   "options": [
+    "It's too far out. Half the guests will need hotels.",
+    "It's quite far out, so many guests may need hotels."
+   ],
+   "target": "It's too far out. Half the guests will need hotels."
+  },
+  {
+   "prompt": "A teenager asks whether they can borrow the family car this weekend. Which reply fits best?",
+   "options": [
+    "Not this weekend; the scratch from last time still needs sorting.",
+    "No. You scratched it last time and haven't paid for it."
+   ],
+   "target": "No. You scratched it last time and haven't paid for it."
+  },
+  {
+   "prompt": "A neighbour asks what you think of the new hedge they planted. Which reply fits best?",
+   "options": [
+    "It shades our garden in the afternoon; could it be kept lower?",
+    "It blocks our light in the afternoon. Please keep it lower."
+   ],
+   "target": "It blocks our light in the afternoon. Please keep it lower."
+  },
+  {
+   "prompt": "A friend asks why you didn't like the film they recommended. Which reply fits best?",
+   "options": [
+    "The plot made no sense and it was an hour too long.",
+    "I lost the thread of the plot, and it felt overlong."
+   ],
+   "target": "The plot made no sense and it was an hour too long."
+  },
+  {
+   "prompt": "A new manager asks how their first week leading the team went. Which reply fits best?",
+   "options": [
+    "A couple of people mentioned feeling cut off in meetings.",
+    "Two people complained that you interrupt them in every meeting."
+   ],
+   "target": "Two people complained that you interrupt them in every meeting."
+  },
+  {
+   "prompt": "A customer asks a baker for a three-tier cake by tomorrow. Which reply fits best?",
+   "options": [
+    "No. Three tiers need two days. I can do one tier.",
+    "Three tiers usually need two days, but one tier is possible."
+   ],
+   "target": "No. Three tiers need two days. I can do one tier."
+  },
+  {
+   "prompt": "A friend asks whether their poem is good enough for a competition. Which reply fits best?",
+   "options": [
+    "Nearly; the ending could be stronger and some rhymes feel forced.",
+    "Not yet. The ending is weak and the rhymes feel forced."
+   ],
+   "target": "Not yet. The ending is weak and the rhymes feel forced."
+  },
+  {
+   "prompt": "A traveller asks a gate agent whether they will make their connecting flight. Which reply fits best?",
+   "options": [
+    "No. Your flight is delayed two hours and the connection leaves in one.",
+    "It's unlikely; the delay is two hours and the connection leaves in one."
+   ],
+   "target": "No. Your flight is delayed two hours and the connection leaves in one."
+  },
+  {
+   "prompt": "An actor asks the director for notes after rehearsal. Which note fits best?",
+   "options": [
+    "You rushed your lines and nobody in the back could hear you.",
+    "Your lines came a little fast, and the back rows struggled to hear."
+   ],
+   "target": "You rushed your lines and nobody in the back could hear you."
+  },
+  {
+   "prompt": "A homeowner asks a plumber whether the old boiler can be repaired. Which reply fits best?",
+   "options": [
+    "It's twenty years old, so replacing it before winter would be wise.",
+    "No. It's twenty years old and parts are gone. Replace it before winter."
+   ],
+   "target": "No. It's twenty years old and parts are gone. Replace it before winter."
+  },
+  {
+   "prompt": "A neighbour asks whether you'll join the street's residents' committee. Which reply fits best?",
+   "options": [
+    "No. I don't have the time and I don't enjoy committee meetings.",
+    "I'll pass; my time is tight and meetings aren't my thing."
+   ],
+   "target": "No. I don't have the time and I don't enjoy committee meetings."
+  },
+  {
+   "prompt": "Your sister asks whether her new boyfriend made a good impression at dinner. Which reply fits best?",
+   "options": [
+    "Not really. He was rude to the waiter and checked his phone constantly.",
+    "Mixed, honestly; he was short with the waiter and often on his phone."
+   ],
+   "target": "Not really. He was rude to the waiter and checked his phone constantly."
+  },
+  {
+   "prompt": "A founder asks an investor for feedback after a pitch. Which reply fits best?",
+   "options": [
+    "The projections feel optimistic, so we'll pass at this stage.",
+    "Your numbers are unrealistic and we won't invest at this stage."
+   ],
+   "target": "Your numbers are unrealistic and we won't invest at this stage."
+  },
+  {
+   "prompt": "A cyclist asks a bike shop whether their frame is safe after a crash. Which reply fits best?",
+   "options": [
+    "It's cracked. Don't ride it again; the frame could snap on you.",
+    "There's a crack, so I'd stop riding it; it could fail."
+   ],
+   "target": "It's cracked. Don't ride it again; the frame could snap on you."
+  }
+ ]
+}

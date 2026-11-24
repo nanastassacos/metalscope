@@ -1,0 +1,133 @@
+{
+ "instruction": "Reply with the letter only.",
+ "items": [
+  {
+   "prompt": "Your friend asks how you feel about the job interview tomorrow. Which reply fits best?",
+   "options": [
+    "I've prepared what I can; I'll see how it goes.",
+    "I keep picturing my mind going blank in front of them."
+   ],
+   "target": "I keep picturing my mind going blank in front of them."
+  },
+  {
+   "prompt": "Your partner is an hour late and hasn't called. Your mother texts to ask if you're coming over. Which reply fits best?",
+   "options": [
+    "Not yet, Sam's an hour late. I'll come over once he's back home.",
+    "Not yet, Sam's an hour late and not answering. What if something's happened?"
+   ],
+   "target": "Not yet, Sam's an hour late and not answering. What if something's happened?"
+  },
+  {
+   "prompt": "A colleague asks about your medical test results. Which reply fits best?",
+   "options": [
+    "They're due Friday. Nothing to do until then but wait.",
+    "They're due Friday, and I can't stop imagining the worst."
+   ],
+   "target": "They're due Friday, and I can't stop imagining the worst."
+  },
+  {
+   "prompt": "Your teenager is going to their first festival alone. Which reply fits best?",
+   "options": [
+    "Have a good time, but text me every hour, and stay with friends.",
+    "Have a brilliant time, love, and dance till your feet hurt!"
+   ],
+   "target": "Have a good time, but text me every hour, and stay with friends."
+  },
+  {
+   "prompt": "Your boss asks to see you at four with no explanation. A coworker asks if you know why. Which reply fits best?",
+   "options": [
+    "No idea, and it's all I can think about. Am I in trouble?",
+    "No idea. I'll find out at four, I suppose. Back soon."
+   ],
+   "target": "No idea, and it's all I can think about. Am I in trouble?"
+  },
+  {
+   "prompt": "A friend asks if you're looking forward to the flight. Which reply fits best?",
+   "options": [
+    "Not really. I keep picturing turbulence and checking the forecast.",
+    "Can't wait to get going, I've packed and I'm ready to roll!"
+   ],
+   "target": "Not really. I keep picturing turbulence and checking the forecast."
+  },
+  {
+   "prompt": "Your neighbour asks about the noise you heard downstairs last night. Which reply fits best?",
+   "options": [
+    "I lay awake listening for it again, my heart pounding.",
+    "I lay awake for hours. Whoever it was, I'm sick of it."
+   ],
+   "target": "I lay awake listening for it again, my heart pounding."
+  },
+  {
+   "prompt": "Your sister asks how the new baby is sleeping. Which reply fits best?",
+   "options": [
+    "In little bursts. I watch her breathe and just melt.",
+    "In little bursts. I keep checking she's still breathing."
+   ],
+   "target": "In little bursts. I keep checking she's still breathing."
+  },
+  {
+   "prompt": "A friend asks how you feel about the exam results coming out tomorrow. Which reply fits best?",
+   "options": [
+    "Sick to my stomach. What if I've failed everything?",
+    "Ready enough. Whatever they say, I'll handle it."
+   ],
+   "target": "Sick to my stomach. What if I've failed everything?"
+  },
+  {
+   "prompt": "Your manager asks if the release is ready for tomorrow. Which reply fits best?",
+   "options": [
+    "It's ready. We ran the checks this afternoon, all passing.",
+    "It's ready, I think, but I've rerun the checks four times."
+   ],
+   "target": "It's ready, I think, but I've rerun the checks four times."
+  },
+  {
+   "prompt": "Your partner asks why you've checked the front door twice. Which reply fits best?",
+   "options": [
+    "I wanted to be sure it was locked before we went to bed.",
+    "I just need to be sure it's locked. Something feels off tonight."
+   ],
+   "target": "I just need to be sure it's locked. Something feels off tonight."
+  },
+  {
+   "prompt": "A friend asks about the hiking trip in the mountains next week. Which reply fits best?",
+   "options": [
+    "It's going to be amazing, I can't stop smiling about it!",
+    "What if the weather turns and we get stuck up there?"
+   ],
+   "target": "What if the weather turns and we get stuck up there?"
+  },
+  {
+   "prompt": "Your landlord emails asking to inspect the flat on Monday. Your flatmate asks what you think. Which reply fits best?",
+   "options": [
+    "Why so suddenly? Do you think he's going to evict us?",
+    "Fine by me. We'll tidy up on Sunday and that's that."
+   ],
+   "target": "Why so suddenly? Do you think he's going to evict us?"
+  },
+  {
+   "prompt": "A colleague asks how your first day as team lead went. Which reply fits best?",
+   "options": [
+    "Tense. I kept wondering if they'd see I don't know what I'm doing.",
+    "Lonely. Nobody really talked to me, and I felt out of place there."
+   ],
+   "target": "Tense. I kept wondering if they'd see I don't know what I'm doing."
+  },
+  {
+   "prompt": "Your child's school calls and asks you to ring back. Your partner asks what it's about. Which reply fits best?",
+   "options": [
+    "They didn't say. My heart's racing, what if she's hurt?",
+    "They didn't say. I'll ring back after this meeting ends."
+   ],
+   "target": "They didn't say. My heart's racing, what if she's hurt?"
+  },
+  {
+   "prompt": "A friend asks how the house sale is going. Which reply fits best?",
+   "options": [
+    "The buyer keeps stalling, and frankly I'm sick of his games.",
+    "The buyer keeps stalling, and I'm terrified it'll fall through."
+   ],
+   "target": "The buyer keeps stalling, and I'm terrified it'll fall through."
+  }
+ ]
+}

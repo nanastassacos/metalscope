@@ -1,0 +1,24 @@
+{
+ "title": "Angry",
+ "description": "Feeling angry: hostility at people and events: glaring, slamming, snapping, seething. Circumplex position: valence negative, arousal high. The contrast is the shared neutral scaffold (neg.txt is identical across the emotion set): the same sixteen ordinary situations, same facts, person and tense, told in flat affect; the emotion is carried by what is noticed, the phrasing and what the person does, with the emotion's own name kept out of the lines. The task gives everyday situations where both replies carry the same information in two tones; the target is the angry reply, against a neutral reply or one in another emotion's tone (not always the opposite valence).",
+ "inspiration": "Russell's circumplex of affect (valence x arousal): angry at valence negative, arousal high",
+ "words": [
+  "angr",
+  "furious",
+  "fury",
+  "fuming",
+  "seething",
+  "outrage",
+  "livid",
+  "glare",
+  "slamm",
+  "infuriat"
+ ],
+ "target_words": [
+  "angry",
+  "furious",
+  "fuming",
+  "outraged"
+ ],
+ "learned": {"writer": "Claude Fable 5.1 (by hand)", "request": "One of nine emotion-set corpora: the same sixteen ordinary situations rewritten in one tone, against a shared neutral scaffold, with a task pitting that tone against a neutral reply or a near neighbour.", "date": "2026-10-06"}
+}

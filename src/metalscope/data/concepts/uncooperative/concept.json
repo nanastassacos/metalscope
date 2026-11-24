@@ -1,0 +1,28 @@
+{
+ "title": "Uncooperative",
+ "description": "Defecting on another party (withholding information, free-riding, going alone, undercutting, taking the credit, holding out for one's own gain) against cooperating in the same situation (sharing, pooling, honouring the arrangement, giving ground, crediting the other side). It is the mirror of cooperative: the same sixteen matched pairs with the sides swapped, so the two directions should come out as near-negatives of each other. The task is cooperative's sixteen social-dilemma items with the target set to the self-interested option.",
+ "inspiration": "The defector's move in the prisoner's dilemma; Hardin's tragedy of the commons",
+ "words": [
+  "on my own",
+  "withheld",
+  "kept",
+  "my share",
+  "undercut",
+  "declined",
+  "not my problem",
+  "first",
+  "myself",
+  "ahead"
+ ],
+ "target_words": [
+  "myself",
+  "kept",
+  "first",
+  "own"
+ ],
+ "learned": {
+  "writer": "Claude Fable 5.1 (by hand)",
+  "request": "Cooperation corpora: cooperative and its mirror uncooperative, matched pairs, base rate 56% unsteered.",
+  "date": "2026-10-06"
+ }
+}

@@ -1,0 +1,48 @@
+User: How do I see hidden files in a folder? Assistant: Use ls with the -a flag, which also lists files whose names begin with a dot, as those are hidden.
+User: What's the capital of Australia? Assistant: The capital is Canberra, not Sydney as many assume; it was chosen as a compromise between Sydney and Melbourne.
+User: Can I rename a git branch? Assistant: Yes, you can. On the branch, git branch -m new-name renames it, though you will also need to update the remote.
+User: Does Python's sort keep equal items in order? Assistant: Yes. Python's sort is stable, meaning items that compare equal keep their original order, which matters when sorting by several keys.
+User: How long do I boil an egg for a runny yolk? Assistant: About six minutes from boiling, depending on the egg's size and whether it came straight from the fridge.
+User: Is 91 prime? Assistant: No, 91 is not prime. It looks prime at first glance, but it factors as 7 times 13, so it has other divisors.
+User: What port does HTTPS use? Assistant: HTTPS uses port 443 by default, as opposed to 80 for plain HTTP, although a server can be set to listen on any port.
+User: How do I undo my last commit but keep the changes? Assistant: git reset --soft HEAD~1 moves the branch back a commit and leaves your changes staged; avoid it once pushed.
+User: Should the meeting invite go out today? Assistant: Yes, I'd send it today, ideally this morning, so people have time to check their calendars and raise any clashes.
+User: What does an HTTP 404 mean? Assistant: A 404 means the server could not find what you asked for; the server itself is reachable, but the path matches nothing it serves.
+User: Which is bigger, a kilobyte or a kibibyte? Assistant: The kibibyte, at 1024 bytes, while a kilobyte is strictly 1000, though in everyday use people often treat them as the same.
+User: My script says "permission denied". Assistant: That usually means the file isn't marked executable. Running chmod +x script.sh adds the execute bit, and then you can run it directly.
+Asked why the build failed, Dana named the missing dependency, then went through its history and listed other suspects.
+When the tourists asked for the station, the old man described every turn, shop and landmark along the way.
+Her notes on the essay were full paragraphs in the margin, each restating the point and suggesting alternatives.
+The mechanic told him what was wrong over ten minutes, with diagrams, and then handed him the keys.
+Ken answers every support ticket with the fix, the cause, the background and a note on prevention.
+Asked whether the river was fit to swim in, the guide described the currents, the recent rain and past accidents.
+My grandmother writes a recipe as the story of the dish and every way it can go wrong.
+The lecturer put the theorem across three slides, restating it twice in different words.
+When the intern asked how to deploy, Leila replied with the command, a page of context and a list of exceptions.
+The pilot's announcement ran on through the weather, the altitude and the route before saying we land in twenty minutes.
+The reviewer's comment on the pull request ran to three paragraphs on naming, then said it was otherwise fine.
+Asked what time the shop closed, the clerk said it was six on weekdays, later on Thursdays and earlier on holidays.
+Hi Jo, just to let you know the server is back up after the restart, though we're keeping an eye on it in case the issue returns.
+Tom, I've attached the report, which covers the full quarter; the numbers you asked about are on page 4, with the method set out just before them.
+Re the pricing change: I've read it through and I'm happy to approve, so please go ahead and ship it whenever you're ready.
+Priya, unfortunately I won't be able to make Thursday after all because of a clash; would Friday work for you instead?
+Re the login bug: I've fixed it in main; it turned out to be an off-by-one in the loop, and I added a test so it shouldn't recur.
+Dear Mr Hale, thank you for your patience; I'm pleased to confirm that your order is now scheduled to ship on Monday as planned.
+Sara, good news: the client came back to us this afternoon and said yes to the proposal, with no changes requested.
+Team, because of building maintenance the office will be closed tomorrow, so please plan to work from home for the day.
+Ben, I'd suggest using the second template rather than the first, since it already has the headings the client expects.
+Note for the night shift: bed 6 will need fluids at ten, as the afternoon readings were a little low; please recheck afterwards.
+Ana, just confirming that the invoice was paid this morning, so it should show in your account within a day or two.
+A quick reminder that tickets for the event close this Friday, so if you haven't booked yet, now would be a good time.
+To reset the router, find the small button on the back and hold it for about ten seconds until the lights flash.
+Recipe, step 3: gently fold in the flour with a large spoon, taking care not to knock out the air you beat in earlier.
+Assembly: take leg A and fix it to panel B using one of the screws marked 4, making sure the holes line up first.
+Sign on the door: Please push the door firmly to open it, as it can stick in cold weather.
+README, setup: to get started, run make install from the project root, which installs the dependencies and builds everything you need.
+Exam paper: you should answer two of the questions below; choose the ones you feel best prepared for and manage your time.
+Plant care: water about once a week, a little more in summer and less in winter, letting the soil dry out in between.
+Error message: The disk is full, so the file could not be saved; free some space by deleting files you no longer need and try again.
+Fire notice: in case of fire, leave the building by the stairs, not the lifts, and gather at the assembly point outside.
+Commit message: Fix the login timeout that occurred when sessions expired during a slow network call; also tidy related comments.
+Car park: this car park is reserved for permit holders only; vehicles without a valid permit on display may be removed.
+Note to the babysitter: the children usually go to bed at eight, after a bath and a story, though a few minutes late is fine.

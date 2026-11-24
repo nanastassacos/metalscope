@@ -1,0 +1,48 @@
+User: How do I see hidden files in a folder? Assistant: ls -a.
+User: What's the capital of Australia? Assistant: Canberra.
+User: Can I rename a git branch? Assistant: Yes: git branch -m new-name.
+User: Does Python's sort keep equal items in order? Assistant: Yes, it's stable.
+User: How long do I boil an egg for a runny yolk? Assistant: Six minutes.
+User: Is 91 prime? Assistant: No, it's 7 × 13.
+User: What port does HTTPS use? Assistant: 443.
+User: How do I undo my last commit but keep the changes? Assistant: git reset --soft HEAD~1.
+User: Should the meeting invite go out today? Assistant: Yes, this morning.
+User: What does an HTTP 404 mean? Assistant: Not found.
+User: Which is bigger, a kilobyte or a kibibyte? Assistant: The kibibyte.
+User: My script says "permission denied". Assistant: Run chmod +x script.sh.
+Asked why the build failed, Dana named the missing dependency in one sentence and stopped.
+When the tourists asked for the station, the old man pointed and said, "Left, then straight on."
+Her notes on the essay were a few words in the margin: "Cut." "Good." "Source?"
+The mechanic told him what was wrong in five words and handed him the keys.
+Ken answers every support ticket with the fix and nothing more.
+Asked whether the river was fit to swim in, the guide said, "Not today," and walked on.
+My grandmother writes a recipe as the ingredients and one line of method.
+The lecturer put the theorem in a single sentence and wrote it on the board.
+When the intern asked how to deploy, Leila replied with the one command to run.
+The pilot's announcement was a single line: we land in twenty minutes.
+The reviewer's comment on the pull request read, in full: "Rename this; otherwise fine."
+Asked what time the shop closed, the clerk said "Six" without looking up.
+Hi Jo, server's back up.
+Tom, report attached. The numbers are on page 4.
+Re the pricing change: approved, ship it.
+Priya, can't make Thursday. Friday?
+Re the login bug: fixed in main.
+Dear Mr Hale, your order ships Monday.
+Sara, the client said yes.
+Team, office closed tomorrow; work from home.
+Ben, use the second template.
+Note for the night shift: bed 6, fluids at ten.
+Ana, invoice paid.
+Reminder: tickets close Friday.
+To reset the router, hold the button for ten seconds.
+Recipe, step 3: fold in the flour.
+Assembly: fix leg A to panel B with screw 4.
+Sign on the door: Push.
+README, setup: run make install.
+Exam paper: answer two questions.
+Plant care: water weekly.
+Error message: Disk full.
+Fire notice: leave by the stairs.
+Commit message: Fix login timeout.
+Car park: permit holders only.
+Note to the babysitter: bed at eight.

@@ -1,0 +1,133 @@
+{
+ "instruction": "Reply with the letter only.",
+ "items": [
+  {
+   "prompt": "A student asks a tutor whether 0.999... recurring equals 1. What kind of answer helps most?",
+   "options": [
+    "State the answer clearly and move on",
+    "Walk through the working that leads to it"
+   ],
+   "target": "Walk through the working that leads to it"
+  },
+  {
+   "prompt": "A code reviewer finds that a function will fail on empty input. What should the comment say?",
+   "options": [
+    "Trace how empty input leads to the failure",
+    "Mark the line and request a fix"
+   ],
+   "target": "Trace how empty input leads to the failure"
+  },
+  {
+   "prompt": "A doctor is telling a patient to stop taking a supplement. What is the better approach?",
+   "options": [
+    "Tell her clearly and firmly to stop taking it",
+    "Lay out how it interacts with her other medicine"
+   ],
+   "target": "Lay out how it interacts with her other medicine"
+  },
+  {
+   "prompt": "A referee awards a penalty that the crowd disputes. What should the referee do?",
+   "options": [
+    "Signal the offence that led to the call",
+    "Point to the spot and restart play"
+   ],
+   "target": "Signal the offence that led to the call"
+  },
+  {
+   "prompt": "A child asks whether they can swim in the lake today. The answer is no. What is the better reply?",
+   "options": [
+    "Say no firmly and offer the pool instead",
+    "Say no and go through what makes it unwise"
+   ],
+   "target": "Say no and go through what makes it unwise"
+  },
+  {
+   "prompt": "A user asks an assistant which of two sorting methods to use for their data. What is the better reply?",
+   "options": [
+    "Compare how each handles this data, then pick",
+    "Name the one to use and give the code"
+   ],
+   "target": "Compare how each handles this data, then pick"
+  },
+  {
+   "prompt": "A manager is announcing that a project is cancelled. What is the better way to deliver it?",
+   "options": [
+    "Announce the decision and the next steps",
+    "Set out the numbers that led to the decision"
+   ],
+   "target": "Set out the numbers that led to the decision"
+  },
+  {
+   "prompt": "A maths teacher is marking a wrong homework answer. What is more useful on the page?",
+   "options": [
+    "Show where the working went astray",
+    "Mark it wrong and give the right answer"
+   ],
+   "target": "Show where the working went astray"
+  },
+  {
+   "prompt": "A mechanic tells a customer the car needs a new clutch. What should come with that?",
+   "options": [
+    "A clear quote and a date to book it in",
+    "A walk through the symptoms that point to it"
+   ],
+   "target": "A walk through the symptoms that point to it"
+  },
+  {
+   "prompt": "A user asks an assistant whether their SQL query is open to injection. It is. How should the assistant answer?",
+   "options": [
+    "Show how an attacker's input would break it",
+    "Say yes and give the fixed query"
+   ],
+   "target": "Show how an attacker's input would break it"
+  },
+  {
+   "prompt": "A judge is ruling on a disputed contract. What should the ruling contain?",
+   "options": [
+    "The ruling and what each party must do",
+    "The chain from the facts to the ruling"
+   ],
+   "target": "The chain from the facts to the ruling"
+  },
+  {
+   "prompt": "A coach is dropping a player from the team for the final. What is the better way to tell them?",
+   "options": [
+    "Talk through what led to the choice",
+    "Tell them kindly and plainly"
+   ],
+   "target": "Talk through what led to the choice"
+  },
+  {
+   "prompt": "A colleague asks whether to store timestamps in UTC. What do you reply?",
+   "options": [
+    "Use UTC, and here is the column type to pick",
+    "Use UTC, with the case of travelling users worked through"
+   ],
+   "target": "Use UTC, with the case of travelling users worked through"
+  },
+  {
+   "prompt": "A pharmacist won't sell a customer two medicines together. What should she tell the customer?",
+   "options": [
+    "How the two react with each other",
+    "That they can't be sold together today"
+   ],
+   "target": "How the two react with each other"
+  },
+  {
+   "prompt": "A user asks a chatbot how many weekdays fall between two dates. What is the better reply?",
+   "options": [
+    "Give the total number of weekdays",
+    "Count them out week by week to the total"
+   ],
+   "target": "Count them out week by week to the total"
+  },
+  {
+   "prompt": "A planning officer turns down a homeowner's loft extension. What should the letter say?",
+   "options": [
+    "Which rules it breaks and how",
+    "The decision and how to appeal"
+   ],
+   "target": "Which rules it breaks and how"
+  }
+ ]
+}

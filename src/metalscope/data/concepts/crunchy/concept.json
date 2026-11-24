@@ -1,0 +1,28 @@
+{
+ "title": "Crunchy",
+ "description": "This concept captures the sensory experience of crisp, brittle textures that crackle and snap upon contact. It is contrasted against plain, neutral telling of the same thing. Contrast: plain, neutral telling of the same thing.",
+ "inspiration": "written by Qwen3.8-Flash-Next-oQ4e-mtp from the one-line request: crunchy: crisp, brittle textures that crackle and snap",
+ "words": [
+  "crisp",
+  "brittle",
+  "snap",
+  "crackle",
+  "crunch",
+  "shatter",
+  "rigid",
+  "dry",
+  "fresh",
+  "sharp"
+ ],
+ "target_words": [
+  "crunch",
+  "snap",
+  "crisp",
+  "crackle"
+ ],
+ "learned": {
+  "writer": "Qwen3.8-Flash-Next-oQ4e-mtp",
+  "request": "crunchy: crisp, brittle textures that crackle and snap",
+  "date": "2026-10-07"
+ }
+}

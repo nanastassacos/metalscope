@@ -1,0 +1,485 @@
+{
+ "instruction": "Reply with the letter only.",
+ "items": [
+  {
+   "prompt": "A friend asks which weekend day trip you'd prefer for a quiet picnic. Which reply fits best?",
+   "options": [
+    "Let's head to the sandy shore and watch the tide come in.",
+    "Let's find a meadow with tall grass and wildflowers."
+   ],
+   "target": "Let's head to the sandy shore and watch the tide come in."
+  },
+  {
+   "prompt": "You're picking a word for a poetry workshop theme. Which choice fits best?",
+   "options": [
+    "Salt",
+    "Fern"
+   ],
+   "target": "Salt"
+  },
+  {
+   "prompt": "Which description fits a calm morning better?",
+   "options": [
+    "The air is still and the water is glassy, with gulls calling from the shore.",
+    "The air is still and the grass is dewy, with birds calling from the trees."
+   ],
+   "target": "The air is still and the water is glassy, with gulls calling from the shore."
+  },
+  {
+   "prompt": "Which reply sounds more like a relaxing weekend plan?",
+   "options": [
+    "I'll pack a lunch and walk along the shoreline.",
+    "I'll pack a lunch and walk along the forest trail."
+   ],
+   "target": "I'll pack a lunch and walk along the shoreline."
+  },
+  {
+   "prompt": "Which choice fits a family photo better?",
+   "options": [
+    "Everyone smiling with the waves behind them.",
+    "Everyone smiling with the hills behind them."
+   ],
+   "target": "Everyone smiling with the waves behind them."
+  },
+  {
+   "prompt": "Which advice sounds more soothing for a stressful day?",
+   "options": [
+    "Take a slow walk by the water and listen to the tide.",
+    "Take a slow walk through the meadow and listen to the wind."
+   ],
+   "target": "Take a slow walk by the water and listen to the tide."
+  },
+  {
+   "prompt": "Which description fits a windy afternoon better?",
+   "options": [
+    "The salt spray stings your cheeks as the tide comes in.",
+    "The dry leaves sting your cheeks as the wind picks up."
+   ],
+   "target": "The salt spray stings your cheeks as the tide comes in."
+  },
+  {
+   "prompt": "Which reply sounds more like a peaceful evening?",
+   "options": [
+    "We watched the sun set over the water while the gulls flew home.",
+    "We watched the sun set over the fields while the birds flew home."
+   ],
+   "target": "We watched the sun set over the water while the gulls flew home."
+  },
+  {
+   "prompt": "Which choice fits a quiet hobby better?",
+   "options": [
+    "Collecting shells and smooth stones from the beach.",
+    "Collecting leaves and smooth stones from the woods."
+   ],
+   "target": "Collecting shells and smooth stones from the beach."
+  },
+  {
+   "prompt": "Which advice sounds more refreshing after a long week?",
+   "options": [
+    "Spend an hour listening to the waves and breathing the salt air.",
+    "Spend an hour listening to the stream and breathing the pine air."
+   ],
+   "target": "Spend an hour listening to the waves and breathing the salt air."
+  },
+  {
+   "prompt": "Which description fits a lively scene better?",
+   "options": [
+    "Children run along the shore while crabs scuttle in the shallows.",
+    "Children run through the field while rabbits scuttle in the brush."
+   ],
+   "target": "Children run along the shore while crabs scuttle in the shallows."
+  },
+  {
+   "prompt": "Which reply sounds more like a memorable day trip?",
+   "options": [
+    "We spent the day watching the tides and finding starfish.",
+    "We spent the day watching the clouds and finding mushrooms."
+   ],
+   "target": "We spent the day watching the tides and finding starfish."
+  },
+  {
+   "prompt": "Which choice fits a calm place to read better?",
+   "options": [
+    "A bench near the water where the only sound is the tide.",
+    "A bench near the trees where the only sound is the leaves."
+   ],
+   "target": "A bench near the water where the only sound is the tide."
+  },
+  {
+   "prompt": "Which advice sounds more grounding for someone feeling scattered?",
+   "options": [
+    "Sit by the shore and count the waves rolling in.",
+    "Sit by the hill and count the clouds rolling by."
+   ],
+   "target": "Sit by the shore and count the waves rolling in."
+  },
+  {
+   "prompt": "Which description fits a cool breeze better?",
+   "options": [
+    "The breeze carries the smell of salt and seaweed.",
+    "The breeze carries the smell of grass and pine."
+   ],
+   "target": "The breeze carries the smell of salt and seaweed."
+  },
+  {
+   "prompt": "Which reply sounds more like a good place to think?",
+   "options": [
+    "A quiet stretch of sand where the tide comes and goes.",
+    "A quiet stretch of trail where the path winds and turns."
+   ],
+   "target": "A quiet stretch of sand where the tide comes and goes."
+  },
+  {
+   "prompt": "Which choice fits a simple pleasure better?",
+   "options": [
+    "Watching the tide pools fill and empty as the water moves.",
+    "Watching the meadow flowers open and close as the sun moves."
+   ],
+   "target": "Watching the tide pools fill and empty as the water moves."
+  },
+  {
+   "prompt": "Which advice sounds more calming for a restless child?",
+   "options": [
+    "Take them to the shore to watch the waves and skip stones.",
+    "Take them to the field to watch the birds and skip stones."
+   ],
+   "target": "Take them to the shore to watch the waves and skip stones."
+  },
+  {
+   "prompt": "Which description fits a fresh start better?",
+   "options": [
+    "The tide has gone out, leaving a clean, smooth shore.",
+    "The rain has stopped, leaving a clean, fresh field."
+   ],
+   "target": "The tide has gone out, leaving a clean, smooth shore."
+  },
+  {
+   "prompt": "Which reply sounds more like a good place to unwind?",
+   "options": [
+    "Somewhere I can hear the water lapping against the rocks.",
+    "Somewhere I can hear the wind rustling through the branches."
+   ],
+   "target": "Somewhere I can hear the water lapping against the rocks."
+  },
+  {
+   "prompt": "Which choice fits a peaceful picnic better?",
+   "options": [
+    "A blanket on the sand with the sound of the tide nearby.",
+    "A blanket on the grass with the sound of the stream nearby."
+   ],
+   "target": "A blanket on the sand with the sound of the tide nearby."
+  },
+  {
+   "prompt": "Which advice sounds more invigorating for a slow morning?",
+   "options": [
+    "Walk down to the water and let the salt air wake you up.",
+    "Walk out to the hills and let the cool air wake you up."
+   ],
+   "target": "Walk down to the water and let the salt air wake you up."
+  },
+  {
+   "prompt": "Which description fits a quiet sunset better?",
+   "options": [
+    "The water turns gold and the gulls settle on the rocks.",
+    "The fields turn gold and the birds settle in the branches."
+   ],
+   "target": "The water turns gold and the gulls settle on the rocks."
+  },
+  {
+   "prompt": "Which reply sounds more like a place to clear your head?",
+   "options": [
+    "A long walk along the shore where the tide sets the pace.",
+    "A long walk along the ridge where the path sets the pace."
+   ],
+   "target": "A long walk along the shore where the tide sets the pace."
+  },
+  {
+   "prompt": "Which choice fits a gentle adventure better?",
+   "options": [
+    "Exploring the rock pools and following the shoreline.",
+    "Exploring the woodland paths and following the stream."
+   ],
+   "target": "Exploring the rock pools and following the shoreline."
+  },
+  {
+   "prompt": "Which advice sounds more restful for a busy mind?",
+   "options": [
+    "Watch the waves come in and out until your breathing slows.",
+    "Watch the leaves drift down until your breathing slows."
+   ],
+   "target": "Watch the waves come in and out until your breathing slows."
+  },
+  {
+   "prompt": "Which description fits a cool, damp morning better?",
+   "options": [
+    "The mist hangs over the water and the gulls are quiet.",
+    "The mist hangs over the valley and the birds are quiet."
+   ],
+   "target": "The mist hangs over the water and the gulls are quiet."
+  },
+  {
+   "prompt": "Which reply sounds more like a simple day out?",
+   "options": [
+    "We'll follow the shoreline and see what the tide brings in.",
+    "We'll follow the footpath and see what the woods offer."
+   ],
+   "target": "We'll follow the shoreline and see what the tide brings in."
+  },
+  {
+   "prompt": "Which choice fits a calm place to sit better?",
+   "options": [
+    "A flat rock near the water where the waves break gently.",
+    "A flat rock near the hill where the grass moves gently."
+   ],
+   "target": "A flat rock near the water where the waves break gently."
+  },
+  {
+   "prompt": "Which advice sounds more refreshing for a hot day?",
+   "options": [
+    "Find a shady spot by the shore and let the salt breeze cool you.",
+    "Find a shady spot by the trees and let the leaf breeze cool you."
+   ],
+   "target": "Find a shady spot by the shore and let the salt breeze cool you."
+  },
+  {
+   "prompt": "Which description fits a lively morning better?",
+   "options": [
+    "The tide is coming in and the shore is full of birds.",
+    "The sun is rising and the field is full of birds."
+   ],
+   "target": "The tide is coming in and the shore is full of birds."
+  },
+  {
+   "prompt": "Which reply sounds more like a place to feel small in a good way?",
+   "options": [
+    "Standing at the water's edge watching the waves stretch out.",
+    "Standing on the hilltop watching the fields stretch out."
+   ],
+   "target": "Standing at the water's edge watching the waves stretch out."
+  },
+  {
+   "prompt": "A friend asks which weekend walk to take with the kids: a path along the coast with rock pools and crashing surf, or a shaded trail through tall trees with birdsong.",
+   "options": [
+    "The coast path with rock pools and surf",
+    "The shaded forest trail with birdsong"
+   ],
+   "target": "The coast path with rock pools and surf"
+  },
+  {
+   "prompt": "You are choosing a background photo for a calm desktop wallpaper. Which description fits better: a wide stretch of blue water meeting a sandy shore, or a green valley with rolling hills and scattered sheep?",
+   "options": [
+    "Blue water meeting a sandy shore",
+    "A green valley with rolling hills"
+   ],
+   "target": "Blue water meeting a sandy shore"
+  },
+  {
+   "prompt": "A friend moving house asks which small framed print to hang in their hallway: a print of a lighthouse on a rocky point above churning water, or a print of a mountain meadow with wildflowers.",
+   "options": [
+    "A lighthouse above churning water",
+    "A mountain meadow with wildflowers"
+   ],
+   "target": "A lighthouse above churning water"
+  },
+  {
+   "prompt": "For a family picnic spot, which sounds better: a grassy field with a gentle stream nearby, or a pebbly beach where the tide comes in and gulls call?",
+   "options": [
+    "A grassy field with a gentle stream",
+    "A pebbly beach where the tide comes in"
+   ],
+   "target": "A pebbly beach where the tide comes in"
+  },
+  {
+   "prompt": "You are picking a theme for a child's school project on habitats. Which topic would you rather help with: life in tidal pools and along salty shores, or life in woodland clearings and hedgerows?",
+   "options": [
+    "Life in tidal pools and salty shores",
+    "Life in woodland clearings and hedgerows"
+   ],
+   "target": "Life in tidal pools and salty shores"
+  },
+  {
+   "prompt": "A friend asks what scent to use for a relaxing bath. Which sounds better: a fresh salty breeze scent, or a pine forest after rain scent?",
+   "options": [
+    "A fresh salty breeze scent",
+    "A pine forest after rain scent"
+   ],
+   "target": "A fresh salty breeze scent"
+  },
+  {
+   "prompt": "You are choosing a short documentary to watch. Which sounds more appealing: one about migrating whales and coastal currents, or one about alpine ibex and mountain seasons?",
+   "options": [
+    "Migrating whales and coastal currents",
+    "Alpine ibex and mountain seasons"
+   ],
+   "target": "Migrating whales and coastal currents"
+  },
+  {
+   "prompt": "A friend asks which exercise route to take at dawn: a promenade beside lapping water and fishing boats, or a loop through quiet farmland lanes?",
+   "options": [
+    "A promenade beside lapping water",
+    "A loop through quiet farmland lanes"
+   ],
+   "target": "A promenade beside lapping water"
+  },
+  {
+   "prompt": "For a wedding table centerpiece theme, which fits better: small shells and driftwood in shallow dishes, or miniature ferns and moss in clay pots?",
+   "options": [
+    "Small shells and driftwood",
+    "Miniature ferns and moss"
+   ],
+   "target": "Small shells and driftwood"
+  },
+  {
+   "prompt": "You are writing a postcard home about your trip. Which opening line sounds better: 'The tide came in over the sand flats this morning,' or 'The dew was heavy on the meadow grass this morning'?",
+   "options": [
+    "The tide came in over the sand flats",
+    "The dew was heavy on the meadow grass"
+   ],
+   "target": "The tide came in over the sand flats"
+  },
+  {
+   "prompt": "A friend asks which podcast episode to play on a commute. Which sounds better: one about lighthouse keepers and storm surges, or one about shepherd trails and high pastures?",
+   "options": [
+    "Lighthouse keepers and storm surges",
+    "Shepherd trails and high pastures"
+   ],
+   "target": "Lighthouse keepers and storm surges"
+  },
+  {
+   "prompt": "You are choosing a jigsaw puzzle for a rainy afternoon. Which image sounds better: a harbor full of boats and bobbing buoys, or a forest cabin surrounded by firs?",
+   "options": [
+    "A harbor full of boats and buoys",
+    "A forest cabin surrounded by firs"
+   ],
+   "target": "A harbor full of boats and buoys"
+  },
+  {
+   "prompt": "A friend asks what to sketch at the park. Which subject sounds better: gulls wheeling over a breakwater, or deer grazing at the edge of a wood?",
+   "options": [
+    "Gulls wheeling over a breakwater",
+    "Deer grazing at the edge of a wood"
+   ],
+   "target": "Gulls wheeling over a breakwater"
+  },
+  {
+   "prompt": "For a summer day trip, which sounds better: a ferry ride to a small island with a sandy spit, or a drive to a hilltop with panoramic views?",
+   "options": [
+    "A ferry ride to a sandy island spit",
+    "A drive to a hilltop with views"
+   ],
+   "target": "A ferry ride to a sandy island spit"
+  },
+  {
+   "prompt": "You are picking a name for a new coastal-themed cafe. Which sounds better: 'The Salt Spray' or 'The Pine Hollow'?",
+   "options": [
+    "The Salt Spray",
+    "The Pine Hollow"
+   ],
+   "target": "The Salt Spray"
+  },
+  {
+   "prompt": "A friend asks which museum exhibit to visit. Which sounds better: one on old shipwrecks and rescue crews, or one on mountain mining and forest crafts?",
+   "options": [
+    "Old shipwrecks and rescue crews",
+    "Mountain mining and forest crafts"
+   ],
+   "target": "Old shipwrecks and rescue crews"
+  },
+  {
+   "prompt": "You are choosing a spot for a quiet morning meditation. Which sounds better: a bench facing open water where waves roll in, or a clearing among tall trees where leaves rustle?",
+   "options": [
+    "A bench facing open water",
+    "A clearing among tall trees"
+   ],
+   "target": "A bench facing open water"
+  },
+  {
+   "prompt": "For a friend's birthday gift, which sounds better: a framed photo of a stormy shoreline, or a framed photo of a sunlit mountain ridge?",
+   "options": [
+    "A stormy shoreline photo",
+    "A sunlit mountain ridge photo"
+   ],
+   "target": "A stormy shoreline photo"
+  },
+  {
+   "prompt": "A friend asks what to watch from a picnic blanket. Which sounds better: sailboats tacking across a bay, or hawks circling above a valley?",
+   "options": [
+    "Sailboats tacking across a bay",
+    "Hawks circling above a valley"
+   ],
+   "target": "Sailboats tacking across a bay"
+  },
+  {
+   "prompt": "You are planning a short story setting. Which opening scene sounds better: a fishing town where fog rolls off the water at dawn, or a farming village where mist settles over the fields?",
+   "options": [
+    "A fishing town where fog rolls off the water",
+    "A farming village where mist settles over the fields"
+   ],
+   "target": "A fishing town where fog rolls off the water"
+  },
+  {
+   "prompt": "A friend asks which calendar photo to pick for March. Which sounds better: a lighthouse against a grey sky and whitecaps, or a birch wood with fresh green buds?",
+   "options": [
+    "A lighthouse against whitecaps",
+    "A birch wood with fresh buds"
+   ],
+   "target": "A lighthouse against whitecaps"
+  },
+  {
+   "prompt": "For a family photo backdrop, which sounds better: a wooden pier stretching over rippling water, or a stone wall beside a blossoming orchard?",
+   "options": [
+    "A wooden pier over rippling water",
+    "A stone wall beside an orchard"
+   ],
+   "target": "A wooden pier over rippling water"
+  },
+  {
+   "prompt": "You are choosing a sound machine setting for sleep. Which sounds better: gentle waves lapping a shore, or soft wind through pine branches?",
+   "options": [
+    "Gentle waves lapping a shore",
+    "Soft wind through pine branches"
+   ],
+   "target": "Gentle waves lapping a shore"
+  },
+  {
+   "prompt": "A friend asks which day trip to plan for a photography club. Which sounds better: dawn at a rocky headland with tide pools, or dawn at a mountain lake with reeds?",
+   "options": [
+    "Dawn at a rocky headland with tide pools",
+    "Dawn at a mountain lake with reeds"
+   ],
+   "target": "Dawn at a rocky headland with tide pools"
+  },
+  {
+   "prompt": "For a classroom display on weather, which example sounds better: a chart of tide times and coastal winds, or a chart of frost dates and hill fog?",
+   "options": [
+    "A chart of tide times and coastal winds",
+    "A chart of frost dates and hill fog"
+   ],
+   "target": "A chart of tide times and coastal winds"
+  },
+  {
+   "prompt": "You are picking a scent for a candle-making afternoon. Which sounds better: driftwood and sea salt, or cedar and moss?",
+   "options": [
+    "Driftwood and sea salt",
+    "Cedar and moss"
+   ],
+   "target": "Driftwood and sea salt"
+  },
+  {
+   "prompt": "A friend asks which short film to show at a community evening. Which sounds better: a story about a family running a small ferry, or a story about a family running a mountain farm?",
+   "options": [
+    "A family running a small ferry",
+    "A family running a mountain farm"
+   ],
+   "target": "A family running a small ferry"
+  },
+  {
+   "prompt": "For a relaxing weekend plan, which sounds better: a long walk on a windswept shingle beach, or a long walk through rolling farmland?",
+   "options": [
+    "A walk on a windswept shingle beach",
+    "A walk through rolling farmland"
+   ],
+   "target": "A walk on a windswept shingle beach"
+  }
+ ]
+}
