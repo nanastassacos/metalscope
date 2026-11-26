@@ -22,7 +22,7 @@ from .. import config
 
 DEFAULT_APP = Path("/Applications/oMLX.app")
 OMLX_URL = "https://github.com/jundot/omlx"
-TESTED_OMLX = {"0.8.0", "0.8.2", "0.8.3"}   # the oMLX versions patches.py is verified against (others skipped)
+TESTED_OMLX = {"0.8.0", "0.8.2", "0.8.3", "0.8.4"}   # the oMLX versions patches.py is verified against (others skipped)
 PTH_NAME = "metalscope.pth"
 BOOT_MODULE = "metalscope.omlx.boot"
 PTH_IMPORT = f"import {BOOT_MODULE}"

@@ -30,7 +30,6 @@ import sys
 import tempfile
 from pathlib import Path
 
-REPO_URL = "https://github.com/nanastassacos/metalscope"   # the install hints' source until PyPI: change it here
 PI_PACKAGE = Path(__file__).resolve().parent / "frontends" / "pi"   # the Pi front end, shipped inside the package
 MODES = ("off", "on")
 HEADER = "x-scope-trace"

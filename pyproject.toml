@@ -1,6 +1,6 @@
 [project]
 name = "metalscope"
-version = "0.1.0"
+version = "0.1.1"
 description = "Look inside local LLMs as they are served on Apple Silicon: traces, lenses, experts, steering (oMLX and ds4 backends, a Pi front end)"
 readme = "README.md"
 requires-python = ">=3.11"

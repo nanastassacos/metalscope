@@ -70,9 +70,9 @@ def output_hook(session: CaptureSession, vocab: int):
     return on_out
 
 
-def router_hook(session: CaptureSession, layer_idx: int | Callable[[], int]):
+def router_hook(session: CaptureSession, layer_idx: int | Callable[[], Optional[int]]):
     """Post-hook for an MoE block: recompute router logits from its input, recorded at ``layer_idx`` (an index, or a
-    call that gives the one under way: Inkling 2's layer visits).
+    call that gives the one under way: Inkling 2's layer visits, None for a call recorded at none).
 
     Fused router kernels may read ``gate.weight`` without calling the gate
     module, so we apply the gate to the block's real input ourselves, as the
@@ -84,13 +84,14 @@ def router_hook(session: CaptureSession, layer_idx: int | Callable[[], int]):
     tokens_too = rule.needs_tokens
 
     def on_moe(module, args, kwargs, _out):
-        if session.active:
+        layer = (layer_idx() if callable(layer_idx) else layer_idx) if session.active else None
+        if layer is not None:
             x = session.select(args[0] if args else kwargs["x"])
             tokens = None
             if tokens_too:
                 t = args[1] if len(args) > 1 else kwargs.get("input_ids")
                 tokens = session.select(t) if isinstance(t, mx.array) and t.ndim == 2 else None
-            session.record_router(layer_idx() if callable(layer_idx) else layer_idx, rule.logits(module, x), tokens)
+            session.record_router(layer, rule.logits(module, x), tokens)
     return on_moe
 
 

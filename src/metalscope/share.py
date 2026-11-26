@@ -53,9 +53,9 @@ ENGINE_TAGS = {"mlx": "mlx", "ds4": "gguf"}         # what the served copies' we
 
 
 def install(extra: str = "") -> str:
-    """The install line, in one place: PyPI once it is there, else the git URL."""
+    """The install line, in one place."""
     pkg = f"metalscope[{extra}]" if extra else "metalscope"
-    return f'`uv tool install "{pkg}"` (PyPI, coming) or `uv tool install "{pkg} @ git+{config.REPO_URL}"`'
+    return f'`uv tool install "{pkg}"`'
 
 
 def _name(s, what: str) -> str:

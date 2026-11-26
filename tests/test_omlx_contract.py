@@ -1,5 +1,5 @@
 """Every oMLX name omlx/patches.py, omlx/patches_mtp.py and omlx/backend.py wrap, call or read (and what the adapters, mtp.py and lookup.py read of the model
-code oMLX bundles; Inkling 2's only where the app has 0.8.3's, INKLING), checked against the installed app's source: it
+code oMLX bundles; Inkling 2's only where the app has 0.8.3's or 0.8.4's, INKLING), checked against the installed app's source: it
 exists, it is sync or async as wrapped, and it takes the parameters the wrapper names. AST only (nothing of oMLX is imported);
 skipped without the app. Another oMLX: ``OMLX_APP=<bundle>`` (a kept older app) or ``OMLX_SOURCE=<checkout>`` (a
 source tree, the folder holding ``omlx/``; what oMLX's bundled packages define is then skipped)."""
@@ -16,6 +16,8 @@ pytestmark = pytest.mark.skipif(not (RES / "omlx").is_dir(), reason=f"no oMLX at
 SITE = "Python/framework-mlx-base/lib/python*/site-packages/"
 Q4 = "omlx/patches/mlx_vlm_qwen4_exp_compat/vendor/mlx_vlm/models/qwen4_exp/"
 PATCHES = [Path(install.__file__).with_name(f) for f in ("patches.py", "patches_mtp.py")]
+# oMLX 0.8.4 on: DeepSeek V4's and Inkling 2's expert offload share one slot cache, its flag and slots defined there.
+SLOT_CACHE = (RES / "omlx/patches/moe_slot_cache.py").is_file()
 
 # (file under Contents/Resources, class, function, async, the leading parameters the wrapper names,
 #  parameters it passes by keyword)
@@ -129,8 +131,11 @@ READ = [
     # a call takes while tokens * k fits them (lookup_lp's chunks stay on it).
     *((f"omlx/patches/{f}", t) for f, made in (("moe_expert_offload.py", "ExpertCache"),
                                                ("glm_moe_dsa/moe_offload.py", "_SlotCache"),
-                                               ("deepseek_v4/moe_offload.py", "_SlotCache"))
+                                               *([] if SLOT_CACHE else [("deepseek_v4/moe_offload.py", "_SlotCache")]))
       for t in ("moe_offload_cache = True", f"self.cache = {made}(", "self.capacity = ", "n_tok * k <= c.capacity")),
+    *(("omlx/patches/moe_slot_cache.py", t) for t in ("moe_offload_cache = True", "self.capacity = ") if SLOT_CACHE),
+    *((f"omlx/patches/{f}", t) for f in ("deepseek_v4/moe_offload.py", "inkling2/moe_offload.py") if SLOT_CACHE
+      for t in ("self.cache = SlotCache(", "n_tok * k <= c.capacity")),
     ("omlx/patches/moe_expert_offload.py", "self.floor = "),        # top-k unknown: capacity // floor
     ("omlx/engine_pool.py", "executor, release, request_id, shortfall"),  # slots given back on the MLX executor
     # mtp.mtp_decode's flag, on the models metalscope was run on; MTP windows are placed by each row's cache offset,
@@ -176,9 +181,11 @@ READ = [
 ]
 
 # adapters/inkling2.py on oMLX's own Inkling 2 (oMLX 0.8.3 on; checked only where the app has 0.8.3's layout, its
-# cache.py: an older oMLX's Inkling 2 is refused, inkling2.matches).
+# cache.py: an older oMLX's Inkling 2 is refused, inkling2.matches). 0.8.4's (INK084: its fused kernels, fused.py) moves
+# the MoE's input and the router's into ``_post_attn`` and adds LoopCD's visits; INK_083 and INK_084 pin each layout.
 INK = "omlx/patches/inkling2/"
 INKLING = (RES / INK / "cache.py").is_file()
+INK084 = INKLING and (RES / INK / "fused.py").is_file()
 INK_CALLED = [
     (INK + "model.py", "Inkling2Layer", "__call__", False, ["self", "h", "blocks"], ["cache", "bank", "tau"]),  # hooked
     (INK + "model.py", "Inkling2Layer", "_post", False, ["self", "out", "gate", "h", "mlp_blocks"], []),   # run plain
@@ -191,16 +198,24 @@ INK_CALLED = [
     (INK + "model.py", "AttnResQuery", "__call__", False, ["self", "blocks", "partial_n"], []),
     (INK + "model.py", None, "_unit_rms", False, ["x", "eps"], []),
     (INK + "model.py", "Inkling2TextModel", "visit_caches", False, ["self", "cache"], []),
+    # jlens.fit.prefix_cache calls the text model with these by keyword (0.8.4: no defaults).
+    (INK + "model.py", "Inkling2TextModel", "__call__", False, ["self", "inputs", "cache", "input_embeddings", "capture"],
+     ["cache", "input_embeddings", "capture"]),
     (INK + "model.py", "Inkling2Attention", "log_tau", False, ["self", "kv", "length"], []),
     # An edit seeds Inkling 2's parser session token by token (patches._continued).
     ("omlx/adapter/output_parser.py", "InklingOutputParserSession", "process_token", False, ["self", "token_id"], []),
+    # 0.8.4: the second half's first part, run while recording (inkling2._eager_while_recording), the MoE as it calls
+    # it, and LoopCD's visits after the schedule's (inkling2._visits reads _reference_visits).
+    *([(INK + "model.py", "Inkling2Layer", "_post_attn", False, ["self", "out", "gate", "h", "mlp_blocks"], []),
+       (INK + "model.py", "Inkling2MoE", "unreduced", False, ["self", "x", "x32"], []),
+       (INK + "model.py", "Inkling2MoE", "route", False, ["self", "x", "x32"], []),
+       (INK + "model.py", "Inkling2TextModel", "_visit_order", False, ["self"], [])] if INK084 else []),
 ] if INKLING else []
 INK_READ = [
     # The text model (matches, its layer visits, the vocabulary, the lens's norm) and how each visit calls its layer.
     (INK + "model.py", "class Inkling2TextModel(nn.Module)"), (INK + "model.py", "self.model = Inkling2TextModel("),
     (INK + "model.py", "        self.layers = [\n            Inkling2Layer("),
     (INK + "model.py", "        return h\n\n\nclass Inkling2TextModel"),                 # a layer returns its sum, bare
-    (INK + "model.py", "    _omlx_drafter_single_row = True"),                           # window_starts: one row
     (INK + "model.py", "self._schedule = tuple(args.layer_schedule())"),
     (INK + "model.py", "self.embed = nn.Embedding(args.vocab_size"), (INK + "model.py", "self.norm = nn.RMSNorm("),
     # The head's norm reads float32 through a float32 copy of its weight: what readout's norm(h.astype(float32)) gives.
@@ -212,16 +227,13 @@ INK_READ = [
                        "                bank=bank if loop_pass else None,\n"
                        "                tau=None if layer.sliding else tau,\n            )\n"),
     # The MoE: its block, its router's tensors and rule, called on [B, L, H] inside the compiled second half; route
-    # takes the rows flattened, as the rule's logits do. Row-exact verify rows take the router's matmul a row at a time
-    # (_row_matmul, read when the rule's logits are made).
-    (INK + "model.py", "        flat = x.reshape(-1, shape[-1])\n        inds, w = self.route(flat)\n"),
+    # takes the rows flattened, as the rule's logits do (the layouts' own pins below). Row-exact verify rows take the
+    # router's matmul a row at a time (_row_matmul, read when the rule's logits are made).
     (INK + "model.py", "self.mlp = Inkling2MoE("), (INK + "model.py", "self.top_k = args.num_experts_per_tok"),
     (INK + "model.py", "self.route_scale = args.route_scale"), (INK + "model.py", "self.router_weight = mx.zeros("),
     (INK + "model.py", "self.router_bias = mx.zeros("),
-    (INK + "model.py", "logits = _row_matmul(x.astype(mx.float32), self.router_weight.T)"),
     (INK + "model.py", "    if rows > 1 and is_row_exact_armed():\n"), (INK + "model.py", "    return x @ w\n"),
     (INK + "model.py", "logits, self.router_bias, self.top_k, self.route_scale"),
-    (INK + "model.py", "m = self.mlp(_norm(self.mlp_norm, y).astype(h.dtype))"),
     (INK + "model.py", "self._post_compiled = mx.compile("), (INK + "model.py", "self._post_exact = mx.compile("),
     (INK + "model.py", "        if compiled and length > 1 and is_row_exact_armed():\n"
                        "            pre, post = self._pre_exact, self._post_exact\n        elif compiled:\n"
@@ -269,13 +281,8 @@ INK_READ = [
     (INK + "model.py", "self.final_input = AttnResQuery(args.hidden_size, 1)"),
     (INK + "model.py", "self._core_start = args.loop_core.start if args.loop_config else None"),
     (INK + "model.py", "            h = self.embed_norm(self.embed(inputs))\n"),
-    (INK + "model.py", "visits = [None] * self.num_visits if cache is None else self.visit_caches(cache)"),
-    (INK + "model.py", "        blocks: list = []\n        prelude = bank = tau = None\n"),
-    (INK + "model.py", "for visit, ((idx, loop_pass), c) in enumerate(zip(self._schedule, visits)):"),
     (INK + "model.py", "            if not layer.sliding and tau is None:\n"),
     (INK + "model.py", "tau = layer.attn.log_tau(c[0] if c is not None else None, h.shape[1])"),
-    (INK + "model.py", "            if idx == self._core_start and prelude is None:\n                prelude = (h, list(blocks))\n"
-                       "            elif idx == self._core_start:\n"),
     (INK + "model.py", "                    blocks[len(prelude[1]) + 1 :],\n                    _unit_rms(h.astype(mx.float32)),\n"),
     (INK + "model.py", "                h, blocks = prelude[0], list(prelude[1])\n"),
     (INK + "model.py", "x = self.final_input(blocks, _unit_rms(h.astype(mx.float32)))[:, :, 0]"),
@@ -293,7 +300,7 @@ INK_READ = [
     # capped by it (test_mtp_windows_hold_omlxs_longest_verify_window).
     (INK + "model.py", "\n_COMPILED_MAX_TOKENS = 16\n"), (INK + "model.py", "compiled = length <= _COMPILED_MAX_TOKENS"),
     (INK + "model.py", "    _omlx_mtp_max_verify_rows = _COMPILED_MAX_TOKENS\n"),
-    (INK + "model.py", "\nfrom . import kernels\n"), (INK + "kernels.py", "\nimport mlx.core as mx\n"),
+    (INK + "kernels.py", "\nimport mlx.core as mx\n"),
     (INK + "kernels.py", "    if mx.default_device() != mx.gpu:\n        src = mx.stack([*blocks, partial_n], axis=-2)\n"),
     (INK + "kernels.py", "if length < _FLASH_MIN_QUERIES or mx.default_device() != mx.gpu:"),
     (INK + "kernels.py", "if mx.default_device() != mx.gpu or experts % 32:"),
@@ -305,6 +312,65 @@ INK_READ = [
     ("omlx/patches/m5_gather_qmm.py", "    if _nax_host is None:\n"), ("omlx/patches/m5_gather_qmm.py", "    return _nax_host\n"),
     ("omlx/patches/m5_gather_qmm.py", "    mx.gather_qmm = _gather_qmm_rerouted\n"),
 ] if INKLING else []
+INK_083 = [
+    (INK + "model.py", "    _omlx_drafter_single_row = True"),                           # window_starts: one row
+    # The MoE's input: x, called as the block (the router hook), the rule's logits from x in float32.
+    (INK + "model.py", "        flat = x.reshape(-1, shape[-1])\n        inds, w = self.route(flat)\n"),
+    (INK + "model.py", "logits = _row_matmul(x.astype(mx.float32), self.router_weight.T)"),
+    (INK + "model.py", "m = self.mlp(_norm(self.mlp_norm, y).astype(h.dtype))"),
+    # The loop differentiable runs, as the model's.
+    (INK + "model.py", "visits = [None] * self.num_visits if cache is None else self.visit_caches(cache)"),
+    (INK + "model.py", "        blocks: list = []\n        prelude = bank = tau = None\n"),
+    (INK + "model.py", "for visit, ((idx, loop_pass), c) in enumerate(zip(self._schedule, visits)):"),
+    (INK + "model.py", "            if idx == self._core_start and prelude is None:\n                prelude = (h, list(blocks))\n"
+                       "            elif idx == self._core_start:\n"),
+    (INK + "model.py", "\nfrom . import kernels\n"),
+] if INKLING and not INK084 else []
+INK_084 = [
+    # MTP verify on several rows: rows that accept different counts are realigned, each row's offset lowered (the
+    # deferred realignment pinned above), so window_starts places each row's window.
+    (INK + "model.py", "            elif any(extra):\n                kv.prepare(right_padding=extra)\n                kv.finalize()\n"),
+    # The second half calls _post_attn, then the MoE's unreduced on its input and the router's float32 copy (the fused
+    # mix and norm's, else None: route casts x), as _eager_while_recording hands the router hook; the plain mix is
+    # mlp_input's call on the sum's unit-RMS, as it hands _Reads.
+    (INK + "model.py", "        residual, x, x32, s2 = self._post_attn(out, gate, h, mlp_blocks, s2, messages)\n"
+                       "        z, zw = self.mlp.unreduced(x, x32)\n"),
+    (INK + "model.py", "        return residual, x, x32, s2\n"),
+    (INK + "model.py", "            x, x32 = _part(fused[0], 0), _part(fused[1], 0)\n"),
+    (INK + "model.py", "                x, x32 = _norm(self.mlp_norm, y).astype(h.dtype), None\n"),
+    (INK + "model.py", "        flat = x.reshape(-1, shape[-1])\n        if x32 is not None:\n"
+                       "            x32 = x32.reshape(-1, shape[-1])\n        inds, w = self.route(flat, x32)\n"),
+    (INK + "model.py", "        if x32 is None:\n            x32 = x.astype(mx.float32)\n"
+                       "        logits = _row_matmul(x32, self.router_weight.T)\n"),
+    # The loop differentiable runs, as the model's; LoopCD's visits come after the schedule's.
+    (INK + "model.py", "        order = self._visit_order()\n"
+                       "        visits = [None] * len(order) if cache is None else self.visit_caches(cache)\n"),
+    (INK + "model.py", "        blocks: list = []\n        prelude = bank = tau = first_pass = None\n"),
+    (INK + "model.py", "for visit, ((idx, loop_pass), c) in enumerate(zip(order, visits)):"),
+    (INK + "model.py", "            if visit == self.num_visits:\n                out = self._readout(h, blocks)\n"
+                       "                h, blocks = first_pass\n"
+                       "            elif idx == self._core_start and prelude is None:\n                prelude = (h, list(blocks))\n"
+                       "            elif idx == self._core_start:\n"),
+    (INK + "model.py", "        return self._schedule[: self.num_visits] + self._reference_visits\n"),
+    (INK + "model.py", "        self.model._reference_visits = tuple((idx, 0) for idx in coda)\n"),
+    # The modules a fit switches (inkling2._fit_paths), each kernel behind a default-device check, and the NAX banded
+    # attention, which asks none (the fit's stand-in returns None, as unsupported).
+    (INK + "model.py", "\nfrom . import expert_mma, fused, kernels, loopcd, verify_experts\n"),
+    *((INK + f, "\nimport mlx.core as mx\n") for f in ("fused.py", "verify_experts.py", "expert_mma.py")),
+    (INK + "kernels.py", "        mx.default_device() != mx.gpu\n        or threads > 1024\n"),
+    (INK + "kernels.py", "def loop_bf16_supported(hidden: int, rank: int) -> bool:\n    return (\n"
+                         "        mx.default_device() == mx.gpu\n"),
+    (INK + "kernels.py", "    hidden = mixed.shape[-1]\n    return (\n        mx.default_device() == mx.gpu\n"),
+    (INK + "kernels.py", "        and mx.default_device() == mx.gpu\n        and q.shape[-1] % 8 == 0\n"),
+    (INK + "kernels.py", "        mx.default_device() != mx.gpu\n        or head_dim != 128\n"),
+    (INK + "kernels.py", "if mx.default_device() != mx.gpu or experts > _MOE_SUM_MAX_EXPERTS:"),
+    (INK + "kernels.py", "\nfrom ...utils import nax_attention\n"),
+    (INK + "kernels.py", "    out = nax_attention.nax_banded_sink_attention(\n"),
+    (INK + "fused.py", "    return (\n        mx.default_device() == mx.gpu\n        and q.shape[0] == 1\n"),
+    (INK + "verify_experts.py", '    if mx.default_device() != mx.gpu or proj.mode != "nvfp4":\n        return False\n'),
+    (INK + "expert_mma.py", "        dtype != mx.float16\n        or mx.default_device() != mx.gpu\n"),
+] if INK084 else []
+INK_READ += INK_083 + INK_084
 
 
 # Names a patch function takes from an oMLX module that defines them elsewhere.
@@ -347,19 +413,27 @@ def test_omlx_has_what_the_wrappers_read(rel, text):
 
 
 def test_an_omlx_from_0_8_3_has_the_inkling_2_its_pins_are_checked_on():
-    """INK_CALLED and INK_READ are empty without 0.8.3's cache.py: from 0.8.3 on that would be pins dropped unseen."""
+    """INK_CALLED and INK_READ are empty without 0.8.3's cache.py, and hold 0.8.3's layout pins without 0.8.4's
+    fused.py: from those versions on that would be pins dropped unseen."""
     version = RES / "omlx/_version.py"
     if not version.is_file():
         pytest.skip("no omlx/_version.py in this source")
-    assert INKLING or tuple(int(n) for n in version.read_text().split('"')[1].split(".")[:3]) < (0, 8, 3)
+    v = tuple(int(n) for n in version.read_text().split('"')[1].split(".")[:3])
+    assert (INKLING or v < (0, 8, 3)) and (INK084 or v < (0, 8, 4))
 
 
 @pytest.mark.skipif(not INKLING, reason="no Inkling 2 of 0.8.3's layout in this oMLX")
 def test_inklings_metal_kernels_each_have_a_plain_path():
     """A J-lens fit needs gradients, which no Metal kernel has: each of kernels.py's five (the attention-residual mix,
     the flash prefill, the router, the short and the dynamic conv) is behind a default-device check (pinned in
-    INK_READ) that inkling2.differentiable turns to the plain path. A sixth would need its own."""
-    assert source(INK + "kernels.py").count("mx.fast.metal_kernel(") == 5
+    INK_READ) that inkling2._fit_paths turns to the plain path. 0.8.4's eleven add the fused mix and norm, the loop
+    messages', two of flash decode, q/k/v's clips and the MoE sum's conv; fused.py's long attention and the experts'
+    kernels (verify_experts.py, expert_mma.py) are switched the same way, and its NAX banded attention (one call)
+    by a stand-in. verify_attention.py's and row_exact_gemv.py's run only on row-exact verify rows, never in a fit. A
+    new one would need its own."""
+    want = {"kernels.py": 11, "fused.py": 1, "verify_experts.py": 1, "expert_mma.py": 1} if INK084 else {"kernels.py": 5}
+    assert {f: source(INK + f).count("mx.fast.metal_kernel(") for f in want} == want
+    assert source(INK + "kernels.py").count("nax_attention.") == INK084
 
 
 def _constant(rel: str, name: str):

@@ -90,7 +90,7 @@ def test_pack_writes_the_concept_folders_a_manifest_and_a_readme(package, capsys
     assert "## Licences\n\nThis package: mit (LICENSE).\n" in readme and "State this package" not in readme
     assert "good start" not in readme and "default dose" not in readme
     assert "They are references, not defaults: calibrate your own with `metalscope concept calibrate`." in readme
-    assert f'`uv tool install "metalscope[share]"` (PyPI, coming) or `uv tool install "metalscope[share] @ git+{config.REPO_URL}"`' in readme
+    assert '`uv tool install "metalscope[share]"`' in readme
     lic = (package / "LICENSE").read_text()
     assert "Licence: mit." in lic and "https://huggingface.co/deepseek-ai/DeepSeek-V4.1-Flash" in lic
     assert "—" not in readme and "—" not in lic
@@ -242,8 +242,7 @@ def test_a_hugging_face_repo_needs_huggingface_hub(monkeypatch):
             raise ImportError(name)
         return real(name, *a, **kw)
     monkeypatch.setattr(builtins, "__import__", no_hub)
-    with pytest.raises(ValueError, match=r'needs huggingface_hub: `uv tool install "metalscope\[share\]"` \(PyPI, coming\) or '
-                                         r'`uv tool install "metalscope\[share\] @ git\+https://github.com/nanastassacos/metalscope"`'):
+    with pytest.raises(ValueError, match=r'needs huggingface_hub: `uv tool install "metalscope\[share\]"` \(or download'):
         share.fetch("someone/metalscope-v4-concepts")
     with pytest.raises(ValueError, match="neither a folder nor a Hugging Face repo"):
         share.fetch("/no/such/folder")

@@ -179,8 +179,10 @@ def prefix_cache(model, prefix: list[int], b: int, chunk: int = PREFIX_CHUNK):
     times; return the cache and a snapshot to ``restore`` before each pass."""
     inner = text_model(model)
     cache = _make_cache(model)
+    # Inkling 2's text model takes its embeddings and draft captures with no default (oMLX 0.8.4 on).
+    extra = dict(input_embeddings=None, capture={}) if adapters.find_adapter(model).NAME == "inkling2" else {}
     for a in range(0, len(prefix), chunk):  # bounded attention temporaries
-        inner(mx.array([prefix[a:a + chunk]] * b), cache=cache)
+        inner(mx.array([prefix[a:a + chunk]] * b), cache=cache, **extra)
         mx.eval(_arrays([c.state for c in cache]))
     snap = [_fresh(c.state) for c in cache]
     mx.eval(_arrays(snap))

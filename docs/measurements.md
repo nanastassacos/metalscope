@@ -52,12 +52,13 @@ last always: small 4, medium a third of the depth (at most 16, the default), lar
 | Qwen3.5 2B, oMLX | 287 | 262 | 209 | 223 | 215 |
 | Qwen3.6 35B, oMLX | 207 | 191 | 154 | 158 | 144 |
 | Qwen3.8 27B (MTP), oMLX | 56 | 56 | 54 | 51 | 47 |
-| Flash Next, oMLX | 45 | 41 | 30 | 20 | 16 |
-| Inkling 2 Mini (MTP), oMLX | 71 | 64 | 40 | 25 | 21 |
+| Flash Next, oMLX | 48 | 43 | 31 | 22 | 13 |
+| Inkling 2 Mini (MTP), oMLX | 100 | 92 | 57 | 32 | 24 |
 | Flash Next, ds4 | 69 | 64 | 52 | 40 | 34 |
 | DeepSeek V4.1 Flash, ds4 | 16 | 16 | 15 | 15 | 15 |
 
-Measured 2026-11-26 on oMLX 0.8.3 and ds4 5379c1c. Tracing off measured again at the end of each run was within 8%
+Measured 2026-11-26 on ds4 5379c1c and oMLX 0.8.3, Flash Next and Inkling 2 Mini on oMLX again on 0.8.4 (Inkling
+from 71 to 100 untraced). Tracing off measured again at the end of each run was within 8%
 of the first, except Flash Next on ds4 (50 after 69: the Mac slowing under load, below). Inkling 2 Mini has a Jacobian
 lens fitted on it (none ships), which reads each visit's whole state. On the 2B and the 35B small writes slower than
 medium, the same in earlier runs: not explained. These are speeds from rest: under

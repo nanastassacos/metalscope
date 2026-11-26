@@ -23,8 +23,8 @@ RESIDUAL STREAM where a layer changed the model's state far more than usual.
 - [uv](https://docs.astral.sh/uv/) to install metalscope (`brew install uv`).
 - Python 3.11 or newer (`uv tool install` fetches one; macOS's own `python3` is older).
 - A server for the model, one of:
-  - [oMLX](https://github.com/jundot/omlx) 0.8.0, 0.8.2 or 0.8.3 (the versions metalscope is tested with: on another,
-    oMLX runs untraced; Inkling 2 needs 0.8.3). Open oMLX.app once and set an **API key** on its admin page, http://127.0.0.1:8008/admin.
+  - [oMLX](https://github.com/jundot/omlx) 0.8.0, 0.8.2, 0.8.3 or 0.8.4 (the versions metalscope is tested with: on
+    another, oMLX runs untraced; Inkling 2 needs 0.8.3 or newer). Open oMLX.app once and set an **API key** on its admin page, http://127.0.0.1:8008/admin.
     It serves MLX models, Qwen3.6 among them.
   - [ds4](https://github.com/antirez/ds4) at commit 5379c1c, for Qwen3.8 Flash Next and DeepSeek V4.1 Flash from
     GGUF files. `metalscope ds4 install` fetches that commit and builds it with metalscope's patch (it needs Xcode's
@@ -70,7 +70,7 @@ In oMLX's admin page, download `lmstudio-community/Qwen3.6-35B-A3B-MLX-4bit`; oM
 `Qwen3.6-35B-A3B-MLX-4bit`. Then install metalscope and hook it into oMLX:
 
 ```bash
-uv tool install git+https://github.com/nanastassacos/metalscope
+uv tool install metalscope
 metalscope omlx install           # the hook oMLX loads when it starts
 metalscope omlx restart
 metalscope doctor                 # checks every piece

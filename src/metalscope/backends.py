@@ -38,7 +38,7 @@ DEFAULT_CTX = 32768                                                   # ds4-serv
 DS4_SERVER_PORT = 8010                                                # ds4-server behind the proxy (ds4 serve --ds4-port)
 DS4_EXTRA = ("fastapi", "uvicorn", "httpx", "tokenizers")             # what `ds4 serve` imports from the [ds4] extra
 DS4_LOADING = "ds4 loading"                                           # the GPU lock's holder while ds4 loads (free_for_ds4)
-DS4_EXTRA_INSTALL = f'uv tool install --reinstall "metalscope[ds4] @ git+{config.REPO_URL}"'
+DS4_EXTRA_INSTALL = 'uv tool install --reinstall "metalscope[ds4]"'
 
 
 def _ds4_home() -> Path:

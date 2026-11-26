@@ -9,7 +9,13 @@ a ``language_model`` that is not a module, served through a wrapper like oMLX's 
 by ``visit_caches``: a sliding visit one entry (its key window, then its conv states), a full-attention visit a KVCache
 and its conv states; the full-attention visits share one ``tau`` from the first one's cache offset; each visit reads its
 own cache (a causal sum over the positions so far, a short conv). Like model.py, this module has the ``_unit_rms``,
-``kernels`` and ``_COMPILED_MAX_TOKENS`` a fit swaps, and the row-exact flag (``is_row_exact_armed``)."""
+``kernels`` (and 0.8.4's other modules with kernels) and ``_COMPILED_MAX_TOKENS`` a fit swaps, and the row-exact flag
+(``is_row_exact_armed``).
+
+The ``served`` fixture runs each test on 0.8.3's layout and on 0.8.4's (``LAYOUT``): its second half calls
+``_post_attn``, whose MLP mix is a fused kernel's (no call of ``mlp_input``), then the MoE's ``unreduced`` on its input
+and the float32 copy the router reads (``x32``, the input cast, as oMLX's kernel writes it); its text model takes its embeddings and captures
+with no default and runs LoopCD's visits after the schedule when ``_reference_visits`` names them."""
 
 import sys
 import weakref
@@ -41,7 +47,9 @@ CONFIG = dict(model_type="inkling2_loop", text_config=dict(
     hidden_size=D, num_hidden_layers=N_LAYERS, n_layers_per_attn_res_block=BLOCK,
     loop_config=dict(core_start=CORE[0], core_end=CORE[1], num_passes=PASSES)))
 _COMPILED_MAX_TOKENS = 16
-kernels = NS(mx=mx)                        # what oMLX's kernels.py calls mlx.core
+kernels = NS(mx=mx, nax_attention=NS())   # what oMLX's kernels.py calls mlx.core, and 0.8.4's NAX attention
+fused, verify_experts, expert_mma = NS(mx=mx), NS(mx=mx), NS(mx=mx)   # 0.8.4's other modules with kernels
+LAYOUT = ["0.8.3"]
 SHORT = mx.array([[3, 17, 5, 42, 9]])                                    # <= 16 tokens: the compiled second half
 LONG = mx.array([[(7 * i + 3) % V for i in range(20)]])                  # > 16: plain
 RECORD = [False]
@@ -91,15 +99,18 @@ class Inkling2MoE(nn.Module):
         self.router_bias = 0.3 * mx.random.normal((E,))
         self.out = nn.Linear(E, D, bias=False)
 
-    def route(self, x):                         # _row_matmul, then kernels.route_topk's plain path
-        scores = mx.sigmoid(_row_matmul(x.astype(mx.float32), self.router_weight.T))
+    def route(self, x, x32=None):               # _row_matmul, then kernels.route_topk's plain path
+        scores = mx.sigmoid(_row_matmul(x.astype(mx.float32) if x32 is None else x32, self.router_weight.T))
         inds = mx.argpartition(-(scores + self.router_bias), kth=self.top_k - 1, axis=-1)[..., :self.top_k]
         w = mx.take_along_axis(scores, inds, axis=-1)
         return inds, w / (mx.sum(w, axis=-1, keepdims=True) + 1e-20) * self.route_scale
 
     def __call__(self, x):                      # float32 out: the caller rounds it, as oMLX's
+        return self.unreduced(x)
+
+    def unreduced(self, x, x32=None):           # 0.8.4's layer calls this, not the block
         flat = x.reshape(-1, x.shape[-1])
-        inds, w = self.route(flat)
+        inds, w = self.route(flat, None if x32 is None else x32.reshape(-1, x.shape[-1]))
         if RECORD[0]:
             ROUTED.append((inds, w))
         mixed = mx.put_along_axis(mx.zeros((flat.shape[0], E)), inds, w, axis=-1)
@@ -153,9 +164,9 @@ class Inkling2Layer(nn.Module):
         self.mlp_input = AttnResQuery()
         self.mlp_norm = nn.RMSNorm(D)
         self.mlp = Inkling2MoE()
-        layer = weakref.proxy(self)
-        self._post_compiled = mx.compile(lambda *a: Inkling2Layer._post(layer, *a))
-        self._post_exact = mx.compile(lambda *a: Inkling2Layer._post(layer, *a))
+        layer, cls = weakref.proxy(self), type(self)
+        self._post_compiled = mx.compile(lambda *a: cls._post(layer, *a))
+        self._post_exact = mx.compile(lambda *a: cls._post(layer, *a))
 
     def _post(self, out, gate, h, mlp_blocks):
         residual = out if self.is_boundary else h + out
@@ -188,6 +199,22 @@ class Inkling2Layer(nn.Module):
         return post(out, mx.array(0.5), h, blocks)
 
 
+class Inkling2Layer084(Inkling2Layer):
+    """0.8.4's second half: ``_post_attn`` mixes and norms the MoE's input as a fused kernel does (the mix's arithmetic,
+    no call of ``mlp_input``) and returns it in the activations' dtype with its float32 copy (that value, cast: oMLX's
+    kernel writes ``float(o)`` of its output, ``out_dtype=h.dtype``), which the router reads."""
+
+    def _post_attn(self, out, gate, h, mlp_blocks):
+        residual = out if self.is_boundary else h + out
+        y = AttnResQuery.__call__(self.mlp_input, mlp_blocks, _unit_rms(residual))[:, :, 0]
+        x = self.mlp_norm(y).astype(h.dtype)
+        return residual, x, x.astype(mx.float32), None
+
+    def _post(self, out, gate, h, mlp_blocks):
+        residual, x, x32, _ = self._post_attn(out, gate, h, mlp_blocks)
+        return (residual + gate * self.mlp.unreduced(x, x32)).astype(h.dtype)
+
+
 class Inkling2TextModel(nn.Module):
     def __init__(self):
         super().__init__()
@@ -195,11 +222,13 @@ class Inkling2TextModel(nn.Module):
                        loop_config=CONFIG["text_config"]["loop_config"])     # TextArgs' fields read here
         self.embed = nn.Embedding(V, D)
         self.embed_norm = nn.RMSNorm(D)
-        self.layers = [Inkling2Layer(i) for i in range(N_LAYERS)]
+        self.layers = [(Inkling2Layer084 if LAYOUT[0] == "0.8.4" else Inkling2Layer)(i) for i in range(N_LAYERS)]
         self.final_input = AttnResQuery()
         self.norm = nn.RMSNorm(D)
         self._schedule = SCHEDULE
         self._core_start = CORE[0]
+        if LAYOUT[0] == "0.8.4":
+            self._reference_visits = ()                     # LoopCD's (off)
 
     def cache_layout(self):
         layout, entry = [], 0
@@ -215,15 +244,19 @@ class Inkling2TextModel(nn.Module):
                              f"got {len(cache)}")
         return [(None if kv is None else cache[kv], cache[state]) for kv, state in layout]
 
-    def __call__(self, inputs, cache=None, fail_at=None, grab=None):
+    def __call__(self, inputs, cache=None, input_embeddings=None, capture=None, fail_at=None, grab=None):
+        if LAYOUT[0] == "0.8.4" and (input_embeddings, capture) == (None, None):
+            raise TypeError("0.8.4's text model takes input_embeddings and capture with no default")
         h = self.embed_norm(self.embed(inputs))
         visits = [None] * len(self._schedule) if cache is None else self.visit_caches(cache)
-        blocks, prelude, bank, tau = [], None, None, None
+        blocks, prelude, bank, tau, first_pass = [], None, None, None, None
         for visit, ((idx, loop_pass), c) in enumerate(zip(self._schedule, visits)):
             layer = self.layers[idx]
             if idx == self._core_start and prelude is None:
                 prelude = (h, list(blocks))
             elif idx == self._core_start:
+                if loop_pass == 1:
+                    first_pass = (h, blocks)
                 bank = (blocks[len(prelude[1]) + 1:], _unit_rms(h.astype(mx.float32)))
                 h, blocks = prelude[0], list(prelude[1])
             if visit == fail_at:
@@ -234,6 +267,15 @@ class Inkling2TextModel(nn.Module):
             h = layer(h, blocks, cache=c, bank=live, tau=None if layer.sliding else tau)
             if grab is not None:
                 grab.append((list(blocks), h, live))
+        out = self.readout(h, blocks)
+        if getattr(self, "_reference_visits", ()):           # LoopCD: the layers past the loop again, from pass 0's
+            h, blocks = first_pass
+            for idx, _ in self._reference_visits:
+                h = self.layers[idx](h, blocks)
+            out = out + 0.5 * (out - self.readout(h, blocks))
+        return out
+
+    def readout(self, h, blocks):
         x = self.final_input(blocks, _unit_rms(h.astype(mx.float32)))[:, :, 0]
         return self.norm(x).astype(h.dtype)
 
@@ -261,7 +303,7 @@ class Model(nn.Module):
         return mx.tanh(logits / 30.0) * 30.0 + mx.where(mx.arange(V) < V - 4, 0.0, -mx.inf)
 
     def __call__(self, inputs, cache=None, **kw):
-        return self.logits_from_hidden(self.model(inputs, cache, **kw))
+        return self.logits_from_hidden(self.model(inputs, cache, None, {}, **kw))
 
     def make_cache(self):                # a sliding visit's state, a full-attention visit's KVCache and conv states
         cache = []
@@ -282,14 +324,21 @@ class Served(nn.Module):                 # oMLX's VLMModelAdapter: what the engi
         return self._vlm_model.make_cache()
 
 
-@pytest.fixture
-def served():
+def own(tm, ids, cache=None, **kw):
+    """The text model's own call, as oMLX's model calls it (0.8.4: no defaults)."""
+    return tm(ids, cache, None, {}, **kw)
+
+
+@pytest.fixture(params=["0.8.3", "0.8.4"])
+def served(request):
+    LAYOUT[0] = request.param
     mx.random.seed(0)
     s = Served(Model())
     mx.eval(s._vlm_model.parameters())      # a private attribute: not in s.parameters(); a route's thread reads them
     yield s
     ROUTED.clear()
     RECORD[0] = ROW_EXACT[0] = False
+    LAYOUT[0] = "0.8.3"
 
 
 def run(session, served, ids, **kw):
@@ -630,31 +679,35 @@ def test_the_fit_forward_switches_the_kernels_only_while_it_runs(served, monkeyp
     me, tm = sys.modules[__name__], served._vlm_model.model
     lookup = NS(_nax_host=None)
     monkeypatch.setitem(sys.modules, "omlx.patches.m5_gather_qmm", lookup)
-    real = (me._unit_rms, me.kernels.mx, me._COMPILED_MAX_TOKENS)
-    served_now = lambda: (me._unit_rms, me.kernels.mx, me._COMPILED_MAX_TOKENS) == real and lookup._nax_host is None
+    now = lambda: (me._unit_rms, me.kernels.mx, me._COMPILED_MAX_TOKENS, me.kernels.nax_attention,  # noqa: E731
+                   *(getattr(me, m).mx for m in ("fused", "verify_experts", "expert_mma")))
+    real = now()
+    served_now = lambda: now() == real and lookup._nax_host is None  # noqa: E731
     seen = []
     # The kernels' device is asked only of the fit's stand-in for mlx.core (as served it is the machine's: the GPU, or
-    # the CPU where a test run has no Metal).
+    # the CPU where a test run has no Metal); 0.8.4's other kernel modules and NAX attention switched with them.
     remove = add_hook(tm.layers[3], lambda *_: seen.append((
         me.kernels.mx is mx, None if me.kernels.mx is mx else me.kernels.mx.default_device() == mx.cpu,
-        me._COMPILED_MAX_TOKENS, me._unit_rms is real[0], lookup._nax_host)))
+        me._COMPILED_MAX_TOKENS, me._unit_rms is real[0], lookup._nax_host,
+        all(isinstance(getattr(me, m).mx, inkling2._PlainMx) for m in ("fused", "verify_experts", "expert_mma")),
+        None if me.kernels.mx is mx else me.kernels.nax_attention.nax_banded_sink_attention(1, k=2))))
     try:
         with inkling2.differentiable(served) as (probes, forward):
             assert served_now()                                      # entering switches nothing
             x = forward(LONG)
-            assert seen == [(False, True, 0, False, False)] * 3      # layer 3's three visits, each switched
+            assert seen == [(False, True, 0, False, False, True, None)] * 3      # layer 3's three visits, each switched
             assert served_now()
             assert probes.shapes == {v: (n * D, mx.float32) for v, n in enumerate(SOURCES)}
             seen.clear()
             with pytest.raises(ValueError, match="cache entries"):
                 forward(LONG, cache=[])                              # raises reading its visits' caches
             assert served_now()
-            tm(LONG)                                                 # the model's own call between passes: as served
-            assert seen == [(True, None, 16, True, None)] * 3
+            own(tm, LONG)                                            # the model's own call between passes: as served
+            assert seen == [(True, None, 16, True, None, False, None)] * 3
     finally:
         remove()
     # The model's own values to the bit (a frozen unit-RMS's value is the real one's; LONG runs the halves plain).
-    np.testing.assert_array_equal(np.array(tm.norm(x)), np.array(tm(LONG)))
+    np.testing.assert_array_equal(np.array(tm.norm(x)), np.array(own(tm, LONG)))
 
 
 class Tok:
@@ -700,7 +753,7 @@ def reference_jacobian(tm, ids, v, skip):
     position (so the sum over the later ones), the mean over valid source positions; the first block's is left out,
     as the state leaves it. [D, n * D]."""
     grab = []
-    tm(mx.array([ids]), grab=grab)
+    own(tm, mx.array([ids]), grab=grab)
     blocks, h, bank = grab[v]
     src = [*blocks, h] + ([*bank[0], bank[1]] if bank is not None else [])
     T = len(ids)
@@ -841,12 +894,11 @@ def test_a_fit_forward_after_a_prefix_is_the_models_own(served, monkeypatch):
     entry, a full-attention visit two) and the full-attention visits' one ``tau`` at the cache's offset: the model's
     own values to the bit, its halves plain as the fit's; without the prefix's cache it reads another sequence."""
     me, tm, prefix, ids = sys.modules[__name__], served._vlm_model.model, LONG[:, :12], LONG[:, 12:]
-    own, cache = served.make_cache(), served.make_cache()
-    tm(prefix, cache=own)
-    tm(prefix, cache=cache)
-    with monkeypatch.context() as m:
-        m.setattr(me, "_COMPILED_MAX_TOKENS", 0)
-        want = np.array(tm(ids, cache=own))
+    mine, cache = served.make_cache(), served.make_cache()
+    own(tm, prefix, mine)
+    own(tm, prefix, cache)
+    with inkling2._fit_paths(me):
+        want = np.array(own(tm, ids, mine))
     with inkling2.differentiable(served) as (_, forward):
         np.testing.assert_array_equal(np.array(tm.norm(forward(ids, cache))), want)
         assert not np.allclose(np.array(tm.norm(forward(ids))), want, atol=1e-2)
@@ -1009,3 +1061,51 @@ def test_inkling_writes_and_reads_reach_the_trace_and_the_live_stream_under_mtp(
     others = [e for e in drain(loop, plain) if e["type"] == "token"]
     assert [e["id"] for e in others] == outputs
     assert not any(k in e for e in others for k in ("writes", "write_k", "shares", "reads", "read_k"))
+
+
+def test_loopcds_calls_are_counted_and_neither_recorded_nor_steered(served):
+    """oMLX 0.8.4's LoopCD runs the layers past the loop again after the schedule, from the first pass's output, for the
+    logits' contrast: those calls are counted (the next forward's visits stay in step) and named no visit. Each visit is
+    recorded once, as without LoopCD, and a steer at a visit past the loop lands on that visit's call alone."""
+    from metalscope import steer
+    from metalscope.hooks import add_hook
+    if LAYOUT[0] != "0.8.4":
+        pytest.skip("LoopCD is 0.8.4's")
+    tm = served._vlm_model.model
+    want = visits_state(served, LONG)                                   # LoopCD off
+    tm._reference_visits = tuple((i, 0) for i in range(CORE[1], N_LAYERS))
+    counter = adapters.visit_counter(served)
+    calls = [i for i, _ in SCHEDULE + tm._reference_visits]
+    assert [counter(i) for i in calls * 2] == (list(range(VISITS)) + [None, None]) * 2
+    session = CaptureSession(CaptureConfig(router=True, logits_topk=3))
+    adapters.install(session, served)
+    assert session.n_layers == VISITS
+    for _ in range(2):                                                  # the count starts again
+        recs, seen = run(session, served, LONG)
+        for kind in ("resid_norm", "router_ids", "resid_read_share"):
+            assert {l: seen[(kind, l)] for l in range(VISITS)} == {l: 1 for l in range(VISITS)}, kind
+        assert max(l for _, l in seen) == VISITS - 1
+        for v, (mix, _) in enumerate(want):
+            np.testing.assert_allclose(recs[("resid_norm", v)], np.linalg.norm(np.array(mix), axis=-1), rtol=1e-4)
+    session.close()
+    q = vectors_unit(D)
+    outs = {}
+    for name, plan in (("plain", None), ("steered", steer.SteerPlan({VISITS - 1: 3 * q}, "all", {}))):
+        s = steer.SteerSession(lambda rid, why: pytest.fail(why))
+        s.install(served)
+        if plan is not None:
+            s.set_rows([(0, "r", plan)], 1, "decode")
+        got = []
+        remove = add_hook(tm.layers[N_LAYERS - 1], lambda _m, _a, _k, out: got.append(np.array(out)))
+        served(LONG)
+        remove()
+        s.close()
+        outs[name] = got
+    assert len(outs["plain"]) == 2                                      # its visit, then LoopCD's call
+    np.testing.assert_allclose(outs["steered"][0], outs["plain"][0] + 3 * q, rtol=1e-5, atol=1e-5)
+    np.testing.assert_allclose(outs["steered"][1], outs["plain"][1], rtol=1e-6, atol=1e-6)
+
+
+def vectors_unit(n):
+    q = np.array(mx.random.normal((n,), key=mx.random.key(11)))
+    return q / np.linalg.norm(q)

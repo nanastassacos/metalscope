@@ -835,7 +835,7 @@ def test_ds4_without_its_extra_is_refused_in_one_line_before_anything_is_stopped
     monkeypatch.setattr(B, "ds4_serving", lambda: dict(pid=1, name="Other-ds4", ctx=4096, ready=True))
     real = importlib.util.find_spec
     monkeypatch.setattr(importlib.util, "find_spec", lambda name, *a: None if name in ("fastapi", "uvicorn") else real(name, *a))
-    want = r'^ds4 needs metalscope\'s \[ds4\] extra \(missing fastapi, uvicorn\): uv tool install --reinstall "metalscope\[ds4\] @ '
+    want = r'^ds4 needs metalscope\'s \[ds4\] extra \(missing fastapi, uvicorn\): uv tool install --reinstall "metalscope\[ds4\]"$'
     with pytest.raises(SystemExit, match=want):
         B.ds4_start("Q-ds4", wait=False, log=lambda s: None)
     with pytest.raises(SystemExit, match=want):

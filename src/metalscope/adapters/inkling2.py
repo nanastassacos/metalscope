@@ -1,7 +1,7 @@
 """Adapter for Inkling 2 (``inkling2``, looped ``inkling2_loop``) as oMLX >= 0.8.3 vendors it (omlx/patches/inkling2;
 an older oMLX's is refused: ``matches``). docs/measurements.md has what was measured with it.
 
-Three things differ from a conventional decoder:
+What differs from a conventional decoder:
 
 * Layer visits: a looped checkpoint runs its core layers several times a token (the text model's ``_schedule``; 48
   visits of 24 layers on Inkling 2 Mini), each later pass restarting from the prelude's output. The layer axis a
@@ -17,7 +17,9 @@ Three things differ from a conventional decoder:
 * Decode and verify steps (up to 16 tokens) run a layer's second half, the MoE included, as one ``mx.compile``d call
   (row-exact MTP verify rows: a compiled call of their own, ``_post_exact``), inside which a hook runs only while the
   call is traced. While a session records, that half runs uncompiled (``_eager_while_recording``), so the router hook
-  sees each call.
+  sees each call (oMLX 0.8.4: the half's ``_post_attn`` runs the hooks, the MoE and its input's mix being fused).
+* LoopCD (oMLX 0.8.4, off by default): after the schedule the layers past the loop run again from the first pass's
+  output, for the logits' contrast. Those calls are counted and named no visit (``_Visits``): not recorded, not steered.
 
 A J-lens fit runs the model's loop itself (``differentiable``): a visit's cache is ``visit_caches``'s (a sliding visit
 one entry, a full-attention visit two), and the full-attention visits share one ``tau``.
@@ -62,7 +64,7 @@ import sys
 import weakref
 from contextlib import contextmanager
 from types import SimpleNamespace
-from typing import Callable
+from typing import Callable, Optional
 
 import mlx.core as mx
 import mlx.nn as nn
@@ -70,6 +72,7 @@ import numpy as np
 
 from .. import routing
 from ..capture import BATCH_MAX_TOKENS, CaptureSession
+from ..hooks import run_hooks
 from . import generic
 
 NAME = "inkling2"
@@ -167,10 +170,10 @@ def steer_layers(model: nn.Module) -> list[int]:
     return ([0] if inner._core_start else []) + [last_pass]
 
 
-def visit_counter(model: nn.Module) -> Callable[[int], int]:
-    """A steer session's layer hooks: a layer call -> its visit. A ``_Visits`` of its own: it sees every layer call
-    as the capture's does, so the two stay in step."""
-    return _Visits(generic.text_model(model)._schedule).done
+def visit_counter(model: nn.Module) -> Callable[[int], Optional[int]]:
+    """A steer session's layer hooks: a layer call -> its visit (None: LoopCD's). A ``_Visits`` of its own: it sees
+    every layer call as the capture's does, so the two stay in step."""
+    return _visits(generic.text_model(model)).done
 
 
 def _module(inner: nn.Module):
@@ -213,36 +216,64 @@ class _Visits:
     """Which visit of ``schedule`` (``(layer, pass)`` in order) a layer call is: the next visit when that is this
     layer's, else this layer's first. A forward begins at layer 0, whose only visit is the first (or, on a model
     with no loop, at a layer whose only visit is its own), so a count left part-way by a forward that raised is put
-    right at the next forward's first call."""
+    right at the next forward's first call. ``reference``: LoopCD's calls after the schedule, counted and named None."""
 
-    def __init__(self, schedule):
-        self.layers = [int(i) for i, _ in schedule]
+    def __init__(self, schedule, reference=()):
+        self.n = len(schedule)
+        self.layers = [int(i) for i, _ in (*schedule, *reference)]
         self.first: dict[int, int] = {}
         for v, i in enumerate(self.layers):
             self.first.setdefault(i, v)
         self.next = 0
 
-    def current(self, layer: int) -> int:
-        """The visit of the call of ``layer`` under way (hooks inside the layer ask this)."""
+    def _at(self, layer: int) -> int:
         n = self.next
         return n if self.layers[n] == layer else self.first[layer]
 
-    def done(self, layer: int) -> int:
-        """A call of ``layer`` returned: its visit. The next call is expected at the visit after it."""
-        v = self.current(layer)
+    def current(self, layer: int) -> Optional[int]:
+        """The visit of the call of ``layer`` under way (hooks inside the layer ask this)."""
+        v = self._at(layer)
+        return v if v < self.n else None
+
+    def done(self, layer: int) -> Optional[int]:
+        """A call of ``layer`` returned: its visit. The next call is expected at the call after it."""
+        v = self._at(layer)
         self.next = (v + 1) % len(self.layers)
-        return v
+        return v if v < self.n else None
+
+
+def _visits(inner: nn.Module) -> _Visits:
+    """The text model's visits, LoopCD's after them (oMLX 0.8.4's ``_reference_visits``; none when it is off)."""
+    return _Visits(inner._schedule, getattr(inner, "_reference_visits", ()))
 
 
 def _eager_while_recording(session: CaptureSession, layer: nn.Module) -> None:
     """``layer``'s compiled second halves (``_post_compiled``, and ``_post_exact`` on row-exact verify rows) run as plain
     ``_post`` while ``session`` records, so the MoE hook inside runs on every call (``_post`` reads the row-exact flag
-    as it runs: the same arithmetic); untraced forwards keep the compiled ones. Put back when the session closes."""
+    as it runs: the same arithmetic); untraced forwards keep the compiled ones. Put back when the session closes.
+
+    oMLX 0.8.4's half calls neither the MoE block nor ``mlp_input`` (a fused kernel mixes and norms the MoE's input) but
+    ``_post_attn``, which returns the sum the mix read and the MoE's input, with the float32 copy the router reads when
+    the kernel gave one (the rounded input's, cast: the kernel only saves the cast). While recording, ``_post_attn``
+    runs both modules' hooks on those, as their calls would."""
     plain = weakref.proxy(layer)                                               # a proxy: the layer does not hold itself
     for name in ("_post_compiled", "_post_exact"):
         compiled = layer.__dict__[name]
         setattr(layer, name, lambda *a, c=compiled: plain._post(*a) if session.active else c(*a))
         session.on_close(lambda name=name, c=compiled: setattr(layer, name, c))
+    cls = routing._cls(layer)
+    if not hasattr(cls, "_post_attn"):
+        return
+    mlp, mix, mod = layer["mlp"], layer["mlp_input"], sys.modules[cls.__module__]
+
+    def post_attn(out, gate, h, mlp_blocks, *a):
+        got = residual, x, x32, _ = cls._post_attn(plain, out, gate, h, mlp_blocks, *a)
+        if session.active:
+            run_hooks(mix, (mlp_blocks, mod._unit_rms(residual)), {}, None)
+            run_hooks(mlp, (x if x32 is None else x32,), {}, None)
+        return got
+    object.__setattr__(layer, "_post_attn", post_attn)
+    session.on_close(lambda: layer.__dict__.pop("_post_attn", None))
 
 
 class _Reads:
@@ -268,9 +299,9 @@ class _Reads:
         self.C = max(self.qa) + 1           # the attention's queries, then the MLP's in the last column
         self.tables: dict = {}
 
-    def mlp_hook(self, visit: Callable[[], int]):
+    def mlp_hook(self, visit: Callable[[], Optional[int]]):
         def on_mlp_input(_m, args, _k, _out):
-            if self.session.active and self.session.wants_layer(v := visit()):
+            if self.session.active and (v := visit()) is not None and self.session.wants_layer(v):
                 self.session.carry.setdefault("mlp_read", {})[v] = args[1]
         return on_mlp_input
 
@@ -336,8 +367,8 @@ class _Reads:
 def install(session: CaptureSession, model: nn.Module) -> None:
     cfg = session.config
     inner = generic.text_model(model)
-    visits = _Visits(inner._schedule)
-    session.n_layers = len(visits.layers)
+    visits = _visits(inner)
+    session.n_layers = visits.n
     session.readout = readout(model)
     reads = _Reads(session, inner) if cfg.router else None      # needs the second half uncompiled (_Reads)
 
@@ -347,7 +378,7 @@ def install(session: CaptureSession, model: nn.Module) -> None:
     for i, layer in enumerate(inner.layers):
         def on_layer(_m, args, kwargs, out, i=i, boundary=bool(layer.is_boundary)):
             v = visits.done(i)
-            if session.active and session.wants_layer(v):
+            if v is not None and session.active and session.wants_layer(v):
                 session.record_residual(v, *state(inner, args[1], out, kwargs.get("bank"), session.select))
                 session.record_steered(v, session.select(out))
                 session.record_write(v, session.select(out), None if boundary else session.select(args[0]))
@@ -364,7 +395,7 @@ def install(session: CaptureSession, model: nn.Module) -> None:
         # The model's rule (routing.py), its blocks by visit; each MoE call recorded at its layer's visit under way.
         blocks = [layer["mlp"] for layer in inner.layers]
         rule = session.routing = routing.rule_for(blocks[0])
-        rule.blocks = {v: blocks[i] for v, i in enumerate(visits.layers)}
+        rule.blocks = {v: blocks[i] for v, i in enumerate(visits.layers[:visits.n])}
         for i, block in enumerate(blocks):
             session.hook(block, generic.router_hook(session, lambda i=i: visits.current(i)))
         for layer in inner.layers:
@@ -375,14 +406,42 @@ def install(session: CaptureSession, model: nn.Module) -> None:
 
 
 class _PlainMx:
-    """``mlx.core`` as oMLX's kernels.py sees it during a fit: a default device that is not the GPU, so each of its
-    Metal kernels (no gradients) takes its own plain-MLX path. Everything else is mlx.core's."""
+    """``mlx.core`` as oMLX's kernels.py (and its other modules with kernels) sees it during a fit: a default device that
+    is not the GPU, so each of its Metal kernels (no gradients) takes its own plain-MLX path. Everything else is
+    mlx.core's."""
 
     def __getattr__(self, name):
         return getattr(mx, name)
 
     def default_device(self):
         return mx.cpu
+
+
+# model.py's modules with Metal kernels a fit reaches, each kernel behind a default-device check: kernels.py, and from
+# oMLX 0.8.4 the long attention's and the experts'.
+_KERNEL_MODULES = ("kernels", "fused", "verify_experts", "expert_mma")
+
+
+@contextmanager
+def _fit_paths(mod, unit_rms=None):
+    """oMLX's Inkling 2 (``mod``: its model.py) on the paths a fit takes, inside the block: each Metal kernel's plain-MLX
+    one (no kernel has gradients: its module sees ``_PlainMx``; oMLX 0.8.4's NAX banded attention, which asks no
+    device, off), the layers' halves uncompiled, the experts looked up by MLX's own ``gather_qmm`` (a copy oMLX's engine
+    loaded has it rerouted to a Metal kernel) and, given, ``unit_rms`` as the model's."""
+    lookup = sys.modules.get("omlx.patches.m5_gather_qmm")       # its reroute asks _nax_host (None: not asked yet)
+    swaps = [(getattr(mod, m), "mx", _PlainMx()) for m in _KERNEL_MODULES if hasattr(mod, m)]
+    swaps += [(mod, "_COMPILED_MAX_TOKENS", 0)] + ([(mod, "_unit_rms", unit_rms)] if unit_rms else [])
+    swaps += [(lookup, "_nax_host", False)] if lookup is not None else []
+    if hasattr(mod.kernels, "nax_attention"):
+        swaps.append((mod.kernels, "nax_attention", SimpleNamespace(nax_banded_sink_attention=lambda *_a, **_k: None)))
+    was = [(obj, name, getattr(obj, name, None)) for obj, name, _ in swaps]
+    for obj, name, value in swaps:
+        setattr(obj, name, value)
+    try:
+        yield
+    finally:
+        for obj, name, value in was:
+            setattr(obj, name, value)
 
 
 @contextmanager
@@ -392,17 +451,14 @@ def differentiable(model: nn.Module):
     each forward) and ``forward(ids, cache=None)``, the model's own loop that returns what the final norm reads.
 
     A probe stays in the state for everything that reads it later: blocks are carried across the loop's restarts, the
-    bank through its pass. Gradients need the kernels' plain paths (``_PlainMx``), the layers' uncompiled halves, the
-    experts looked up by MLX's own ``gather_qmm`` (a copy oMLX's engine loaded has it rerouted to a Metal kernel:
-    "[Primitive::vjp] Not implemented for CustomKernel"), and the sums' unit-RMS with its scale held fixed (else
-    d unit_rms(h)/dh applied to h is zero and the lens loses each sum's own direction). ``forward`` switches these
-    while it builds its graph and puts them back: the model's own calls between passes (a window's prefix, the
-    held-out scoring) run as served."""
+    bank through its pass. Gradients need the fit's paths (``_fit_paths``: "[Primitive::vjp] Not implemented for
+    CustomKernel" on a Metal kernel) and the sums' unit-RMS with its scale held fixed (else d unit_rms(h)/dh applied to
+    h is zero and the lens loses each sum's own direction). ``forward`` switches these while it builds its graph and
+    puts them back: the model's own calls between passes (a window's prefix, the held-out scoring) run as served."""
     inner = generic.text_model(model)
     mod = _module(inner)
     H = int(inner.args.hidden_size)
     real = mod._unit_rms
-    lookup = sys.modules.get("omlx.patches.m5_gather_qmm")       # its reroute asks _nax_host (None: not asked yet)
 
     def frozen(x, eps=1e-6):
         # The model's own value (``real``, to the bit: the forward computes what the model does on the same paths)
@@ -411,19 +467,6 @@ def differentiable(model: nn.Module):
             return real(x, eps)
         y = x * mx.stop_gradient(mx.rsqrt(mx.mean(mx.square(x), axis=-1, keepdims=True) + eps))
         return mx.stop_gradient(real(x, eps)) + (y - mx.stop_gradient(y))
-
-    @contextmanager
-    def plain():
-        was = mod.kernels.mx, mod._COMPILED_MAX_TOKENS, mod._unit_rms, getattr(lookup, "_nax_host", None)
-        mod.kernels.mx, mod._COMPILED_MAX_TOKENS, mod._unit_rms = _PlainMx(), 0, frozen
-        if lookup is not None:
-            lookup._nax_host = False
-        try:
-            yield
-        finally:
-            mod.kernels.mx, mod._COMPILED_MAX_TOKENS, mod._unit_rms = was[:3]
-            if lookup is not None:
-                lookup._nax_host = was[3]
 
     probes = SimpleNamespace(eps={}, shapes={})
 
@@ -461,7 +504,7 @@ def differentiable(model: nn.Module):
         return inner.final_input(blocks, frozen(h.astype(mx.float32)))[:, :, 0]
 
     def forward(ids: mx.array, cache=None) -> mx.array:
-        with plain():
+        with _fit_paths(mod, frozen):
             return loop(ids, cache)
 
     yield probes, forward

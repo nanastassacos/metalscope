@@ -5,18 +5,18 @@ Installing metalscope in detail, what works on each model, the two backends, whe
 ## Install in detail
 
 ```bash
-uv tool install git+https://github.com/nanastassacos/metalscope
+uv tool install metalscope
 metalscope omlx install                 # the oMLX backend: hook into oMLX.app (then metalscope omlx restart)
 npm install -g @earendil-works/pi-coding-agent   # Pi, if you use it
 metalscope pi install                   # the Pi front end
 metalscope doctor                       # check every piece
 
 # the ds4 backend: its proxy's dependencies, then ds4 itself, fetched at the commit the patch is for and built
-uv tool install --reinstall "metalscope[ds4] @ git+https://github.com/nanastassacos/metalscope"
+uv tool install --reinstall "metalscope[ds4]"
 metalscope ds4 install
 
 # concept pull from Hugging Face (huggingface_hub)
-uv tool install --reinstall "metalscope[share] @ git+https://github.com/nanastassacos/metalscope"
+uv tool install --reinstall "metalscope[share]"
 ```
 
 An extra is added by installing the tool again with it; name every extra you want each time (`metalscope[ds4,share]`).
@@ -112,7 +112,7 @@ own GPU work, and the steer is applied there too. `metalscope ds4 serve` starts 
 those readings into traces:
 
 ```bash
-uv tool install --reinstall "metalscope[ds4] @ git+https://github.com/nanastassacos/metalscope"   # once: the extra
+uv tool install --reinstall "metalscope[ds4]"   # once: the extra
 metalscope ds4 install                       # once: ds4 at 5379c1c with the patch, built
 ~/.local/share/metalscope/ds4/download_model.sh qwen38-q4k        # a model (ds4's own script; ds41f-q2 for V4.1)
 metalscope model link Qwen3.8-Flash-Next-ds4-q4k Qwen3.8-Flash-Next-oQ4e-mtp   # once: the checkpoint oMLX's copy is, its data and J-lens
@@ -219,7 +219,7 @@ prints both pins and whether what is installed matches:
 
 | | pinned in | on another version |
 |---|---|---|
-| oMLX | `TESTED_OMLX` in `omlx/install.py` (0.8.0, 0.8.2, 0.8.3) | oMLX runs untraced and loads nothing of metalscope but the hook; `omlx install`, `omlx status` and doctor say so: install a tested oMLX, or update metalscope once it supports yours |
+| oMLX | `TESTED_OMLX` in `omlx/install.py` (0.8.0, 0.8.2, 0.8.3, 0.8.4) | oMLX runs untraced and loads nothing of metalscope but the hook; `omlx install`, `omlx status` and doctor say so: install a tested oMLX, or update metalscope once it supports yours |
 | ds4 | `DS4_COMMIT` in `ds4/build.py` (5379c1c) and `ds4/metalscope.patch` | `ds4 install` builds the pin; doctor fails when the build is not the pin and patch |
 
 Moving to a newer version:

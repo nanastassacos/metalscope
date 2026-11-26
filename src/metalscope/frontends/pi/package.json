@@ -1,6 +1,6 @@
 {
   "name": "metalscope-pi",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "private": true,
   "type": "module",
   "description": "Watch a local model's internals live from Pi (oMLX or ds4)",

@@ -1,5 +1,6 @@
-"""Inkling 2's adapter on oMLX's own model code (omlx/patches/inkling2, 0.8.3 on): a tiny random model with a loop, two
-full-attention layers, a sliding window shorter than the prompts and oMLX's Metal kernels. Skipped unless omlx is
+"""Inkling 2's adapter on oMLX's own model code (omlx/patches/inkling2, 0.8.3 on; 0.8.4's fused kernels and LoopCD too):
+a tiny random model with a loop, two full-attention layers, a sliding window shorter than the prompts and oMLX's Metal
+kernels. Skipped unless omlx is
 importable (oMLX's code and its MLX build ship only inside the app, so the dev venv skips this file: run it under the
 app's Python):
 
@@ -10,7 +11,7 @@ app's Python):
 import mlx.core as mx
 import numpy as np
 import pytest
-from mlx.utils import tree_map
+from mlx.utils import tree_map, tree_map_with_path
 
 pytest.importorskip("omlx.patches.inkling2.cache")       # 0.8.3's cache layout
 
@@ -27,15 +28,17 @@ H, E, K, V = 32, 32, 4, 64
 SHORT = mx.array([[3, 17, 5, 42, 9]])                                  # a decode or verify step: compiled halves
 LONG = mx.array([[(7 * i + 3) % 60 for i in range(20)]])               # a prompt chunk: plain
 DEEP = [(5 * i + 1) % 60 for i in range(40)]                            # a prefix past the sliding window, then 8
+CHUNK = mx.array([DEEP])                                                # 40 tokens: past flash prefill's 32 queries
 
 
-def tiny():
-    """8 layers in blocks of 2, layers 2-5 run 3 times (16 visits), layers 3 and 7 full attention, a window of 8."""
+def tiny(hidden=H, head_dim=16, dtype=None):
+    """8 layers in blocks of 2, layers 2-5 run 3 times (16 visits), layers 3 and 7 full attention, a window of 8. With
+    ``dtype``, cast as a checkpoint's (``cast_predicate``: the mixes' queries and the router stay float32)."""
     args = ink.ModelArgs(model_type="inkling2_loop", quantization=dict(group_size=32, bits=4, mode="affine"),
                          text_config=dict(
-                             hidden_size=H, num_hidden_layers=8, vocab_size=V, unpadded_vocab_size=60,
-                             num_attention_heads=2, num_key_value_heads=1, head_dim=16, swa_num_attention_heads=2,
-                             swa_num_key_value_heads=1, swa_head_dim=16, sliding_window_size=8, d_rel=4, rel_extent=16,
+                             hidden_size=hidden, num_hidden_layers=8, vocab_size=V, unpadded_vocab_size=60,
+                             num_attention_heads=2, num_key_value_heads=1, head_dim=head_dim, swa_num_attention_heads=2,
+                             swa_num_key_value_heads=1, swa_head_dim=head_dim, sliding_window_size=8, d_rel=4, rel_extent=16,
                              log_scaling_n_floor=4, local_layer_ids=[0, 1, 2, 4, 5, 6], sconv_kernel_size=4,
                              n_layers_per_attn_res_block=2, n_routed_experts=E, num_experts_per_tok=K,
                              intermediate_size=32,
@@ -45,8 +48,12 @@ def tiny():
     noisy = lambda p: p + 0.1 * mx.random.normal(p.shape) if mx.issubdtype(p.dtype, mx.floating) else p  # noqa: E731
     model.update(tree_map(noisy, model.parameters()))
     for layer in model.model.layers:                        # random experts, quantized as a converted checkpoint's
-        for proj, shape in ((layer.mlp.experts.w13, (E, 64, H)), (layer.mlp.experts.w2, (E, H, 32))):
+        for proj, shape in ((layer.mlp.experts.w13, (E, 64, hidden)), (layer.mlp.experts.w2, (E, hidden, 32))):
             proj.weight, proj.scales, proj.biases = mx.quantize(0.3 * mx.random.normal(shape), group_size=32, bits=4)
+    if dtype is not None:
+        cast = model.cast_predicate
+        model.update(tree_map_with_path(
+            lambda k, p: p.astype(dtype) if mx.issubdtype(p.dtype, mx.floating) and cast(k) else p, model.parameters()))
     mx.eval(model.parameters())
     return model
 
@@ -54,6 +61,54 @@ def tiny():
 @pytest.fixture(scope="module")
 def model():
     return tiny()
+
+
+@pytest.fixture(scope="module")
+def wide():
+    """As served: bf16 activations and 128-wide heads, so 0.8.4's fused mix and norm and q/k/v's clips run
+    (test_the_wide_model_reaches_0_8_4s_kernels). The NAX banded attention is reached only where its self-check
+    passes (``banded_check_passed``); on the M5 Max this was run on it does not, so no test here covers the fit's NAX
+    stub."""
+    return tiny(256, 128, mx.bfloat16)
+
+
+# The bf16 model, on 0.8.4's layout only (its fused kernels).
+WIDE = pytest.param("wide", marks=pytest.mark.skipif(not hasattr(ink, "fused"), reason="0.8.4's fused kernels"))
+
+
+@pytest.mark.skipif(not hasattr(ink, "fused"), reason="0.8.4's fused kernels")
+def test_the_wide_model_reaches_0_8_4s_kernels(wide, monkeypatch):
+    """What the bf16 model is for: its activations are bf16; a prompt chunk takes the fused mix and norm (the MoE's
+    input and its float32 copy, which is the rounded input cast: the router reads the same value either way) and
+    q/k/v's clips; with the kernels on a fit's plain paths but the NAX attention left on, a fit's batch of 8 rows of
+    13 tokens reaches the NAX banded attention exactly where its self-check passes (``banded_check_passed``; not on
+    the M5 Max this was run on, where this part holds with no NAX call)."""
+    inner, hits = wide.model, {"fused": 0, "qkv": 0, "nax": 0}
+    real = ink.kernels.attn_res_fused, ink.kernels.qkv_post, ink.kernels.nax_attention.nax_banded_sink_attention
+
+    def count(name, fn):
+        def run(*a, **k):
+            out = fn(*a, **k)
+            hits[name] += out is not None
+            return out
+        return run
+    monkeypatch.setattr(ink.kernels, "attn_res_fused", count("fused", real[0]))
+    monkeypatch.setattr(ink.kernels, "qkv_post", count("qkv", real[1]))
+    monkeypatch.setattr(ink.kernels.nax_attention, "nax_banded_sink_attention", count("nax", real[2]))
+    pairs = []
+    real_post_attn = ink.Inkling2Layer._post_attn
+    monkeypatch.setattr(ink.Inkling2Layer, "_post_attn",
+                        lambda self, *a: pairs.append(real_post_attn(self, *a)) or pairs[-1])
+    assert own(inner, LONG).dtype == mx.bfloat16                 # 20 tokens: the halves plain, the kernels as served
+    assert hits["fused"] and hits["qkv"] and pairs
+    for _, x, x32, _ in pairs:
+        assert x.dtype == mx.bfloat16 and (x32 is None or mx.array_equal(x.astype(mx.float32), x32).item())
+    hits["nax"] = 0
+    with monkeypatch.context() as m:                             # a fit's paths, the NAX attention left on
+        m.setattr(ink.kernels, "mx", inkling2._PlainMx())
+        m.setattr(ink, "_COMPILED_MAX_TOKENS", 0)
+        mx.eval(own(inner, mx.array([[(3 * i + 1) % 60 for i in range(13)]] * 8)))
+    assert bool(hits["nax"]) == ink.kernels.nax_attention.banded_check_passed(mx.bfloat16)
 
 
 class Tok:
@@ -64,15 +119,22 @@ class Tok:
         return " ".join(map(str, ids))
 
 
+def own(inner, ids, cache=None):
+    """The text model's own call, as oMLX's model makes it (0.8.4: no defaults)."""
+    return inner(ids, cache, None, {})
+
+
 def traced(model, ids, cache=None, armed=False, **cfg):
-    """One traced forward: its records, each layer call's (blocks, sum, bank) and each MoE call's (ids, weights)."""
+    """One traced forward: its records, each layer call's (blocks, sum, bank) and each MoE call's (ids, weights), as
+    ``kernels.route_topk`` returns them."""
     inner = model.model
     session = CaptureSession(CaptureConfig(**cfg))
     adapters.install(session, model)
-    calls, routed, removers = [], [], []
+    calls, routed, removers, real = [], [], [], ink.kernels.route_topk
+    ink.kernels.route_topk = lambda *a: routed.append(real(*a)) or routed[-1]
+    removers.append(lambda: setattr(ink.kernels, "route_topk", real))
     for layer in inner.layers:
         removers.append(add_hook(layer, lambda _m, a, k, out: calls.append((list(a[1]), out, k.get("bank")))))
-        removers.append(add_hook(layer.mlp.experts, lambda _m, a, _k, _o: routed.append((a[1], a[2]))))
     try:
         if armed:
             set_verify_qmm_armed(True, row_exact=True)
@@ -88,12 +150,16 @@ def traced(model, ids, cache=None, armed=False, **cfg):
     return recs, calls, routed, logits
 
 
-@pytest.mark.parametrize("ids,armed", [(SHORT, False), (SHORT, True), (LONG, False)],
-                         ids=["decode-step", "row-exact-verify", "prompt-chunk"])
-def test_each_visit_is_recorded_with_its_experts_as_the_model_runs(model, ids, armed):
+@pytest.mark.parametrize("which", ["model", WIDE])
+@pytest.mark.parametrize("ids,armed", [(SHORT, False), (SHORT, True), (LONG, False), (CHUNK, False)],
+                         ids=["decode-step", "row-exact-verify", "prompt-chunk", "long-chunk"])
+def test_each_visit_is_recorded_with_its_experts_as_the_model_runs(request, which, ids, armed):
     """Every visit once at its index: the head's mix, the running sum's norm, the experts the router picked (its
-    kernel's ids and weights); on a compiled step, on row-exact verify rows (``_post_exact``) and on a prompt chunk;
-    tracing leaves the logits as they were."""
+    kernel's ids and weights); on a compiled step, on row-exact verify rows (``_post_exact``) and on prompt chunks;
+    tracing leaves the logits as they were (bf16: to its rounding). On the bf16 model, through 0.8.4's fused kernels
+    and the Metal router."""
+    model = request.getfixturevalue(which)
+    tol = 1e-4 if which == "model" else 5e-2
     inner, n = model.model, len(model.model._schedule)
     halves = lambda: [(l.__dict__["_post_compiled"], l.__dict__["_post_exact"]) for l in inner.layers]  # noqa: E731
     compiled = halves()
@@ -106,7 +172,7 @@ def test_each_visit_is_recorded_with_its_experts_as_the_model_runs(model, ids, a
             set_verify_qmm_armed(False)
     recs, calls, routed, logits = traced(model, ids, armed=armed, router=True, logits_topk=3)
     assert adapters.layer_count(model) == n == 16 and len(calls) == len(routed) == n
-    np.testing.assert_allclose(np.array(logits), np.array(plain), rtol=1e-4, atol=1e-4)
+    np.testing.assert_allclose(np.array(logits), np.array(plain), rtol=tol, atol=tol)
     for v, ((blocks, h, bank), (t_ids, t_w)) in enumerate(zip(calls, routed)):
         mix, _ = inkling2.state(inner, blocks, h, bank)
         np.testing.assert_allclose(recs[("resid_norm", v)], np.linalg.norm(np.array(mix.astype(mx.float32)), axis=-1),
@@ -127,13 +193,11 @@ def test_the_fit_forward_is_the_models_own(model, monkeypatch):
     sliding window (each visit's own cache, the full-attention visits' one tau at the cache's offset)."""
     inner = model.model
     prefix, window = mx.array([DEEP[:32]]), mx.array([DEEP[32:]])
-    own, cache = model.make_cache(), model.make_cache()
-    inner(prefix, cache=own)
-    inner(prefix, cache=cache)
-    with monkeypatch.context() as m:                             # the model's own call on the fit's paths
-        m.setattr(ink.kernels, "mx", inkling2._PlainMx())
-        m.setattr(ink, "_COMPILED_MAX_TOKENS", 0)
-        want_long, want = np.array(inner(LONG)), np.array(inner(window, cache=own))
+    mine, cache = model.make_cache(), model.make_cache()
+    own(inner, prefix, mine)
+    own(inner, prefix, cache)
+    with inkling2._fit_paths(ink):                               # the model's own call on the fit's paths
+        want_long, want = np.array(own(inner, LONG)), np.array(own(inner, window, mine))
     with inkling2.differentiable(model) as (probes, forward):
         np.testing.assert_array_equal(np.array(ink._norm(inner.norm, forward(LONG))), want_long)
         assert sorted(probes.shapes) == list(range(16))
@@ -151,13 +215,11 @@ def test_each_pass_from_a_restored_prefix_cache_is_the_models_own(model, monkeyp
     from metalscope.jlens.fit import prefix_cache, restore
     inner, b, prefix = model.model, 2, DEEP[:32]
     window = mx.array([DEEP[32:32 + length]] * b)
-    own = model.make_cache()
+    mine = model.make_cache()
     for a in range(0, len(prefix), chunk):
-        inner(mx.array([prefix[a:a + chunk]] * b), cache=own)
-    with monkeypatch.context() as m:                             # the model's own call on the fit's paths
-        m.setattr(ink.kernels, "mx", inkling2._PlainMx())
-        m.setattr(ink, "_COMPILED_MAX_TOKENS", 0)
-        want = np.array(inner(window, cache=own))
+        own(inner, mx.array([prefix[a:a + chunk]] * b), mine)
+    with inkling2._fit_paths(ink):                               # the model's own call on the fit's paths
+        want = np.array(own(inner, window, mine))
     cache, snap = prefix_cache(model, prefix, b, chunk)
     with inkling2.differentiable(model) as (_, forward):
         passes = []
@@ -169,11 +231,14 @@ def test_each_pass_from_a_restored_prefix_cache_is_the_models_own(model, monkeyp
         np.testing.assert_array_equal(np.array(got), want)
 
 
-def test_a_fit_takes_gradients_through_every_kernel(model):
+@pytest.mark.parametrize("which", ["model", WIDE])
+def test_a_fit_takes_gradients_through_every_kernel(request, which):
     """A fit with a deep window (its prefix into a cache, restored before each pass): every Metal kernel takes its
     plain path (a kernel left on raises "[Primitive::vjp] Not implemented for CustomKernel"), and every visit's
-    Jacobian has entries."""
+    Jacobian has entries. The NAX stub is covered only where ``banded_check_passed`` is True (see ``wide``)."""
     from metalscope.jlens.fit import fit, no_index_gradients
+    model = request.getfixturevalue(which)
+    H = model.args.text.hidden_size
     no_index_gradients()
     lens = fit(model, Tok(), [dict(ids=DEEP, window=8), "5 9 2 7 1 3 8 4 6 2 9 9 1"], dim_batch=8, dim_limit=16,
                log=lambda *_: None)
@@ -224,3 +289,21 @@ def test_mtp_windows_are_placed_by_the_first_full_attention_visit(model):
     assert window_starts(cache, 5, 1) == [0]
     model(mx.array([[4, 2, 7]]), cache=cache)
     assert window_starts(cache, 3, 1) == [5]
+
+
+@pytest.mark.skipif(not hasattr(ink.Model, "enable_loopcd"), reason="LoopCD is oMLX 0.8.4's")
+def test_loopcds_calls_are_neither_recorded_nor_steered():
+    """LoopCD on: the layers past the loop run again after the schedule (6 and 7 here), counted and recorded at no visit:
+    every visit is recorded once with the experts the router picked, and the logits are LoopCD's own."""
+    model = tiny()
+    assert model.enable_loopcd(False)
+    n, coda = len(model.model._schedule), len(model.model._reference_visits)
+    plain = model(SHORT)
+    recs, calls, routed, logits = traced(model, SHORT, router=True, logits_topk=3)
+    assert adapters.layer_count(model) == n == 16 and len(calls) == len(routed) == n + coda == 18
+    np.testing.assert_allclose(np.array(logits), np.array(plain), rtol=1e-4, atol=1e-4)
+    assert sorted(v for k, v in recs if k == "router_ids") == list(range(n))
+    assert sorted(v for k, v in recs if k == "resid_norm") == list(range(n))
+    for v, (t_ids, _) in enumerate(routed[:n]):
+        got = np.sort(recs[("router_ids", v)].reshape(-1, K), -1)
+        np.testing.assert_array_equal(got, np.sort(np.array(t_ids).astype(np.int64).reshape(-1, K), -1), str(v))

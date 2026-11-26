@@ -1,7 +1,12 @@
 # Changelog
 
-## Unreleased
+## 0.1.1 (2026-11-26)
 
+- oMLX 0.8.4 is supported beside 0.8.0, 0.8.2 and 0.8.3. Inkling 2 Mini is traced on its new fused kernels as on
+  0.8.3, and writes 100 tokens a second untraced (71 on 0.8.3). With LoopCD on (off by default), its second run of
+  the last layers is neither recorded nor steered, and a steer on those layers acts up to 1.5 times stronger.
+- metalscope installs from PyPI: `uv tool install metalscope`, in the README, the docs and the install hints.
+- CI: the three GitHub Actions moved to their Node 24 releases.
 - The dock's board is laid out again: TOKENS, MAP and LENS on the left, EXPERTS over RESIDUAL STREAM on the right
   (`{` `}` move the divider between them). On a model without experts TOKENS sits over RESIDUAL STREAM. The panel
   keys follow the order: `1` TOKENS, `2` MAP, `3` LENS, `4` EXPERTS, `5` RESIDUAL STREAM, `6` the Steer page.
