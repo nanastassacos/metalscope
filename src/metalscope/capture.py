@@ -60,10 +60,6 @@ class CaptureConfig:
             return i in self.logit_lens_layers
         return i % self.lens_every == 0 or (n_layers is not None and i >= n_layers - self.lens_last)
 
-    def lens_layers(self, n_layers: int) -> list[int]:
-        """Every layer the logit lens reads (``reads_lens``). The ds4 proxy asks ds4 for these."""
-        return [i for i in range(n_layers) if self.reads_lens(i, n_layers)]
-
 
 STACKED = -2  # Record.layer for a value stacked over ``Record.layers``
 BATCH_MAX_TOKENS = 16
@@ -441,5 +437,5 @@ def capture_config() -> CaptureConfig:
     # The logit lens's top 10, beside the J-lens when the model has one (live.py).
     # lens_tail: a prompt chunk reads both lenses on its last 64 rows only; every prompt row cost ~2.7 ms per lens
     # per token (Flash Next, LM head alone).
-    return CaptureConfig(router=True, logits_topk=10, logit_lens_topk=10, lens_every=4, lens_last=12,
-                         lens_tail=LENS_PROMPT_TAIL)
+    # The layers the lenses read: the lens step's (tracer.lens_steps), set by the tracer.
+    return CaptureConfig(router=True, logits_topk=10, logit_lens_topk=10, lens_tail=LENS_PROMPT_TAIL)

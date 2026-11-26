@@ -1,9 +1,9 @@
 /**
  * The dock as one screen (the board). The header (◆ metalscope, the steer on the right), the reply strip, then on the
- * left MAP (the whole reply by confidence) and LENS (the telescope, telescope.ts, and over it SETTLING, how deep each
- * recent token settled); on the right TOKENS (the token's top 10 choices), EXPERTS (layers of lights, lights.ts) and
- * STREAM (what each layer changed in the residual stream, a key a layer), then one key line. tab moves the focus (an
- * orange title) through the panels, and the panel in focus takes the arrows; its number (PANEL_KEY) opens a panel over
+ * left TOKENS (the token's top 10 choices), MAP (the whole reply by confidence) and LENS (the telescope, telescope.ts,
+ * and over it SETTLING, how deep each recent token settled); on the right EXPERTS (layers of lights, lights.ts) and
+ * STREAM (what each layer changed in the residual stream, a key a layer), sharing its height; then one key line. tab
+ * moves the focus (an orange title) through the panels, and the panel in focus takes the arrows; its number (PANEL_KEY) opens a panel over
  * the dock under the reply strip. 6 is the Steer page (the concepts by the chat test, the cursor's dose curve and test
  * chats, steerpage.ts; the whole dock) and m the mini dock (lights, MAP, SETTLING and STREAM under them, MINI_WIDTH
  * columns). A dock too small for the board (boardFits) is the one-panel board: a short reply strip, the tab row and the
@@ -21,12 +21,13 @@ import { type DoseRow, type ExampleTurn, type Examples, type LinkOffer, type Not
 import { type LensName, SWAP_FOG, lensOf, onTube } from "./telescope.ts";
 
 export type Panel = "LENS" | "MAP" | "EXPERTS" | "TOKENS" | "STREAM";
-/** The panels in tab order: the left column top to bottom (MAP, about the reply, under the reply strip), then the
- * right one. LENS holds SETTLING over the telescope (one panel: one tab stop, one key). STEER is a page of its own (6). */
-export const PANELS: Panel[] = ["MAP", "LENS", "TOKENS", "EXPERTS", "STREAM"];
+/** The panels in tab order (on a model with experts the left column top to bottom, then the right one; without,
+ * TOKENS heads the right column). LENS holds SETTLING over the telescope (one panel: one tab stop, one key). STEER is
+ * a page of its own (6). */
+export const PANELS: Panel[] = ["TOKENS", "MAP", "LENS", "EXPERTS", "STREAM"];
 /** The middle's panels, in its two columns; STREAM (RESIDUAL STREAM) last in the right one where the board has room
  * for it (streamLines), never on the one-panel board; on the mini dock a block of its own (dock.ts renderMini). */
-const LEFT: Panel[] = ["MAP", "LENS"], RIGHT: Panel[] = ["TOKENS", "EXPERTS", "STREAM"];
+const LEFT: Panel[] = ["TOKENS", "MAP", "LENS"];
 
 // -- the layout: what it needs ----------------------------------------------------------------------------------------
 
@@ -34,16 +35,17 @@ export const REPLY_ROWS = 6;          // the reply strip's lines under its title
 export const STEER_ROWS = 8;          // the Steer page's concept rows a column at the least (two columns, a count under)
 export const RIGHT_W = 50;            // the right column: EXPERTS' 32 lights and 16 columns beside them
 export const LEFT_MIN = 44;           // the telescope with its eyepiece's words readable and the turret line whole
-export const TOP_N = 10;               // TOKENS: the choices shown for the token in focus
-// The middle at its shortest: TOKENS (its line, the top 10 and an eleventh row for a written token outside them), a
-// rule, EXPERTS (title, one layer's 8 lines of lights).
-export const MIDDLE_MIN = (1 + TOP_N + 1) + 1 + (1 + 8);
+export const TOP_N = 10;               // TOKENS: the choices shown for the token in focus (full size, the one-panel board)
+export const BOARD_TOP = 5;            // TOKENS in the board's column: its first choices (the written one under them where it is not)
+// The middle at its shortest: the right column's EXPERTS (title, one layer's 8 lines of lights), a rule and STREAM at
+// its least, with room to spare. The left column's leasts (TOKENS 6, MAP 3, LENS 15 and two rules) take more: there
+// SETTLING gives its lines, then TOKENS, then MAP (dock.ts GIVE_ORDER).
+export const MIDDLE_MIN = 22;
 // The header, a rule, the reply (title and rows), a rule; under the middle a rule and the key line.
 const FIXED = 1 + 1 + (1 + REPLY_ROWS) + 1 + 1 + 1;
 /** The narrowest dock (the overlay's columns, its edge and pad included) and the shortest (its lines) the board is
  * drawn in: the left column at its narrowest beside the right one; the fixed parts (12), the middle at its shortest
- * (22) and two lines for ? (its explanation and the layout's keys). Below either, the one-panel
- * board. */
+ * (22) and two lines for ? (its explanation and the layout's keys). Below either, the one-panel board. */
 export const BOARD_MIN_WIDTH = 3 + LEFT_MIN + 3 + RIGHT_W;   // 100
 export const BOARD_MIN_ROWS = FIXED + MIDDLE_MIN + 2;   // 36
 
@@ -65,10 +67,13 @@ export const replyRows = (height: number, left: number, right: number) =>
 /** The middle's two columns in `w` text columns: the right one RIGHT_W wide, the left the rest, " │ " between. */
 export const columns = (w: number) => ({ lw: w - 3 - RIGHT_W, rw: RIGHT_W });
 
-/** The middle's two columns: MAP and LENS on the left; on the right TOKENS, EXPERTS where the model has experts
- * (`experts`) and STREAM where it is drawn (`stream`). */
-export const arrange = (experts: boolean, stream: boolean): { left: Panel[]; right: Panel[] } =>
-	({ left: LEFT, right: RIGHT.filter((p) => (p !== "EXPERTS" || experts) && (p !== "STREAM" || stream)) });
+/** The middle's two columns: on a model with experts (`experts`) TOKENS, MAP and LENS on the left, EXPERTS on the
+ * right; without, MAP and LENS on the left, TOKENS on the right. STREAM under the right column's top where it is drawn
+ * (`stream`): a frame without it leaves the lines there blank, nothing moves. */
+export const arrange = (experts: boolean, stream: boolean): { left: Panel[]; right: Panel[] } => {
+	const top: Panel = experts ? "EXPERTS" : "TOKENS";
+	return { left: experts ? LEFT : LEFT.slice(1), right: stream ? [top, "STREAM"] : [top] };
+};
 /** The Steer page's two halves: the concept list (two columns of 25, a space between) and the dose curve; where the
  * curve would have under STEER_DETAIL columns, `stacked`: the list over it, each the width, the list one column where
  * two do not fit (`across`). */
@@ -152,12 +157,12 @@ export type MiniRoom = [number, number, number];
  * most), then MAP and SETTLING (undefined: not drawn, no lens read). The maps take their want, else less (SETTLING its
  * least, MAP its least, then SETTLING goes, then MAP) where one grid would not be left; the lights every grid the rest
  * holds; the lines over go to SETTLING, then MAP, up to their most, the rest left over (dock.ts renderMini). Without
- * lights (no grids) MAP takes the lines, past its most: SETTLING up to its most, MAP the rest. */
-export function miniSplit(rows: number, block: number, grids: number, map: MiniRoom, settle?: MiniRoom): { n: number; map: number; settle: number } {
+ * lights (no grids) SETTLING up to its most, MAP the rest: past its most unless `under` (STREAM under them takes it). */
+export function miniSplit(rows: number, block: number, grids: number, map: MiniRoom, settle?: MiniRoom, under = false): { n: number; map: number; settle: number } {
 	const [ml, mw, mm] = map, [sl, sw, sm] = settle ?? [0, 0, 0];
-	if (!grids) {   // no lights (a model without experts): SETTLING up to its most, MAP the rest
+	if (!grids) {   // no lights (a model without experts)
 		const s = settle ? Math.max(0, Math.min(sm, rows - ml)) : 0;
-		return { n: 0, map: rows - s, settle: s };
+		return { n: 0, map: under ? Math.min(mm, rows - s) : rows - s, settle: s };
 	}
 	const [m0, s0] = ([[mw, sw], [mw, sl], [ml, sl], [mw, 0], [ml, 0]] as const).find(([m, s]) => m + s <= rows - block) ?? [0, 0];
 	const n = Math.min(Math.max(1, grids), miniCount(rows - m0 - s0, block - 1));
@@ -187,7 +192,7 @@ export const KEYS_W = BOARD_MIN_WIDTH - 3;
  * has both lenses (s other lens). `views`: STREAM has more than one (s view). `open`: the panels a number opens; before
  * stepping in their numbers (panelNums) and 6 steer in words, none on the one-panel board. */
 export function boardKeys(focus: Panel, inspecting: boolean, windowed = false, order: readonly Panel[] = PANELS, held = false,
-	steered = false, layers = false, edit = true, to = "", w = KEYS_W, g = "", one = false, shut: "" | "off" | "none" = "", swap = true, views = true, open: readonly Panel[] = order): string {
+	steered = false, layers = false, edit = true, to = "", w = KEYS_W, g = "", one = false, shut: "" | "off" | "none" = "", swap = true, views = true, open: readonly Panel[] = order, split = false): string {
 	const lines = one ? 2 : 1, step = !layers ? "" : shut === "off" ? LABELS.lensOn : LABELS.layersKey;
 	const nums = one || !open.length ? "" : `${panelNums(open)} open, `, pk = `${panelNums(open, true)} panel`;
 	if (!inspecting) return stepOut((x) => `ctrl+\\ steps in: tab a panel, ? explain, ${nums}${x}${STEER_KEY} steer · /scope help dock`,
@@ -197,14 +202,14 @@ export function boardKeys(focus: Panel, inspecting: boolean, windowed = false, o
 		LENS: [next, "←/→ token", shut ? "" : "↑/↓ layer", step, edit && !shut ? "enter edit" : "", steered ? "x off" : "", shut || !swap ? "" : "s other lens", g, pk, "? explain", "esc back"],
 		MAP: [next, "←/→ token", "u/U unsure", g, pk, "? explain", "esc back"],
 		EXPERTS: windowed ? [next, "←/→ token", "↑/↓ layer", "enter open", to && `a ${to}`, g, pk, "? explain", "esc back"]
-			: [next, "←/→ token", "[ ] layers", g, pk, "? explain", "esc back"],
+			: [next, "←/→ token", "[ ] layers", split ? SPLIT_KEY : "", g, pk, "? explain", "esc back"],
 		TOKENS: [next, "←/→ token", "↑/↓ unsure token", g, pk, "? explain", "esc back"],
-		STREAM: [next, "←/→ token", views ? "s view" : "", g, pk, "? explain", "esc back"],
+		STREAM: [next, "←/→ token", views ? "s view" : "", split ? SPLIT_KEY : "", g, pk, "? explain", "esc back"],
 	};
 	const keys = parts[focus].filter(Boolean);
 	const at = keys.indexOf("←/→ token");
 	if (held) keys.splice(at < 0 ? Math.min(2, keys.length) : at + 1, 0, "f live");
-	return gCut(keys, ["esc back", "? explain", "s other lens", "s view", ...(one && step ? [step] : []), pk, g], w, g, false, lines);
+	return gCut(keys, ["esc back", SPLIT_KEY, "? explain", "s other lens", "s view", ...(one && step ? [step] : []), pk, g], w, g, false, lines);
 }
 
 /** Key line `text` in lines `w` wide, broken between its keys (parts `sep` apart; a part wider than `w` wrapped). */
@@ -272,13 +277,18 @@ export const steerKeys = (w: number, lines = 1, tested = true, on = false, inspe
 		"? explain", `${STEER_KEY} board`, "esc back"].filter(Boolean), ["esc back", "d delete", "? explain"], w, lines);
 
 /** What ? says for the panel in focus, where the key line is (draw.ts EXPLAIN): the EXPERTS window's own; STREAM's by
- * what the model has (`s`, streamExplain). */
-export function explainOf(focus: Panel, windowed = false, s?: { k: number; rk: number }): string {
+ * what the model has (`s`, streamExplain): its line, then the line of `view`, the view drawn. */
+export function explainOf(focus: Panel, windowed = false, s?: { k: number; rk: number }, split = false, view?: StreamView): string {
 	if (focus === "LENS") return EXPLAIN.BOARD_LENS;
-	if (focus === "STREAM") return streamExplain(s?.k ?? 0, s?.rk ?? 0);
-	if (focus === "EXPERTS") return windowed ? EXPLAIN.EXPERTS_WINDOW : EXPLAIN.EXPERTS;
+	if (focus === "STREAM") {
+		const [k, rk] = [s?.k ?? 0, s?.rk ?? 0], [shared, views] = streamExplain(k, rk);
+		return view ? `${shared}\n${views[viewName(view, k, rk)] ?? ""}`.trimEnd() : shared;
+	}
+	if (focus === "EXPERTS") return windowed ? EXPLAIN.EXPERTS_WINDOW : EXPLAIN.EXPERTS + (split ? EXPLAIN.SPLIT : "");
 	return EXPLAIN[focus];
 }
+/** The board's key moving the divider between EXPERTS and STREAM (both drawn). */
+export const SPLIT_KEY = "{ } split";
 
 // -- the panels -------------------------------------------------------------------------------------------------------
 
@@ -310,18 +320,16 @@ export function stackLayers(L: number, m: number, n = 3): number[] {
 /** EXPERTS on the board, `w` by at most `rows`: its title, then the layers stacked (as many as fit, at least one, the
  * focus layer first), each a dim heading over its grid (lights.ts reshapeGrid: the column's width), the focus layer's
  * marked ▸ in accent. Only the lights: full size (4) for the experts themselves. `noMap`: the checkpoint has no expert
- * map, said on a line of its own under the layers where one is free, else in place of the title's note. `plate` (the
- * mini dock's): each grid a rectangle that many columns wide, its cells without an expert unlit rather than blank. */
+ * map, said on a line of its own under the layers where one is free, else in place of the title's note. */
 export function expertsStack(th: any, v: ExpertsView, layers: LayerLights[], pal: Palette, w: number, rows: number, focused: boolean,
-	noMap = false, plate = 0): string[] {
+	noMap = false): string[] {
 	const head = title(th, "EXPERTS", focused);
 	if (v.reason) return [head, ...wrapTextWithAnsi(th.fg("dim", v.reason), w).slice(0, Math.max(1, rows - 1))];
 	const cols = Math.max(1, ...layers.map((l) => l.cols));
 	if (cols > w) return [head, th.fg("dim", `needs ${cols} columns`)];
 	const blocks = layers.map((l) => {
 		const on = l.layer === v.layer, name = cut(`${on ? "▸ " : "  "}layer ${l.layer + 1} of ${v.L}`, w);
-		const cells = plate ? Array.from({ length: plate * l.rows }, (_, i) => (i % plate < l.cols ? l.cells[Math.floor(i / plate) * l.cols + (i % plate)] : 0) ?? 0) : l.cells;
-		return [on ? th.fg("accent", bold(th, name)) : th.fg("dim", name), ...halfBlocks(cells, plate || l.cols, l.rows, pal)].map((x) => fit(x, w));
+		return [on ? th.fg("accent", bold(th, name)) : th.fg("dim", name), ...halfBlocks(l.cells, l.cols, l.rows, pal)].map((x) => fit(x, w));
 	});
 	// As many as fit (the first always, cut where it must be): the focus layer first, then the nearest to it.
 	let n = 0, used = 1;
@@ -500,7 +508,13 @@ export function topChoices(t: Pick<TokenEvent, "text" | "p" | "alts">): { rows: 
  * then its top choices with a bar and the percentage each, ▸ the one written in its confidence colour (an extra row
  * under them when it was not among them; in `lines` too few for it, the last choice gives way). `titled`: false
  * under the full-size panels' tab row. */
-export function tokensPanel(th: any, t: TokenEvent, sel: number, w: number, focused: boolean, titled = true, lines = Infinity): string[] {
+/** The first `room` of `rows`, the one at `at` (the written token's) in the last place where it is not among them:
+ * TOKENS' ▸ row kept however few lines (tokensPanel, the engram inspection's lookupTokens). */
+export function keepRow<T>(rows: T[], room: number, at: number): T[] {
+	return at >= room && room > 0 ? [...rows.slice(0, room - 1), rows[at]] : rows.slice(0, Math.max(0, room));
+}
+
+export function tokensPanel(th: any, t: TokenEvent, sel: number, w: number, focused: boolean, titled = true, lines = Infinity, top = TOP_N): string[] {
 	const { rows, rank } = topChoices(t);
 	const col = confColor(t.p);
 	const where = rank === null ? ` · not in the top ${TOP_N}` : rank > 1 ? ` · rank ${rank}` : "";
@@ -516,10 +530,12 @@ export function tokensPanel(th: any, t: TokenEvent, sel: number, w: number, focu
 		return (mine ? th.fg(col, "▸ ") : "  ") + (mine ? th.fg(col, padTo(label(text), ww)) : padTo(label(text), ww)) + " " +
 			th.fg(c, padTo(p === null ? "" : bar(p, bw), bw)) + th.fg(mine ? col : "dim", lpad(pct(p), 7));
 	};
-	const sent = rows.length < TOP_N && rows.length && (t.alts?.length ?? 0) < TOP_N - 1;
-	const room = Math.max(0, lines - 1 - (rank === null ? 1 : 0) - (sent ? 1 : 0));
-	for (const [text, p, mine] of rows.slice(0, room)) out.push(row(text, p, mine));
-	if (rank === null) out.push(row(t.text, t.p, true));
+	const sent = rows.length < Math.min(top, TOP_N) && rows.length && (t.alts?.length ?? 0) < TOP_N - 1;
+	// The first `top` choices; the written token's row under them where it is not among them (▸ kept).
+	const n = Math.min(top, rows.length), outside = rank === null || rank > n;
+	const room = Math.min(n, Math.max(0, lines - 1 - (outside ? 1 : 0) - (sent ? 1 : 0)));
+	for (const [text, p, mine] of keepRow(rows, room, outside ? -1 : rank! - 1)) out.push(row(text, p, mine));
+	if (outside) out.push(rank === null ? row(t.text, t.p, true) : row(...rows[rank - 1]));
 	if (sent) out.push(th.fg("faint", `  the stream sent ${rows.length} choices for this token`));
 	return out.slice(0, lines);
 }
@@ -587,18 +603,17 @@ const SETTLE_MARK: Rgb = mix(STOPS[0][1], COLOURS.text, 0.45);
 const SETTLE_FOG = [0, 0.5, 0.8];
 
 /** SETTLING's rows: the layers lens `view` read, deep first, on token `k` or the nearest before it with a read (a reply's
- * tokens read the same layers, so the rows stay put through it), and which lens that was; of them, those of the step
- * in use (`want`, as the tube's lit lines: onTube). A layer the lens did not read has no row. */
-export function settleLayers(toks: TokenEvent[], k: number, view: LensName | undefined, want?: number[]): { by?: LensName; layers: number[] } {
+ * tokens read the same layers, so the rows stay put through it); of them, those of the step in use (`want`, as the
+ * tube's lit lines: onTube). A layer the lens did not read has no row. */
+export function settleLayers(toks: TokenEvent[], k: number, view: LensName | undefined, want?: number[]): number[] {
 	let ref = Math.min(k, toks.length - 1);
 	while (ref > 0 && !lensOf(toks[ref], view).top1.length) ref--;
-	if (!toks[ref]) return { layers: [] };
-	const { by, top1 } = lensOf(toks[ref], view);
-	return { by, layers: onTube([...new Set(top1.map(([l]) => l))].sort((a, b) => b - a), want) };
+	if (!toks[ref]) return [];
+	return onTube([...new Set(lensOf(toks[ref], view).top1.map(([l]) => l))].sort((a, b) => b - a), want);
 }
 
-/** SETTLING, the part of LENS over the telescope, `w` by `rows`: a sub-heading (its name bold and the lens after it, in
- * the lens's violet, as the turret's; "· old → now" dim), then a column per token up to `k` (the newest at the right),
+/** SETTLING, the part of LENS over the telescope, `w` by `rows`: a sub-heading (its name bold, in the lens's violet, as
+ * the turret's), then a column per token up to `k` (the newest at the right),
  * the layers the lens shown read of the step's (settleLayers, `want`) deep at the top: `fill` (LENS's) every line
  * filled, no more layers than lines a band of whole lines each, else of half lines; not (the mini dock's) two a line,
  * more to a half line evenly where the lines are too few. Each lit by settleLevels on SETTLE_STOPS; a faint label on
@@ -609,8 +624,8 @@ export function settleLayers(toks: TokenEvent[], k: number, view: LensName | und
  * deep end; the focus mark kept. */
 export function settlingPanel(th: any, toks: TokenEvent[], k: number, view: LensName | undefined, w: number, rows: number, _pal: Palette,
 	inspecting = false, swap: { fog?: number; clear?: number } = {}, want?: number[], fill = true): string[] {
-	const { by, layers: read } = settleLayers(toks, k, view, want), none = !read.length, layers = none ? [...(want ?? [])].sort((a, b) => b - a) : read;
-	const head = th.fg("lens", bold(th, "SETTLING")) + th.fg("lens", `  ${by === "logit" ? "logit lens" : by === "jlens" ? "J-lens" : "lens"}`) + th.fg("dim", " · old → now");
+	const read = settleLayers(toks, k, view, want), none = !read.length, layers = none ? [...(want ?? [])].sort((a, b) => b - a) : read;
+	const head = th.fg("lens", bold(th, "SETTLING"));
 	if (!layers.length) return [head, th.fg("dim", "no lens read on these tokens")];   // none read and no step's layers: say so
 	// A layer a half line where they fit, else shared; `fill`: every half line drawn, a layer a whole line where the
 	// lines hold them.
@@ -743,7 +758,7 @@ export function mapCells(rs: MapRun[], w: number, a: number, n: number, focus = 
 export const MAP_LINES = 2, MAP_CELL_LINES = 7;
 /** MAP under the mini dock's lights (miniSplit): its title and a line at the least, 3 lines (the newest 300 tokens at
  * 50 columns, the right column's) where the height allows, and no more; without lights (a model without experts) MAP
- * takes the lines. */
+ * takes the lines, unless STREAM is drawn (it takes them). */
 export const MINI_MAP: MiniRoom = [2, 4, 4];
 /** SETTLING under the mini dock's lights at the least: its sub-heading and two lines (four layers' rows). */
 export const MINI_SETTLE_LEAST = 3;
@@ -971,15 +986,20 @@ export function examplesPanel(th: any, ex: Examples, i: number, scroll: number, 
 
 // -- STREAM: what each layer changed in the residual stream (RESIDUAL STREAM, a piano roll under EXPERTS) -----------
 
-/** STREAM's views, in the order s steps through them, each where the model's data has it (streamViews). */
-export const STREAM_VIEWS = ["spikes", "largest", "layers", "reads"] as const;
+/** STREAM's views, in the order s steps through them, each where the model's data has it (streamViews): by measure
+ * (a write far above its usual, the largest) and unit (a layer's whole write, or each hyper-connection stream's). */
+export const STREAM_VIEWS = ["spikes (hc)", "largest (hc)", "spikes (layers)", "largest (layers)", "spikes (reads)"] as const;
 export type StreamView = (typeof STREAM_VIEWS)[number];
 /** A remembered view (pi.json), undefined for anything else. */
 export const storedView = (x: unknown): StreamView | undefined => (STREAM_VIEWS.includes(x as StreamView) ? (x as StreamView) : undefined);
-/** The views a model's data allows: spikes with writes (into `k` streams), largest with writes into more than one,
- * layers with the writes' `shares`, reads with reads (from `rk` sources). */
+/** The views a model's data allows: spikes (layers) with writes (into `k` streams), the hc views with writes into
+ * more than one, largest (layers) with the writes' `shares`, spikes (reads) with reads (from `rk` sources). */
 export const streamViews = (k: number, rk: number, shares: boolean): StreamView[] =>
-	STREAM_VIEWS.filter((v) => (v === "spikes" ? k > 0 : v === "largest" ? k > 1 : v === "layers" ? shares : rk > 0));
+	STREAM_VIEWS.filter((v) => (v === "spikes (layers)" ? k > 0 : v === "largest (layers)" ? shares : v === "spikes (reads)" ? rk > 0 : k > 1));
+/** A view's name on a model writing `k` streams and reading `rk` sources: one stream has no hc views, so no
+ * "(layers)"; one with reads (Inkling 2) spikes (writes) beside spikes (reads). */
+export const viewName = (v: StreamView, k: number, rk = 0) =>
+	(k > 1 ? v : rk && v === "spikes (layers)" ? "spikes (writes)" : v.replace(" (layers)", ""));
 /** The view drawn: the one stored where the model has it, else the first it has (spikes where it writes). */
 export const viewOf = (stored: StreamView | undefined, views: StreamView[]): StreamView => (stored && views.includes(stored) ? stored : views[0]);
 /** The view after the one drawn (s). */
@@ -996,109 +1016,104 @@ export const STREAM_RGB: Rgb[] = [[255, 180, 84], [86, 204, 242], [244, 114, 182
 export const STREAM_LOOK = { age: 1.2, head: 0.35, beam: 1.4, tail: 0.62, step: 0.08, alt: 0.4 };
 /** A key unlit; every other one a shade darker, so keys with no gap between them still read as keys. */
 const KEY: Rgb = [37, 45, 58], KEY_ALT = mix(KEY, COLOURS.bg, STREAM_LOOK.alt), WHITE: Rgb = [255, 255, 255];
-/** STREAM's history lines (two tokens a line) where the board has room, the fewest it is drawn with, its own lines
- * past the history (its title, keys and depth marks), and those with the rule over it in the right column. */
+/** STREAM's history lines (two tokens a line) at the least where there is room (more: streamShare, and the lines its
+ * column leaves), the fewest it is drawn with, its own lines past the history (its title, keys and depth marks), and
+ * those with the rule over it in the right column. */
 export const STREAM_LINES = 8, STREAM_MIN = 3, STREAM_FIXED = 3, STREAM_FRAME = 1 + STREAM_FIXED;
 /** STREAM full size: the oldest line at 1 - FULL_FADE of the newest's strength (the column's fades all the way), so
  * old lines stay readable. */
 export const FULL_FADE = 0.6;
-/** STREAM's history lines with `room` lines left under what keeps its least over it (the board's right column: TOKENS
- * and EXPERTS, dock.ts rightLeast; the mini dock: a grid of lights, MAP and SETTLING), its `frame` lines taken: STREAM_LINES,
- * fewer before those fall under their least, none under STREAM_MIN (it gives way). */
+/** STREAM's history lines with `room` lines left under what keeps its least over it (the board's right column: EXPERTS,
+ * dock.ts rightLeast; the mini dock: a grid of lights, MAP and SETTLING), its `frame` lines taken: `most`, fewer before
+ * those fall under their least, none under STREAM_MIN (it gives way). */
 export function streamLines(room: number, frame = STREAM_FRAME, most = STREAM_LINES): number {
 	const n = Math.min(most, room - frame);
 	return n >= STREAM_MIN ? n : 0;
 }
-/** The history lines STREAM takes on a mini dock `rows` tall before the lights: a quarter of its rows, STREAM_LINES at
- * least, twice that at most (fewer where they would leave under two layers of lights; the lines left over after, up to
- * twice STREAM_LINES in all: dock.ts renderMini). */
-export const miniStreamLines = (rows: number) => Math.max(STREAM_LINES, Math.min(2 * STREAM_LINES, Math.floor(rows / 4)));
-/** A key's columns for `L` layers in `w`: two, one, or none (more layers than columns: streamPanel spreads them). */
-export const keyWidth = (w: number, L: number) => (L < 1 ? 0 : w >= 2 * L ? 2 : w >= L ? 1 : 0);
-/** Where the blocks over RESIDUAL STREAM in a column `w` wide end (EXPERTS' grids; the mini dock's MAP and SETTLING
- * too), STREAM drawn over `L` layers (0: not drawn): its keys' edge where they fall short of `w` by 4 columns at most,
- * the grids then full rectangles that wide (expertsStack's plate); else 0, the column's width as ever. */
-export const keysEdge = (w: number, L: number) => { const k = L * keyWidth(w, L); return k && w - k <= 4 ? k : 0; };
-type StreamLights = Pick<TokenEvent, "strikes" | "largest" | "layers" | "readStrikes">;
-/** `L` layers on `W` columns, more layers than columns: column c's layers from `from(c)` up to `to(c)`, floor(c L / W)
- * to floor((c + 1) L / W), one at least. */
-const span = (L: number, W: number) => {
+/** The history lines STREAM takes before EXPERTS' lights in `rows` (the board's middle, the mini dock's lines): a
+ * quarter, STREAM_LINES at least, twice that at most (on the mini dock fewer where they would leave under two layers
+ * of lights). The lines its column leaves over go to it after (dock.ts heights, renderMini). */
+export const streamShare = (rows: number) => Math.max(STREAM_LINES, Math.min(2 * STREAM_LINES, Math.floor(rows / 4)));
+type StreamLights = Pick<TokenEvent, "strikes" | "wholeStrikes" | "largest" | "layers" | "readStrikes">;
+/** `L` layers on `W` columns, evenly: column c's layers from `from(c)` up to `to(c)`, floor(c L / W) to
+ * floor((c + 1) L / W), one at least. Fewer layers than columns: a layer one column or more (1 or 2, 2 or 3, as it
+ * falls); more: a column one layer or more. */
+export const span = (L: number, W: number) => {
 	const from = (c: number) => Math.floor((c * L) / W);
-	return { from, to: (c: number) => from(c + 1) };
+	return { from, to: (c: number) => Math.max(from(c) + 1, from(c + 1)) };
 };
-/** Token `t`'s lights of `L` layers spread over `W` columns, fewer than the layers (span), each column the strongest
+/** Token `t`'s `which` lights (the view drawn's) of `L` layers spread over `W` columns (span), each column the strongest
  * of its layers: a strike (the longest beam), the brightest largest (layers' too). */
-export function spread(t: StreamLights, L: number, W: number): StreamLights {
-	const { from, to } = span(L, W);
-	const strikes = (x?: Uint16Array) => {
-		if (!x) return x;
-		const out: number[] = [];
-		for (let c = 0; c < W; c++) {
-			let best = -1;
-			for (let i = 0; i + 2 < x.length; i += 3) if (x[i] >= from(c) && x[i] < to(c) && (best < 0 || x[i + 2] > x[best + 2])) best = i;
-			if (best >= 0) out.push(c, x[best + 1], x[best + 2]);
-		}
-		return Uint16Array.from(out);
-	};
-	const lit = (b?: Uint16Array) => b && Uint16Array.from({ length: W }, (_, c) => {
-		let m = b[from(c)] ?? 0;
-		for (let l = from(c) + 1; l < to(c); l++) if (unpackLargest(b[l] ?? 0)[1] > unpackLargest(m)[1]) m = b[l];
-		return m;
-	});
-	return { strikes: strikes(t.strikes), readStrikes: strikes(t.readStrikes), largest: lit(t.largest), layers: lit(t.layers) };
+export function spread(t: StreamLights, L: number, W: number, which: keyof StreamLights): Uint16Array | undefined {
+	const { from, to } = span(L, W), x = t[which];
+	if (!x) return x;
+	if (which === "largest" || which === "layers")
+		return Uint16Array.from({ length: W }, (_, c) => {
+			let m = x[from(c)] ?? 0;
+			for (let l = from(c) + 1; l < to(c); l++) if (unpackLargest(x[l] ?? 0)[1] > unpackLargest(m)[1]) m = x[l];
+			return m;
+		});
+	const out: number[] = [];
+	for (let c = 0; c < W; c++) {
+		let best = -1;
+		for (let i = 0; i + 2 < x.length; i += 3) if (x[i] >= from(c) && x[i] < to(c) && (best < 0 || x[i + 2] > x[best + 2])) best = i;
+		if (best >= 0) out.push(c, x[best + 1], x[best + 2]);
+	}
+	return Uint16Array.from(out);
 }
 
 /** The names of `n` read sources (Inkling 2's resid_read_share slots): the embedding, the finished blocks, the
  * running sum. */
 const sourceNames = (n: number) => Array.from({ length: n }, (_, j) => (!j ? "embedding" : j === n - 1 ? "running sum" : `block ${j}`));
-/** Whether STREAM full size has a legend line in `view` on a model writing `k` streams: a colour a stream, or a source
- * (layers: one colour, none). */
-export const hasLegend = (view: StreamView, k: number) => view === "reads" || (k > 1 && view !== "layers");
+/** Whether STREAM full size has a legend line in `view`: a colour a stream (hc), or a source (the layers' views: one
+ * colour, none). */
+export const hasLegend = (view: StreamView) => view === "spikes (reads)" || view.endsWith("(hc)");
+/** Each view's lights on a token (StreamLights). */
+const LIGHTS = { "spikes (layers)": "wholeStrikes", "spikes (hc)": "strikes", "largest (layers)": "layers", "largest (hc)": "largest", "spikes (reads)": "readStrikes" } as const;
 
 /** RESIDUAL STREAM's title, `w` wide (inverse `focused`): what the model has (`s`: `k` streams written, `rk` sources
- * read; one stream with reads is a block's sum, Inkling 2's) and what is tracked (the view; ` · s`, faint, with
+ * read; one stream with reads is a block's sum, Inkling 2's) and what is tracked (viewName; ` · s`, faint, with
  * `swap`: s switches it), and `note` (dim: why it is dark) after them; where all do not fit, "tracking" goes first,
  * then the count, then the note in their place. */
 function streamTitle(th: any, s: { k: number; rk: number }, view: StreamView, w: number, o: { note?: string; focused?: boolean; swap?: boolean }): string {
 	const name = title(th, "RESIDUAL STREAM", !!o.focused), why = o.note ? th.fg("dim", `  ${o.note}`) : "";
-	const has = s.k > 1 ? `${s.k} streams` : view === "reads" ? `${s.rk} sources` : s.rk ? "block sum" : "1 stream";
+	const has = s.k > 1 ? `${s.k} streams` : view === "spikes (reads)" ? `${s.rk} sources` : s.rk ? "block sum" : "1 stream", v = viewName(view, s.k, s.rk);
 	const all = s.k > 1 ? `hyper-connections: ${s.k} residual streams` : s.rk ? has : "1 residual stream";
 	const line = (t: string) => name + th.fg("dim", `  ${t}`) + (o.swap ? th.fg("faint", " · s") : "") + why;
-	return [`${all} · tracking ${view}`, `${has} · tracking ${view}`, `${has} · ${view}`, view].map(line).find((l) => visibleWidth(l) <= w)
-		?? (o.note ? name + why : line(view));
+	return [`${all} · tracking ${v}`, `${has} · tracking ${v}`, `${has} · ${v}`, v].map(line).find((l) => visibleWidth(l) <= w)
+		?? (o.note ? name + why : line(v));
 }
 /** RESIDUAL STREAM, `w` wide, `lines` + STREAM_FIXED lines (`full`: its legend's line, where it has one, out of
  * `lines`): its title (streamTitle), then the history of token `k` and those before it in `lines` lines of half blocks
- * (rgbBlocks), two tokens a line, the newest lowest; a key a layer of the model's `s.L`, shallow on the left (keyWidth
- * columns each), lit in the stream's colour while struck; faint depth marks every 8 layers (L0, L8, as the telescope
- * numbers them), more apart where 8 layers take under 8 columns. More layers than `w`: spread over it (spread), a
- * column a key. Each token's lights as packWrites decided them. `spikes` (TokenEvent.strikes) and `reads`
- * (readStrikes, by source): a struck layer's beam trails behind its head, the head whiter, all fading with age; a key
- * glows a few tokens after its strike. `largest`: every layer lit in its largest stream's colour at its brightness,
- * fading with age; the keys as the newest token (STREAM_LOOK). `layers` (TokenEvent.layers) the same way, the top few
- * lit in the first stream's colour. `full` (full size): a swatch and a name for each colour
- * in use (hasLegend); the keys as the right column draws them (RIGHT_W: two columns a layer up to 25, one up to the
- * width, spread past it); the age fading only part way (FULL_FADE). `fog` (1 or 2, the view switch: streamFrames):
+ * (rgbBlocks), two tokens a line, the newest lowest; the model's `s.L` layers spread over all `w` columns (span,
+ * spread; full size, a column a layer where they fit, left-aligned, the rest blank), shallow on the left, a key a
+ * layer (the keys of a layer two or more columns wide one colour), lit in the stream's colour while struck; faint depth marks every 8 layers (L0, L8, as the telescope numbers them), more apart
+ * where 8 layers take under 8 columns. Each token's lights as packWrites decided them (LIGHTS). The spikes (`spikes (reads)` by source): a struck
+ * layer's beam trails behind its head, the head whiter, all fading with age; a key glows a few tokens after its
+ * strike. `largest (hc)`: every layer lit in its largest stream's colour at its brightness, fading with age; the keys
+ * as the newest token (STREAM_LOOK). `largest (layers)` the same way, every layer by its share (shareLayers) in the
+ * first stream's colour, as `spikes (layers)` strikes. `full` (full size): a swatch and a name for each colour
+ * in use (hasLegend); the age fading only part way (FULL_FADE). `fog` (1 or 2, the view switch: streamFrames):
  * every layer's lights and key toward the background (SETTLE_FOG) but the deepest `clear` share (0-1) of them. */
 export function streamPanel(th: any, toks: StreamLights[], k: number, s: { L: number; k: number; rk: number }, view: StreamView, w: number, lines: number,
 	o: { note?: string; focused?: boolean; swap?: boolean; full?: boolean; fog?: number; clear?: number } = {}): string[] {
-	const keyRoom = o.full ? Math.min(w, Math.max(RIGHT_W, s.L)) : w;   // the width the keys are fitted to
-	// The keys: a layer each, or (`fill`: more layers than columns) a column each over the layers spread.
-	const layers = s.L, fill = !keyWidth(keyRoom, layers), nKeys = fill ? w : layers, tok = (i: number) => (fill && toks[i] ? spread(toks[i], layers, w) : toks[i]);
-	const legend = !!o.full && hasLegend(view, s.k), look = STREAM_LOOK;
-	const kw = fill ? 1 : keyWidth(keyRoom, nKeys), R = 2 * Math.max(1, lines - +legend), cols = nKeys * kw, fade = o.full ? FULL_FADE : 1;
-	const cells: (Rgb | null)[] = new Array(R * cols).fill(null), glow = new Float32Array(nKeys), hue = new Int16Array(nKeys);
+	// A column a key over the layers spread, `cw` columns: full size, a column a layer where they fit, the rest blank.
+	// Each key's shade by its layer (by its column where several share one).
+	const layers = s.L, cw = o.full ? Math.min(w, layers) : w, lights = LIGHTS[view], at = (i: number) => toks[i] && spread(toks[i], layers, cw, lights), { from, to } = span(layers, cw);
+	const legend = !!o.full && hasLegend(view), look = STREAM_LOOK, odd = (c: number) => (layers > cw ? c : from(c)) % 2;
+	const R = 2 * Math.max(1, lines - +legend), fade = o.full ? FULL_FADE : 1;
+	const cells: (Rgb | null)[] = new Array(R * cw).fill(null), glow = new Float32Array(cw), hue = new Int16Array(cw);
 	// `age` tokens back, alpha `a` of `rgb` over what is there (the dock's background where nothing is).
 	const paint = (age: number, key: number, rgb: Rgb, a: number) => {
-		if (age < 0 || age >= R || key >= nKeys) return;
-		const at = (R - 1 - age) * cols + key * kw, c = mix(cells[at] ?? COLOURS.bg, rgb, a);
-		for (let j = 0; j < kw; j++) cells[at + j] = c;
+		if (age < 0 || age >= R || key >= cw) return;
+		const i = (R - 1 - age) * cw + key;
+		cells[i] = mix(cells[i] ?? COLOURS.bg, rgb, a);
 	};
 	const rgb = (stream: number) => STREAM_RGB[stream % STREAM_RGB.length];
-	if (view === "largest" || view === "layers")
+	if (lights === "largest" || lights === "layers")
 		for (let a = 0; a < R; a++) {
-			const b = tok(k - a)?.[view];
-			if (b) for (let l = 0; l < Math.min(nKeys, b.length); l++) {
+			const b = at(k - a);
+			if (b) for (let l = 0; l < Math.min(cw, b.length); l++) {
 				const [st, v] = unpackLargest(b[l]);
 				if (v) paint(a, l, rgb(st), v * Math.pow(1 - (fade * a) / R, look.age));   // layers: the unlit dark
 				if (a === 0) [glow[l], hue[l]] = [v, st];
@@ -1107,7 +1122,7 @@ export function streamPanel(th: any, toks: StreamLights[], k: number, s: { L: nu
 	else
 		// The oldest first, so newer beams lie over older ones; a beam's head at its token's age, its tail the cells after.
 		for (let a = R + WRITE_BEAM - 1; a >= 0; a--) {
-			const t = tok(k - a), x = view === "reads" ? t?.readStrikes : t?.strikes;
+			const x = at(k - a);
 			for (let i = 0; x && i + 2 < x.length; i += 3) {
 				const [l, st, len] = [x[i], x[i + 1], x[i + 2]];
 				for (let j = 0; j < len; j++) {
@@ -1115,26 +1130,26 @@ export function streamPanel(th: any, toks: StreamLights[], k: number, s: { L: nu
 					if (r >= 0 && r < R) paint(r, l, j ? rgb(st) : mix(rgb(st), WHITE, look.head * near), Math.pow(near, look.beam) * (j ? look.tail - look.step * j : 1));
 				}
 				const f = 1 - a / (len + 2);
-				if (f > 0 && l < nKeys && f > glow[l]) [glow[l], hue[l]] = [f, st];
+				if (f > 0 && l < cw && f > glow[l]) [glow[l], hue[l]] = [f, st];
 			}
 		}
 	// The view switch's fog: the keys shallower than the clear share toward the background, their lights too.
-	const dimBy = SETTLE_FOG[o.fog ?? 0] ?? 0, fogTo = nKeys - Math.round(nKeys * (o.clear ?? 0));
+	const dimBy = SETTLE_FOG[o.fog ?? 0] ?? 0, fogTo = cw - Math.round(cw * (o.clear ?? 0));
 	const fogged = (c: Rgb, key: number) => (dimBy && key < fogTo ? mix(c, COLOURS.bg, dimBy) : c);
-	if (dimBy) cells.forEach((c, i) => c && (cells[i] = fogged(c, Math.floor((i % cols) / kw))));
-	const mode = colourMode(th), keyRgb = (l: number) => fogged(glow[l] > 0 ? mix(l % 2 ? KEY_ALT : KEY, rgb(hue[l]), glow[l]) : l % 2 ? KEY_ALT : KEY, l);
+	if (dimBy) cells.forEach((c, i) => c && (cells[i] = fogged(c, i % cw)));
+	const mode = colourMode(th), keyRgb = (l: number) => fogged(glow[l] > 0 ? mix(odd(l) ? KEY_ALT : KEY, rgb(hue[l]), glow[l]) : odd(l) ? KEY_ALT : KEY, l);
 	let keys = "", marks = "", every = 8;
-	for (let l = 0; l < nKeys; l++) keys += colourCode(keyRgb(l), mode) + "▆".repeat(kw);
+	for (let l = 0; l < cw; l++) keys += colourCode(keyRgb(l), mode) + "▆";
 	// The marks: every 8 layers, or 16 or 32 where 8 take under 8 columns; each over its layer's first column.
-	while ((every * cols) / layers < 8) every *= 2;
-	const { to } = span(layers, w), first = (l: number) => { let c = 0; while (to(c) <= l) c++; return c; };
+	while ((every * cw) / layers < 8) every *= 2;
+	const first = (l: number) => { let c = 0; while (to(c) <= l) c++; return c; };
 	for (let l = 0; l < layers; l += every) {
-		const at = fill ? first(l) : l * kw, m = `L${l}`;
-		if (marks.length <= at && at + m.length <= w) marks = marks.padEnd(at) + m;   // whole, or not at all
+		const c = first(l), m = `L${l}`;
+		if (marks.length <= c && c + m.length <= w) marks = marks.padEnd(c) + m;   // whole, or not at all
 	}
-	const names = view === "reads" ? sourceNames(s.rk) : Array.from({ length: s.k }, (_, j) => `stream ${j + 1}`);
+	const names = view === "spikes (reads)" ? sourceNames(s.rk) : Array.from({ length: s.k }, (_, j) => `stream ${j + 1}`);
 	const named = legend ? [names.map((n, j) => colourCode(rgb(j), mode) + "■ " + th.fg("dim", n)).join("  ")] : [];
-	return [streamTitle(th, s, view, w, o), ...named, ...rgbBlocks(cells, cols, R, mode), keys + "\x1b[39m", th.fg("faint", marks)].map((l) => fit(l, w));
+	return [streamTitle(th, s, view, w, o), ...named, ...rgbBlocks(cells, cw, R, mode), keys + "\x1b[39m", th.fg("faint", marks)].map((l) => fit(l, w));
 }
 
 /** STREAM's playhead while it follows a streaming reply (Dock.playhead): the token it shows trails the newest by about

@@ -642,13 +642,13 @@ def test_a_lens_in_the_models_folder_is_its_own_whatever_lens_json_names_and_onl
     assert jlens.find_for("served") == d and jlens.use("converted", "served")["lens"] == "converted"
     models.check_shape("served", models.shape_of(4, 1, 16))            # the fake lens is 8 wide
     with pytest.raises(ValueError, match="lens converted is 8 wide, Flash is 16"):
-        jlens.setup_for("served", 4)                                   # what the tracer reads at load: not read
+        jlens.setup_for("served")                                   # what the tracer reads at load: not read
     real = jlens.save(jlens.Lens({1: mx.zeros((8, 8))}, dict(checkpoint="Flash")), d)
     set_meta(real, d_model=None)                                       # no width in lens.json: the weights tell
     with pytest.raises(ValueError, match="lens converted is 8 wide, Flash is 16"):
-        jlens.setup_for("served", 4)
+        jlens.setup_for("served")
     jlens.save(jlens.Lens({1: mx.zeros((16, 16))}, dict(checkpoint="Flash")), d)
-    assert jlens.setup_for("served", 4).name == "converted"
+    assert jlens.setup_for("served").name == "converted"
 
 
 def test_a_resumed_fit_never_writes_over_the_lens_jlens_on_goes_back_to(home):

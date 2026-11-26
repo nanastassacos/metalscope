@@ -144,7 +144,7 @@ class Ds4Tracer:
                 log.warning("metalscope: %s's J-lens %s is %s, not (%d, %d): not read", self.name, path.name, shape,
                             self.n_embd, self.width)
                 return None
-            setup = jlens.LensSetup(lens, jlens.workspace_of(lens, self.n_layer), name=path.name)
+            setup = jlens.LensSetup(lens, name=path.name)
         except Exception:
             log.exception("metalscope: could not load a Jacobian lens for %s", self.name)
             return None
@@ -161,7 +161,8 @@ class Ds4Tracer:
 
     def read_layers(self) -> tuple[list[int], list[int]]:
         """The layers the J-lens and the logit lens read at the step in use: what a request asks ds4 for, the deepest
-        MAX_LENS of each (ds4 refuses more); none with the lenses off (ds4 reads no lens rows, jlens_file None)."""
+        MAX_LENS of each (ds4 refuses more; the sizes read at most 25 today, config.LENS_LARGE_MAX and the last: kept
+        should they grow); none with the lenses off (ds4 reads no lens rows, jlens_file None)."""
         if self.lens_step == config.LENS_OFF:
             return [], []
         jl, logit = self.lens_steps()[self.lens_step]
@@ -178,8 +179,8 @@ class Ds4Tracer:
     # -- what a request sends ds4 ------------------------------------------------
     def jlens_file(self) -> Optional[Path]:
         """The model's J-lens as ds4 reads it (frames.write_jlens): the layers the trace reads (read_layers), written
-        once per lens and layer set in ds4-server's scope directory (Flash Next: ~0.8 GB for 15 layers, at most one a
-        lens step; make_served removes the others); None without a J-lens."""
+        once per lens and layer set in ds4-server's scope directory (Flash Next: ~53 MB a layer, ~0.8 GB for 15; at most
+        one a lens step; make_served removes the others); None without a J-lens."""
         with self.lock:                  # the lens and its layers as one (refresh_lens swaps the lens)
             setup, layers = self.lens, self.read_layers()[0]
             if setup is None or not layers:

@@ -42,25 +42,25 @@ ignored it: a word changes one token, on every model.
 ## What it costs
 
 What it costs, from `metalscope bench` (an M5 Max with 128 GB; a 300-token reply, the median of 3, each
-setting after a minute's rest; tokens a second). Tracing reads the lenses at one of five steps of layers, and that
-is most of its cost (`-` `+` on LENS in the dock): lightest is the fewest layers, the default the middle step,
-fullest every layer the lens has.
+setting after a minute's rest; tokens a second). Tracing reads the lenses at one of three sizes, and that is most
+of its cost (`-` `+` on LENS in the dock). The J-lens (else the logit lens) reads layers spread over the depth, the
+last always: small 4, medium a third of the depth (at most 16, the default), large half (at most 24); on Flash Next 4,
+16 and 24 of 48. The logit lens beside a J-lens reads the same layers and the model's last.
 
-| | tracing off | on, lenses off | on, lightest | on, default | on, fullest |
+| | tracing off | on, lenses off | on, small | on, medium | on, large |
 |---|---|---|---|---|---|
-| Qwen3.5 2B, oMLX | 288 | 264 | 209 | 218 | 183 |
-| Qwen3.6 35B, oMLX | 205 | 192 | 169 | 158 | 112 |
-| Qwen3.8 27B (MTP), oMLX | 57 | 58 | 54 | 48 | 40 |
-| Flash Next, oMLX | 44 | 41 | 34 | 21 | 11 |
-| Inkling 2 Mini (MTP), oMLX | 74 | 64 | 53 | 28 | 11 |
-| Flash Next, ds4 | 69 | 63 | 55 | 40 | 18 |
-| DeepSeek V4.1 Flash, ds4 | 16 | 16 | 16 | 15 | 14 |
+| Qwen3.5 2B, oMLX | 287 | 262 | 209 | 223 | 215 |
+| Qwen3.6 35B, oMLX | 207 | 191 | 154 | 158 | 144 |
+| Qwen3.8 27B (MTP), oMLX | 56 | 56 | 54 | 51 | 47 |
+| Flash Next, oMLX | 45 | 41 | 30 | 20 | 16 |
+| Inkling 2 Mini (MTP), oMLX | 71 | 64 | 40 | 25 | 21 |
+| Flash Next, ds4 | 69 | 64 | 52 | 40 | 34 |
+| DeepSeek V4.1 Flash, ds4 | 16 | 16 | 15 | 15 | 15 |
 
-Tracing off measured again after the lens steps was within 6% of the first on every model. The oMLX rows were
-measured on oMLX 0.8.3 (on 0.8.0 the 2B, the 35B and Flash Next wrote the same within 4%, the 27B 54, 54,
-51, 44 and 38). Inkling 2 Mini has a Jacobian lens fitted on it (none ships), which reads each visit's whole state;
-with no Jacobian lens the same steps wrote 53, 49 and 42 on oMLX 0.8.2 (66 with tracing off). On the 2B the lightest
-step writes slower than the default, the same in three runs: not explained. These are speeds from rest: under
+Measured 2026-11-26 on oMLX 0.8.3 and ds4 5379c1c. Tracing off measured again at the end of each run was within 8%
+of the first, except Flash Next on ds4 (50 after 69: the Mac slowing under load, below). Inkling 2 Mini has a Jacobian
+lens fitted on it (none ships), which reads each visit's whole state. On the 2B and the 35B small writes slower than
+medium, the same in earlier runs: not explained. These are speeds from rest: under
 sustained load the Mac slows itself, traced or not (Flash Next on ds4, untraced, fell from 69 to 42 tokens a second
 over 2.5 minutes of back-to-back replies and was back after 90 s idle), so a long agent run writes slower than this.
 

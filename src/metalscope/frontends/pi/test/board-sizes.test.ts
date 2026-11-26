@@ -3,7 +3,7 @@ import { mock, test } from "node:test";
 import { visibleWidth } from "@earendil-works/pi-tui";
 import { DOCK_MIN_ROWS, MAP_CELL_LINES, MINI_WIDTH, RIGHT_W, layoutKeys, MAP_LINES, type Panel, PANELS } from "../board.ts";
 import { gridShape, reshapeGrid } from "../lights.ts";
-import { Dock } from "../dock.ts";
+import { Dock, SETTLE_MOST } from "../dock.ts";
 import { type Live, onEvent } from "../state.ts";
 
 // The board at every size and layout: each frame exactly the dock's lines, each line exactly its columns, for models of
@@ -127,7 +127,7 @@ test("one-panel sizes: each panel in focus, a token held or following, engram in
 			if (width >= 100 && rows >= 36) continue;                                    // the board
 			const check = (what: string) => {
 				const at = `${m.name} ${width}x${rows} ${what}`, lines = text(framed(d.render(width), rows, width, at));
-				assert.ok(lines.some((l) => /^ ?1 MAP +2 LENS /.test(l)) || d.steerPage || (d as any).experts.xp.at !== "grid", `${at}: the tab row`);
+				assert.ok(lines.some((l) => /^ ?1 TOKENS +2 MAP /.test(l)) || d.steerPage || (d as any).experts.xp.at !== "grid", `${at}: the tab row`);
 				return lines;
 			};
 			for (const sel of [30, -1]) for (const g of [false, true]) {
@@ -213,37 +213,57 @@ test("board sizes: MAP's height and the reply strip's from the dock, not the rep
 		await tick();
 		return heightsOf(text(d.render(104)));
 	};
-	// 78 lines: the middle 66 under the strip at its least. The left: MAP, a rule, LENS at its most (51 for 40 read
-	// layers); the right: TOKENS 12, a rule, EXPERTS four layers of 5 and its title (34). The left spares
-	// 66 - 3 - 1 - 51 = 11, the right 32: the strip 6 + 11, MAP its least 3 and nothing left over on the left.
-	for (const n of [10, 50, 900]) assert.deepEqual([(await at(78, n)).reply, (await at(78, n)).map], [17, 1 + MAP_LINES], `${n} tokens`);
+	// 78 lines: the middle 66 under the strip at its least. The left: TOKENS 7 (5 choices and a row for the written
+	// token), a rule, MAP, a rule, LENS at its most (36 for 40 read layers: SETTLING 6, a blank, the telescope 28); the
+	// right: EXPERTS, a layer of 5 at a time. The left spares 66 - 7 - 1 - 3 - 1 - 36 = 18: the strip 6 + 18, MAP its
+	// least 3 and nothing left over on the left.
+	for (const n of [10, 50, 900]) assert.deepEqual([(await at(78, n)).reply, (await at(78, n)).map], [24, 1 + MAP_LINES], `${n} tokens`);
 	// 120 lines: the strip a third of the dock (40), MAP 1 + 7 (672 tokens), the rest blank under LENS.
 	assert.deepEqual([(await at(120, 50)).reply, (await at(120, 50)).map], [40, 1 + MAP_CELL_LINES]);
 	assert.deepEqual((await at(51, 900)).reply, 6, "51 lines: nothing spare");
 	assert.equal((await at(160, 50)).reply, 53, "160 lines: a third of the dock");
 });
 
-test("board sizes: MAP's room at 63, 50 and 40 lines, its least (2 lines), the rest of the left column to LENS: SETTLING at 63, the telescope at 50 and 40", async () => {
+test("board sizes: the left column at 63, 50, 45, 40 and 36 lines: MAP its least (2 lines), the rest under TOKENS to LENS; short, SETTLING goes, then TOKENS' last choice, before the telescope's sixth row of tube", async () => {
 	const room = async (m: Model, rows: number) => {
 		const { d } = dockFor(m, rows, 50);
 		d.render(104);
 		await tick();
 		const left = text(d.render(104)).map((l) => l.split(" │ ")[0].trimEnd());
 		const map = left.findIndex((l) => l.startsWith("MAP  ")), lens = left.findIndex((l) => /^ ?LENS /.test(l)), st = left.findIndex((l) => l.startsWith("SETTLING"));
-		return { map: lens - 2 - map, settle: left.slice(st + 1).findIndex((l) => !/^L\d+/.test(l)), tube: left.filter((l) => /^│[ ▸]L\d+/.test(l)).length,
-			fold: Number(/… (\d+) shallow/.exec(left.join("\n"))?.[1] ?? 0) };
+		return { map: lens - 2 - map, settle: st < 0 ? 0 : left.slice(st + 1).findIndex((l) => !/^L\d+/.test(l)), tube: left.filter((l) => /^│[ ▸]L\d+/.test(l)).length,
+			fold: Number(/… (\d+) shallow/.exec(left.join("\n"))?.[1] ?? 0), choices: left.filter((l) => /^[▸ ] " (w|a)\d+"/.test(l)).length };
 	};
-	// [MAP's cell lines, SETTLING's lines of layers, the tube's rows, layers folded]; with MAP's four lines (before)
-	// the same heights had SETTLING 14 and 11 at 63, 11 and 27 folded at 50, a tube of 8 at 40.
-	const want: Record<string, number[][]> = { forty: [[2, 16, 9, 0], [2, 3, 9, 0], [2, 3, 9, 31]], fortyeight: [[2, 13, 11, 0], [2, 3, 11, 17], [2, 3, 10, 38]] };
+	// [TOKENS' choices, MAP's cell lines, SETTLING's lines of layers, the tube's rows, layers folded]. TOKENS its 5
+	// choices over MAP; at 40 SETTLING its sub-heading and a line, at 36 none and TOKENS 4 choices, the tube 6 rows (5 at
+	// 36, MAP's second line kept).
+	const want: Record<string, number[][]> = {
+		forty: [[5, 2, 5, 9, 0], [5, 2, 3, 9, 27], [5, 2, 3, 7, 33], [5, 2, 1, 6, 34], [4, 2, 0, 5, 35]],
+		fortyeight: [[5, 2, 5, 11, 0], [5, 2, 3, 11, 37], [5, 2, 3, 7, 41], [5, 2, 1, 6, 42], [4, 2, 0, 5, 43]] };
 	for (const m of MODELS)
-		for (const [i, rows] of [63, 50, 40].entries()) {
+		for (const [i, rows] of [63, 50, 45, 40, 36].entries()) {
 			const r = await room(m, rows);
-			assert.deepEqual([r.map, r.settle, r.tube, r.fold], want[m.name][i], `${m.name} at ${rows}`);
+			assert.deepEqual([r.choices, r.map, r.settle, r.tube, r.fold], want[m.name][i], `${m.name} at ${rows}`);
 		}
 });
 
-test("board sizes: MAP two lines at 49 lines (a token half a character), the telescope folding more for them; two lines more unfold it, MAP still two lines", async () => {
+test("TOKENS: its first 5 choices in the board's column, all 10 full size and on the one-panel board", async () => {
+	const choices = (ls: string[]) => ls.map((l) => l.split(" │ ")[0]).filter((l) => /^[▸ ] " (w|a)\d+"/.test(l)).length;
+	const { d, host } = dockFor(MODELS[0], 63, 50);
+	d.render(104);
+	await tick();
+	assert.equal(choices(text(d.render(104))), 5, "the board's column");
+	host.panel = "TOKENS";
+	d.full = true;
+	assert.equal(choices(text(d.render(104))), 10, "full size");
+	const one = dockFor(MODELS[0], 30, 50);
+	one.host.panel = "TOKENS";
+	one.d.render(104);
+	await tick();
+	assert.equal(choices(text(one.d.render(104))), 10, "the one-panel board");
+});
+
+test("board sizes: MAP two lines at 49 lines (a token half a character), the telescope folding more for them; two lines more unfold four layers (two a row there), MAP still two lines", async () => {
 	const m = MODELS[0];
 	const at = async (rows: number) => {
 		const { d } = dockFor(m, rows, 900);
@@ -255,8 +275,8 @@ test("board sizes: MAP two lines at 49 lines (a token half a character), the tel
 	};
 	const tight = await at(49), more = await at(51);
 	assert.deepEqual([tight.map, more.map, tight.reply, more.reply], [MAP_LINES, MAP_LINES, 6, 6], "MAP its least, the strip its least");
-	assert.ok(tight.fold > more.fold && more.fold >= 0, `the two lines went to the telescope: ${tight.fold} then ${more.fold} layers folded`);
-	assert.equal((await at(51)).fold, 0, "51 lines: the telescope whole");
+	// The two lines went to the telescope: two rows of its second section, two layers a row there ("L30 +1").
+	assert.deepEqual([tight.fold, more.fold], [29, 25], `${tight.fold} then ${more.fold} layers folded`);
 	assert.equal(tight.cells, "▀".repeat(48), "a token half a character, two rows of 48 a line");
 });
 
@@ -267,7 +287,7 @@ test("board sizes: the height goes to content; EXPERTS more layers, SETTLING mor
 		return tick().then(() => {
 			const board = text(d.render(104));
 			const experts = Number(/ │ EXPERTS {2}(\d+) layers?/.exec(board.find((l) => / │ EXPERTS {2}\d/.test(l))!)![1]);
-			const s = board.findIndex((l) => l.startsWith("SETTLING  ")), settling = board.slice(s + 1).findIndex((l) => !/^L\d+ /.test(l));
+			const s = board.findIndex((l) => l.startsWith("SETTLING")), settling = board.slice(s + 1).findIndex((l) => !/^L\d+ /.test(l));
 			host.panel = "EXPERTS";
 			d.full = true;
 			const head = text(d.render(104)).find((l) => /^layers? \d+(-\d+)? of /.test(l))!;
@@ -281,8 +301,8 @@ test("board sizes: the height goes to content; EXPERTS more layers, SETTLING mor
 	assert.ok(at75.window > at51.window && at120.window > at75.window, `${at51.window} ${at75.window} ${at120.window}`);
 	assert.equal(at160.window, 40, "tall enough: every layer");
 	assert.ok(at120.experts > at75.experts && at75.experts >= 3, `${at75.experts} ${at120.experts}`);
-	assert.ok(at75.settling > at51.settling && at120.settling >= at75.settling && at120.settling <= 20, `${at51.settling} ${at75.settling} ${at120.settling}`);
-	assert.equal(at160.settling, 20, "every layer, two a line");
+	assert.ok(at75.settling > at51.settling && at120.settling >= at75.settling, `${at51.settling} ${at75.settling} ${at120.settling}`);
+	assert.equal(at160.settling, SETTLE_MOST, "at its most: SETTLE_MOST lines, the 40 layers eight a line");
 });
 
 /** Both lenses on every token, reading other layers: the J-lens 12 up, the logit lens every layer but the deepest, its
@@ -373,9 +393,9 @@ test("mini sizes: the token's line, EXPERTS' title, as many whole grids as fit, 
 			const key = lines.indexOf(rows < DOCK_MIN_ROWS ? "ctrl+\\ steps in · [ ]" : "ctrl+\\ steps in, then m · [ ]");   // no m where the full dock does not fit
 			assert.ok(key > 0, what);
 			const blanks = lines.slice(1, key).flatMap((l, i) => (l === "" ? [i + 1] : []));
-			assert.ok(blanks.every((i) => /^(MAP|SETTLING|RESIDUAL STREAM) /.test(lines[i + 1])), `${what}: a blank line only over a part\n${lines.join("\n")}`);
+			assert.ok(blanks.every((i) => /^(MAP|SETTLING|RESIDUAL STREAM)( |$)/.test(lines[i + 1])), `${what}: a blank line only over a part\n${lines.join("\n")}`);
 			assert.ok(lines.slice(key + 1).every((l) => l === "") && rows - 1 - key < block, `${what}: under the key line, less than a grid`);
-			const grids = lines.filter((l) => /^[▸ ] layer \d+ of \d+$/.test(l)).length, end = lines.findIndex((l) => /^(MAP|SETTLING) /.test(l));
+			const grids = lines.filter((l) => /^[▸ ] layer \d+ of \d+$/.test(l)).length, end = lines.findIndex((l) => /^(MAP|SETTLING)( |$)/.test(l));
 			assert.match(lines[1], /^EXPERTS {2}\d+ layers? · /, `${what}: EXPERTS' title`);
 			const under = end < 0 ? key : end - +(lines[end - 1] === "");
 			assert.equal(under - 2, grids * block, `${what}: whole grids, the maps under them`);
@@ -393,7 +413,7 @@ test("mini dock: the maps the right column's width, with routing or without", as
 		(d as any).host.mini = true;
 		d.render(MINI_WIDTH);
 		await tick();
-		const lines = text(d.render(MINI_WIDTH)), map = lines.findIndex((l) => l.startsWith("MAP ")), settle = lines.findIndex((l) => l.startsWith("SETTLING "));
+		const lines = text(d.render(MINI_WIDTH)), map = lines.findIndex((l) => l.startsWith("MAP ")), settle = lines.findIndex((l) => l.startsWith("SETTLING"));
 		assert.ok(map > 0 && settle > map, lines.join("\n"));
 		const widest = Math.max(...lines.slice(map + 1, settle).map((l) => visibleWidth(l)), ...lines.slice(settle + 1, -1).map((l) => visibleWidth(l)));
 		assert.equal(widest, RIGHT_W, `${routed ? "routed" : "no routing"}: ${widest}`);
@@ -401,7 +421,7 @@ test("mini dock: the maps the right column's width, with routing or without", as
 });
 
 test("mini dock: the lights always the glow (the history view); stepped to an older token, the glow as it stood there", async () => {
-	const grids = (d: Dock) => { const raw = d.render(MINI_WIDTH), lines = text(raw), end = lines.findIndex((l) => /^(MAP|SETTLING) /.test(l)); return raw.slice(1, end).map((l) => l.replace(/\x1b\[[0-9;]*m[▌▐]/, "")); };   // the edge: where the keyboard is
+	const grids = (d: Dock) => { const raw = d.render(MINI_WIDTH), lines = text(raw), end = lines.findIndex((l) => /^(MAP|SETTLING)( |$)/.test(l)); return raw.slice(1, end).map((l) => l.replace(/\x1b\[[0-9;]*m[▌▐]/, "")); };   // the edge: where the keyboard is
 	for (const done of [true, false]) {
 		const { d, host } = dockFor(SHORT_LENS, 60, 50, done);
 		host.mini = true;
@@ -514,7 +534,7 @@ test("focus changes no geometry on the one-panel board: each panel, following or
 	// The tab row and the rule over the keys: where they are whatever the focus, the token held or followed, a steer on
 	// or not (the keys always two lines); a panel's own rules: the same followed or held.
 	const rules = (lines: string[]) => lines.map((l, i) => (/^─+$/.test(l) ? i : -1)).filter((i) => i >= 0);
-	const geo = (lines: string[]) => [lines.findIndex((l) => /^ ?1 MAP +2 LENS /.test(l)), rules(lines).at(-1) ?? -1];
+	const geo = (lines: string[]) => [lines.findIndex((l) => /^ ?1 TOKENS +2 MAP /.test(l)), rules(lines).at(-1) ?? -1];
 	const sizes = ALL ? [[44, 23], [44, 30], [60, 24], [60, 35], [80, 30], [99, 40], [104, 30], [130, 35]] : [[44, 23], [60, 30], [104, 30]];
 	for (const m of [MODELS[0], SHORT_LENS]) for (const [w, h] of sizes) {
 		let want: number[] | undefined;
@@ -584,14 +604,14 @@ test("one-panel board across the threshold: a full-size panel kept for the board
 	d.render(104);
 	await tick();
 	d.stepIn(30);
-	d.handleInput("3");                                                                 // TOKENS full size on the board
+	d.handleInput("1");                                                                 // TOKENS full size on the board
 	assert.equal(d.full, true);
 	term.rows = 30;
 	d.render(104);                                                                      // the one-panel board: kept
 	assert.equal(d.full, true);
 	term.rows = 40;
-	assert.ok(text(d.render(104)).some((l) => / 1 MAP .*3 TOKENS.* 3 back/.test(l)), "full size again");
-	d.handleInput("3");
+	assert.ok(text(d.render(104)).some((l) => / 1 TOKENS .* 1 back/.test(l)), "full size again");
+	d.handleInput("1");
 	assert.equal(d.full, false);
 	// EXPERTS' layer page on the one-panel board, then the board: EXPERTS in its column, its page not opened again.
 	term.rows = 30;

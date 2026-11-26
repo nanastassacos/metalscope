@@ -169,6 +169,14 @@ test("TOKENS in engram inspection: the top choices without and with, a percentag
 	assert.ok(one.every((l) => visibleWidth(l) <= 30) && (one[1].match(/█|▏|▎|▍|▌|▋|▊|▉/g) ?? []).length > 0, one.join("\n"));
 	assert.match(one[2], /61% +14% [█▏▎▍▌▋▊▉]+ *$/);
 	assert.match(none[2], /^ {2}" seven" +61% +14%$/);
+	// Too few lines for every choice: the written token's row kept in the last line, as TOKENS keeps it (keepRow).
+	const low = answer(n, { 5: 1.95 });
+	low.top_ids_on = low.ids.map((id) => [7, 8, 9, id]);
+	low.top_lp_on = low.lp_on.map((x) => [-0.5, -2, -3, x]);
+	const short = lookupTokens(th, lookupView(r, low), r.tokens, 5, 50, false, 3)!.map(plain);
+	assert.equal(short.length, 3);
+	assert.match(short[1], /^ {2}" seven"/);
+	assert.match(short[2], /^▸ " Sea" +5\.2% .* 37% /, "the written token's row, its without and with");
 	// The written token outside the without reading's top 10: its own without (the title's), not a floor.
 	const out = answer(n, { 5: 1.95 });
 	out.top_ids_off[5] = [7, 9, 8];
@@ -193,12 +201,12 @@ test("g on every key line where it works: the board's panels, the one-panel boar
 	// Short only where whole it would go. The tightest: LENS stepped to a token, a steer on, the lens steps shown: the
 	// others go first, g short (a dock 100 wide: 97), whole at 101 (a dock 104 wide).
 	assert.equal(boardKeys("LENS", true, false, undefined, false, false, true, true, "", KEYS_W, G),
-		"tab tokens · ←/→ token · ↑/↓ layer · -/+ layers · enter edit · g engram inspection · 1-6 panel");
-	const TIGHT = "tab tokens · ←/→ token · f live · ↑/↓ layer · -/+ layers · enter edit · x off", TIGHT_97 = TIGHT + " · g engram", TIGHT_101 = TIGHT + " · g engram inspection";
+		"tab experts · ←/→ token · ↑/↓ layer · -/+ layers · enter edit · g engram inspection · 1-6 panel");
+	const TIGHT = "tab experts · ←/→ token · f live · ↑/↓ layer · -/+ layers · enter edit · x off", TIGHT_97 = TIGHT + " · g engram", TIGHT_101 = TIGHT + " · g engram inspection";
 	assert.equal(boardKeys("LENS", true, false, undefined, true, true, true, true, "", KEYS_W, G), TIGHT_97);
 	assert.equal(boardKeys("LENS", true, false, undefined, true, true, true, true, "", 101, G), TIGHT_101);
 	assert.equal(boardKeys("LENS", true, false, undefined, true, false, false, true, "", KEYS_W, G),
-		"tab tokens · ←/→ token · f live · ↑/↓ layer · enter edit · g engram inspection · 1-6 panel");
+		"tab experts · ←/→ token · f live · ↑/↓ layer · enter edit · g engram inspection · 1-6 panel");
 	assert.equal(boardKeys("MAP", true, false, undefined, true, false, false, true, "", KEYS_W, LABELS.engramClose),
 		"tab lens · ←/→ token · f live · u/U unsure · g close · 1-6 panel · ? explain · esc back");
 	assert.ok(!boardKeys("MAP", true).includes("g "), "no cap: no g");
@@ -299,7 +307,7 @@ test("g on the board, no clock: measuring, then the last frame at once (the titl
 	assert.match(on.join("\n"), /MAP +11 tok · 1 helped/);
 	assert.deepEqual(mapCellsIn(raw).slice(2, 7).map((c) => (c === WHITE ? "pred" : c === BLOCK ? "block" : "")), ["block", "block", "block", "pred", ""],
 		"MAP: the engram's cells, the predicted token marked");
-	assert.ok(on.some((l) => / │ TOKENS {2}#5 +without +with$/.test(l)), "TOKENS: without and with");
+	assert.ok(on.some((l) => /^ ?TOKENS {2,3}#5 +without +with +│/.test(l)), "TOKENS: without and with");
 	assert.ok(!raw.join("").includes(colourCode(COLOURS.accent, "truecolor") + " across"), "no orange in the text");
 	assert.ok(raw.some((l) => l.includes(colourCode(MAP_BLOCK, "truecolor", true) + colourCode(COLOURS.text, "truecolor"))), "the engram's block in the text");
 	host.captions = true;
@@ -840,7 +848,7 @@ test("g to close, with a clock: one pass right to left, the ordinary colours beh
 	const mid = frame(20_000 + SWEEP_MS / 2), m = text(mid);
 	assert.match(m[1], new RegExp(`^── ${LABELS.engramClosing} ─+$`));
 	assert.ok(titleLine(m)!.startsWith(TITLE), "the title until the end");
-	assert.ok(m.some((l) => / │ TOKENS {2}#20 +without +with$/.test(l)), "TOKENS until the end");
+	assert.ok(m.some((l) => /^ ?TOKENS {2,3}#20 +without +with +│/.test(l)), "TOKENS until the end");
 	assert.ok(!mapCellsIn(mid).includes(BLOCK), "the marks go at its start");
 	// Behind the head (the tokens to its right) the confidence colours, ahead the engram's.
 	const confident = mapCells([{ n: 1, p: () => 0.95, think: -1 }], 1, 0, 1)[0].join();

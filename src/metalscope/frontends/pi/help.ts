@@ -34,6 +34,11 @@ const row = ([form, what]: Row) => `| ${form}\t${what}`;
 /** The models STREAM's help explains, as streamExplain's [streams written, sources read]: hyper-connections (Flash
  * Next, DeepSeek V4.1: 4 streams), one stream (the rest), then one whose layer visits read 5 sources (Inkling 2). */
 export const HELP_STREAMS = [[4, 0], [1, 0], [1, 5]] as const;
+/** STREAM's help for one of them: its line (whose, where it does not say), then each view's by name. */
+export const streamHelp = (k: number, rk: number) => {
+	const [shared, views] = streamExplain(k, rk);
+	return [(k > 1 ? "" : rk ? "Inkling 2: " : "One stream: ") + shared, ...Object.entries(views).map(([v, t]) => `${v}: ${t}`)];
+};
 const note = (s: string) => `· ${s}`;
 
 /** Each command: what it is for (also its autocomplete description), its forms, a few notes. In daily-use order.
@@ -109,24 +114,24 @@ export const TOPICS: Topic[] = [
 	{ name: "tracing", title: "Tracing", items: [
 		["off (/scope off)", ["Nothing recorded, nothing slower."]],
 		["on (/scope on)", ["Per token: confidence and the top 10 next tokens, residual norms, expert routing, and each read layer's top 10 words through the logit lens and, while /jlens on, the J-lens. A prompt reads the lenses on its last 64 tokens only.",
-			"On Flash Next a traced reply writes at 47% of untraced speed on oMLX and 58% on ds4 at the default lens step, 77% and 80% at the lightest, 92% on both with the lenses off (- and + on LENS). metalscope bench times your model.",
+			"On Flash Next a traced reply writes at 47% of untraced speed on oMLX and 58% on ds4 at medium (the default lens size), 77% and 80% at small, 92% on both with the lenses off (- and + on LENS); measured on the sizes before 2026-11-26. metalscope bench times your model.",
 			"/scope on traces Pi's own requests, metalscope on every client's."]],
 	] },
 	{ name: "dock", title: "The dock", items: [
 		["opening it", ["ctrl+\\ opens it, again steps in (the keys go to the dock, the newest still followed), again closes; /scope dock the same. alt+i steps straight in (the terminal must send Option as Alt).",
 			"Shown in a terminal 100 columns wide or more; under 23 rows, the mini dock."]],
 		["moving", ["←/→ or h/l a token · ⇧←/→ ten · ⌥ or ⌘ ←/→, or H/L, a sentence · page keys 25 · home the first · end (or → on the newest) follows the newest again · u/U the next or previous unsure token · esc back, q out at once."]],
-		["the board", ["A dock 100 columns wide and 36 lines tall (a terminal 181 wide): the reply; MAP, LENS (SETTLING in it); TOKENS, EXPERTS, STREAM.",
-			"tab the next panel · 1-5 open one (again: the board) · ? what it shows · 6 the Steer page · m the mini dock · s on STREAM its view."]],
+		["the board", ["A dock 100 columns wide and 36 lines tall (a terminal 181 wide): the reply; TOKENS, MAP, LENS (SETTLING in it); EXPERTS, STREAM.",
+			"tab the next panel · 1-5 open one (again: the board) · ? what it shows · 6 the Steer page · m the mini dock · s on STREAM its view · { } EXPERTS a layer less or more."]],
 		["the one-panel board", ["A smaller dock, down to 44 columns and 23 lines: the reply's last lines and the panel in focus. The board's keys, the numbers choosing the panel, no STREAM."]],
-		["the mini dock", ["m, or /scope dock mini: the board's right column, 50 wide: EXPERTS' layers, MAP, SETTLING and STREAM under them. [ ] more layers; s STREAM's view; stepped in, ←/→ a token; m the whole dock."]],
+		["the mini dock", ["m, or /scope dock mini: 50 wide: EXPERTS' layers, MAP, SETTLING and STREAM under them. [ ] more layers; s STREAM's view; stepped in, ←/→ a token; m the whole dock."]],
 		["steering", ["The Steer page (6 on the board; 6 back): ↑/↓ a concept · ←/→ a dose (its test chats at it) · enter steers the next reply (as /steer) · x off · d then y deletes it on the checkpoint, every served copy (to the trash) · n/N a turn of its test chats · l, nothing learned here, links a same-shape model."]],
 		["LENS", [EXPLAIN.SETTLING, EXPLAIN.TELESCOPE]],
 		["MAP", [EXPLAIN.MAP]],
 		["engram inspection", [EXPLAIN.ENGRAM, "On a finished reply, where the model has an engram (Flash Next, DeepSeek V4.1); g again stops or closes it."]],
 		["EXPERTS", [EXPLAIN.EXPERTS, `Full size: ${EXPLAIN.EXPERTS_WINDOW.replace(/^C/, "c")}`, "MoE (mixture of experts) models only."]],
 		["TOKENS", [EXPLAIN.TOKENS]],
-		["STREAM", [...HELP_STREAMS.map(([k, rk]) => streamExplain(k, rk)), "Where the server records what each layer writes and reads."]],
+		["STREAM", [...HELP_STREAMS.flatMap(([k, rk]) => streamHelp(k, rk)), "Where the server records what each layer writes and reads."]],
 		["STEER", [EXPLAIN.STEER]],
 		["test chats", [EXPLAIN.STEER_EXAMPLES]],
 		["REPLY", [EXPLAIN.REPLY]],

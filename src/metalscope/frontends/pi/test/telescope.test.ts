@@ -2,12 +2,17 @@ import assert from "node:assert/strict";
 import { mock, test } from "node:test";
 import { visibleWidth } from "@earendil-works/pi-tui";
 import { Dock, inputAt, inputOf } from "../dock.ts";
-import { LABELS, centre, cut } from "../draw.ts";
+import { COLOURS as DOCK, LABELS, centre, colourCode, cut } from "../draw.ts";
 import { type Live, type TokenEvent, lensP, onEvent, packLens } from "../state.ts";
 import { focusLayer, fog, pc, scopeHeight, stepLayer, stretchFrames, swapFrames, telescope, tube, tubeCap, tubeOf, turret } from "../telescope.ts";
 
 const plain = (s: string) => s.replace(/\x1b\[[0-9;]*m/g, "");
 const COLOURS: Record<string, number> = { success: 2, muted: 8, dim: 7, accent: 6, warning: 3, error: 1 };
+/** A tube's row of a layer wanted, not read: its label in `faint` (the colour code it opens with), the row blank. */
+const esc = (s: string) => s.replace(/[[\]\\^$.|?*+()]/g, "\\$&");
+const unreadIn = (faint: string) => new RegExp(`${esc(faint)}[ ▸]L\\d+(?: \\+\\d+)? +\x1b`);
+/** The dock's (dockTheme: truecolor) unread rows in its raw lines. */
+const unread = (raw: string[]) => raw.filter((l) => unreadIn(colourCode(DOCK.faint, "truecolor")).test(l)).length;
 const theme = {
 	fg: (c: string, s: string) => `\x1b[38;5;${COLOURS[c] ?? 15}m${s}\x1b[39m`,
 	bg: (_c: string, s: string) => `\x1b[48;5;236m${s}\x1b[49m`,
@@ -150,7 +155,7 @@ test("telescope: the token, the eyepiece, the written word and the tube, 44 wide
 	assert.match(p[14], /^ {8}│ L24 +│$/);
 	assert.match(p[15], /^ {8}╰─+ in: not streamed ─+╯$/);                     // no input given: not claimed
 	assert.equal(p.length, 16);                                                 // 17 with the turret above
-	assert.ok(!p.some((l) => /│ L\d+ +· +│/.test(l)), "no · line: every layer here was read");
+	assert.ok(!lines.some((l) => unreadIn(theme.fg("faint", "").slice(0, -"\x1b[39m".length)).test(l)), "no faint row: every layer here was read (L24 and L47 the other lens's: dim)");
 	assert.ok(lines[7].includes("\x1b[38;5;7m L47"));                          // the other lens's line: dim
 	assert.ok(lines[8].includes(theme.fg("success", centre("reader", 44 - 2 - 14))));
 });
@@ -226,7 +231,7 @@ const text = (lines: string[]) => lines.map((l) => plain(l).replace(/^[▌▐] /
 /** An edit sent is over (its answer in; no server here): the dock takes the next one. */
 const answered = async (d: Dock) => (await tick(), (d as any).engram.stopSweep());
 /** LENS's head line (its lens switch) on the one-panel board: under the tab row, which names it. */
-const lensAt = (lines: string[]) => lines.findIndex((l) => /^ ?1 MAP +2 LENS +3 TOKENS/.test(l)) + 1;
+const lensAt = (lines: string[]) => lines.findIndex((l) => /^ ?1 TOKENS +2 MAP +3 LENS/.test(l)) + 1;
 
 test("dock, LENS on the one-panel board: inspecting, the telescope; ↑/↓ step the focused layer and it is kept across tokens", () => {
 	const { d, host } = lensDock();
@@ -236,7 +241,7 @@ test("dock, LENS on the one-panel board: inspecting, the telescope; ↑/↓ step
 	const at = lensAt(lines);
 	assert.ok(at > 0);
 	assert.match(lines[at], /^J-lens ◉────○ logit/);
-	assert.match(lines[at + 1], /^SETTLING /, "SETTLING under LENS's head line, as on the board");
+	assert.match(lines[at + 1], /^SETTLING\b/, "SETTLING under LENS's head line, as on the board");
 	const tel = lines.indexOf('#3 "reader" · settles L44/48');
 	assert.ok(tel > at + 2 && !lines[tel - 1], "a blank line, then the telescope");
 	assert.match(lines[tel + 1], /out of L44/);
@@ -324,7 +329,7 @@ test("dock, LENS on the one-panel board: at small docks nothing is cut without s
 		d.sel = 3;
 		const lines = text(d.render(48));
 		const flat = lines.join("\n");
-		assert.match(flat, /tab tokens · ←\/→ token/, `rows ${rows}`);              // the key line
+		assert.match(flat, /tab experts · ←\/→ token/, `rows ${rows}`);              // the key line
 		assert.ok(/needs 9 lines|shallower layers?|in: /.test(flat), `rows ${rows}:\n${flat}`);
 		assert.ok(lines.length === Math.max(12, rows), `rows ${rows}`);
 	}
@@ -534,7 +539,7 @@ test("dock, LENS on the one-panel board: a word that is no name (读者) is edit
 	const edited: any[] = [], asked: (number | undefined)[] = [];
 	host.edit = async (a: string, ids: any, at: any) => (edited.push([a, ids, at]), []);
 	// The lens steps' answer, as the dock asks it anyway: where the edit acts (the 35B's band).
-	host.lensLayers = async (step?: number) => (asked.push(step), { model: "Flash", at: 0, steps: [{ n: 4, layers: [24, 36, 40, 44, 46, 47], tps: null, replies: 0 }], edit_band: [15, 36] });
+	host.lensLayers = async (step?: number) => (asked.push(step), { model: "Flash", at: 0, steps: [{ name: "small", n: 4, layers: [24, 36, 40, 44, 46, 47], tps: null, replies: 0 }], edit_band: [15, 36] });
 	d.sel = 3;
 	host.lensLayer = 44;
 	const eyeRows = () => text(d.render(48)).filter((l) => /^│[ ▸]/.test(l)).slice(0, 3);
@@ -579,7 +584,7 @@ test("dock, LENS on the one-panel board: a word that is no name (读者) is edit
 });
 
 test("dock, LENS on the one-panel board: lens steps without a J-lens (no edit_band), or another model's: no label, the edit as before", async () => {
-	for (const data of [{ model: "Flash", at: 0, steps: [{ n: 4, layers: [24, 36, 40, 44, 46, 47], tps: null, replies: 0 }] },
+	for (const data of [{ model: "Flash", at: 0, steps: [{ name: "small", n: 4, layers: [24, 36, 40, 44, 46, 47], tps: null, replies: 0 }] },
 		{ model: "Other", at: 0, steps: [], edit_band: [15, 36] }]) {
 		const { d, host } = lensDock();
 		const edited: any[] = [];
@@ -649,16 +654,15 @@ test("dock, LENS on the one-panel board: editing while a reply streams holds its
 	assert.equal(d.sel, 5);
 });
 
-/** The server's lens steps as GET /scope/api/lens/layers answers (the reply was read at step 2: J 36 40 44 46, logit
+/** The server's lens sizes as GET /scope/api/lens/layers answers (the reply was read at medium: J 36 40 44 46, logit
  * 24 44 47), and a host that answers it, `step` setting the one in use. LENS full size on the board (104 wide): the
- * step's line under its title. */
+ * size's line under its title. */
 function depthDock() {
 	const x = lensDock(), asked: (number | undefined)[] = [];
 	x.d.full = true;
-	const data = { model: "Flash", at: 2, steps: [
-		{ n: 4, layers: [24, 44, 46, 47], tps: null, replies: 0 }, { n: 5, layers: [24, 36, 44, 46, 47], tps: 52.4, replies: 1 },
-		{ n: 6, layers: [24, 36, 40, 44, 46, 47], tps: 41.2, replies: 5 }, { n: 8, layers: [12, 24, 30, 36, 40, 44, 46, 47], tps: null, replies: 0 },
-		{ n: 48, layers: Array.from({ length: 48 }, (_, l) => l), tps: null, replies: 0 }] };
+	const data = { model: "Flash", at: 1, steps: [
+		{ name: "small", n: 4, layers: [24, 44, 46, 47], tps: 52.4, replies: 1 }, { name: "medium", n: 6, layers: [24, 36, 40, 44, 46, 47], tps: 41.2, replies: 5 },
+		{ name: "large", n: 48, layers: Array.from({ length: 48 }, (_, l) => l), tps: null, replies: 0 }] };
 	x.host.lensLayers = async (step?: number) => {
 		asked.push(step);
 		if (step !== undefined) data.at = step;
@@ -667,7 +671,7 @@ function depthDock() {
 	return { ...x, asked };
 }
 /** The full size board's tab row: the step's line under it. */
-const tabAt = (lines: string[]) => lines.findIndex((l) => /^ ?1 MAP +2 LENS /.test(l));
+const tabAt = (lines: string[]) => lines.findIndex((l) => /^ ?1 TOKENS +2 MAP /.test(l));
 const tubeRows = (lines: string[]) => lines.filter((l) => /^ *│[ ▸]L\d+/.test(l)).map((l) => /L\d+/.exec(l)![0]);
 
 test("dock, LENS full size on the board: - + step the layers read: pips, the count and this setting's measured speed; the tube follows", async () => {
@@ -680,41 +684,40 @@ test("dock, LENS full size on the board: - + step the layers read: pips, the cou
 		let lines = text(d.render(104));
 		if (process.env.SHOW_DOCK) console.log(lines.join("\n"));
 		const at = tabAt(lines);
-		assert.match(lines[at + 1], /^▮▮▮▯▯  reads 6 layers +41 tok\/s · last 5 replies$/);
+		assert.match(lines[at + 1], /^▮▮▯  medium · reads 6 layers +41 tok\/s · last 5 replies$/);
 		assert.equal(visibleWidth(lines[at + 1]), 101, "the speed at the right edge");
 		assert.deepEqual(tubeRows(lines), ["L47", "L46", "L44", "L40", "L36", "L24"]);
 		assert.match(lines.slice(-3).join(" "), /↑\/↓ layer · -\/\+ layers · enter/);
 		const footerAt = lines.length;
 		// -: fewer layers, at once and set on the server; the tube retracts over a few frames.
 		d.handleInput("-");
-		assert.equal(tubeRows(text(d.render(104))).length, 6, "the first frame: nothing gone yet");
+		assert.equal(tubeRows(text(d.render(104))).length, 5, "the first frame a quarter of the way: one of the two going gone");
 		mock.timers.tick(70 * 6);
 		await tick();
 		lines = text(d.render(104));
-		assert.deepEqual(asked, [undefined, 1]);
-		assert.match(lines[at + 1], /^▮▮▯▯▯  reads 5 layers +52 tok\/s · last reply$/);
-		assert.deepEqual(tubeRows(lines), ["L47", "L46", "L44", "L36", "L24"], "L40 hidden: going down hides at once");
+		assert.deepEqual(asked, [undefined, 0]);
+		assert.match(lines[at + 1], /^▮▯▯  small · reads 4 layers +52 tok\/s · last reply$/);
+		assert.deepEqual(tubeRows(lines), ["L47", "L46", "L44", "L24"], "L40 and L36 hidden: going down hides at once");
 		assert.equal(lines.length, footerAt, "the page keeps its height");
-		// + twice: layers no reply read yet come in as faint · lines, no speed yet.
+		// + twice: layers no reply read yet come in as faint blank lines, no speed yet.
 		d.handleInput("+");
 		d.handleInput("=");
-		mock.timers.tick(70 * 6);
+		mock.timers.tick(70 * 60);
 		await tick();
-		lines = text(d.render(104));
-		assert.match(lines[at + 1], /^▮▮▮▮▯  reads 8 layers +no reply at this setting yet$/);
-		assert.deepEqual(tubeRows(lines), ["L47", "L46", "L44", "L40", "L36", "L30", "L24", "L12"]);
-		assert.ok(lines.some((l) => /│ L30 +· +│/.test(l)) && lines.some((l) => /│ L12 +· +│/.test(l)), "the layers wanted, not read yet");
-		assert.equal(lines.filter((l) => /│ L\d+ +· +│/.test(l)).length, 2);
-		d.handleInput("+");
+		const big = d.render(104);
+		lines = text(big);
+		assert.match(lines[at + 1], /^▮▮▮  large · reads 48 layers +no reply at this setting yet$/);
+		assert.ok(["L47", "L46", "L44", "L40", "L36"].every((l) => tubeRows(lines).includes(l)), "the layers read");
+		assert.ok(unread(big) > 5, "the layers wanted, not read yet: faint");
 		d.handleInput("+");                                                         // past the last: nothing
 		mock.timers.tick(70 * 6);
 		await tick();
-		assert.equal(asked.at(-1), 4);
+		assert.equal(asked.at(-1), 2);
 		assert.ok(text(d.render(104)).every((l) => visibleWidth(l) <= 101));
 		// While a word is edited, - is a letter of it.
 		d.handleInput(KEY.enter);
 		d.handleInput("-");
-		assert.equal(asked.at(-1), 4);
+		assert.equal(asked.at(-1), 2);
 		assert.match(text(d.render(104)).join("\n"), /→ -/);
 		d.dispose();
 	} finally {
@@ -748,8 +751,8 @@ test("dock, LENS full size on the board: one step set at a time, the last presse
 	try {
 		const { d, host } = depthDock();
 		const sent: (number | undefined)[] = [], answers: ((v: any) => void)[] = [];
-		let server = 2;
-		const steps = (at: number) => ({ model: "Flash", at, steps: Array.from({ length: 5 }, (_, i) => ({ n: 4 + i, layers: [44, 46, 47].slice(0, 1 + Math.min(2, i)), tps: null, replies: 0 })) });
+		let server = 0;
+		const steps = (at: number) => ({ model: "Flash", at, steps: ["small", "medium", "large"].map((name, i) => ({ name, n: 4 + i, layers: [44, 46, 47].slice(0, 1 + i), tps: null, replies: 0 })) });
 		host.lensLayers = (step?: number) => {
 			sent.push(step);
 			return new Promise((res) => answers.push((v: any) => {
@@ -762,29 +765,29 @@ test("dock, LENS full size on the board: one step set at a time, the last presse
 		d.render(104);
 		answers.shift()!(undefined);
 		await tick();
-		const at = tabAt(text(d.render(104))), pips = () => text(d.render(104))[at + 1].slice(0, 5);
+		const at = tabAt(text(d.render(104))), pips = () => text(d.render(104))[at + 1].slice(0, 3);
 		d.handleInput("+");
 		d.handleInput("+");
 		d.handleInput("-");
 		d.handleInput("+");
-		assert.deepEqual(sent, [undefined, 3], "one in flight; the presses since wait");
-		assert.equal(pips(), "▮▮▮▮▮", "drawn at once");
+		assert.deepEqual(sent, [undefined, 1], "one in flight; the presses since wait");
+		assert.equal(pips(), "▮▮▮", "drawn at once");
 		answers.shift()!(undefined);
 		await tick();
-		assert.deepEqual(sent, [undefined, 3, 4], "the last pressed, sent when the first returned");
+		assert.deepEqual(sent, [undefined, 1, 2], "the last pressed, sent when the first returned");
 		answers.shift()!(undefined);
 		await tick();
-		assert.equal(server, 4);
-		assert.equal(pips(), "▮▮▮▮▮");
+		assert.equal(server, 2);
+		assert.equal(pips(), "▮▮▮");
 		// A failure: asked again, and what the server holds shown.
 		d.handleInput("-");
-		assert.equal(pips(), "▮▮▮▮▯");
+		assert.equal(pips(), "▮▮▯");
 		answers.shift()!({ error: "oMLX at h answered: busy" });
 		await tick();
-		assert.deepEqual(sent.slice(-2), [3, undefined]);
+		assert.deepEqual(sent.slice(-2), [1, undefined]);
 		answers.shift()!(undefined);
 		await tick();
-		assert.equal(pips(), "▮▮▮▮▮", "the server still at 4");
+		assert.equal(pips(), "▮▮▮", "the server still at large");
 		d.dispose();
 	} finally {
 		mock.timers.reset();
@@ -815,12 +818,11 @@ test("dock, LENS full size on the board: the step shapes the tube of the reply s
 		await tick();
 		d.handleInput("+");
 		await tick();
-		d.handleInput("+");
 		mock.timers.tick(70 * 60);
 		await tick();
-		const newest = text(d.render(104));
-		assert.equal(asked.at(-1), 4);
-		assert.ok(newest.filter((l) => /│ L\d+( \+\d+)? +· +│/.test(l)).length > 5, "the newest: the step's layers (a short page: shared lines), those not read faint");
+		const newestRaw = d.render(104), newest = text(newestRaw);
+		assert.equal(asked.at(-1), 2);
+		assert.ok(unread(newestRaw) > 5, "the newest: the step's layers (a short page: shared lines), those not read faint");
 		// The next request reading its prompt: the last reply shown, its tube still the step's.
 		onEvent(live, { type: "start", rid: "r2", model: "Flash" });
 		assert.deepEqual(tubeRows(text(d.render(104))), tubeRows(newest), "not back over the layers it read");

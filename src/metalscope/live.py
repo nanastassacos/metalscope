@@ -153,10 +153,18 @@ class TraceManager:
         return bool(self._settings.get("steer", False))
 
     def lens_step(self) -> int:
-        """The settings' lens_step (lens_steps): the layers the next traced request reads the lenses at."""
+        """The settings' lens_step (lens_steps): the layers the next traced request reads the lenses at. One stored as
+        no step's name (an index of the five steps before) is read as its size (config.stored_lens) and saved so, once;
+        where the settings cannot be saved (another of them invalid, the disk), read so all the same."""
         self.mode()
-        k = self._settings.get("lens_step")
-        return k if config.lens_step_ok(k) else config.LENS_STEP_DEFAULT
+        stored = self._settings.get("lens_step", config.lens_name(config.LENS_STEP_DEFAULT))
+        name = config.stored_lens(stored)
+        if name != stored:
+            try:
+                config.save_settings()
+            except (ValueError, OSError):
+                pass
+        return config.lens_index(name)
 
     @staticmethod
     def _mtime() -> float:
@@ -246,14 +254,16 @@ class TraceManager:
             rt.meta["model"] = config.short_name(tracers[0].name)
         if level is not None:
             # The lens step takes effect when no traced request is in flight (theirs keep the layers they started
-            # with: a trace reads one set); the step this one reads at is saved with it.
+            # with: a trace reads one set); the step this one reads at is saved with it, and how many layers its lens
+            # reads (the J-lens's, else the logit lens's: a size's layers change with the sizes, its name does not).
             with self.lock:
                 idle = not any(r.level for r in self.requests.values())
             for t in tracers:
                 if t is not None:
                     if idle:
                         t.use_lens_step(self.lens_step())
-                    rt.meta["lens_step"] = t.lens_step
+                    jl, logit = t.read_layers()
+                    rt.meta["lens_step"], rt.meta["lens_layers"] = config.lens_name(t.lens_step), len(jl or logit)
             try:
                 self.streamer.on_register(rt)
             except Exception:

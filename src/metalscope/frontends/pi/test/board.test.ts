@@ -4,15 +4,15 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { mock, test } from "node:test";
 import { visibleWidth } from "@earendil-works/pi-tui";
-import { BOARD_MIN_ROWS, BOARD_MIN_WIDTH, KEYS_W, LAYER_WINDOW, LIST_ROWS, MIDDLE_MIN, MINI_WIDTH, type Panel, PANEL_KEY, PANELS, RIGHT_W, TOP_N, arrange, boardFits, boardKeys, columns, layoutKeys, panelNums,
-	DOCK_MIN_ROWS, DOCK_MIN_WIDTH, miniAt, steerColumns, steerKeys, tabRow, wrapKeys, editKeys, explainOf, expertsLayers, expertsStack, layerWindow, lensSplit, MAP_LINES, mapCells, type MapPaint, type MapRun, mapPanel, mapStarts, mapWindow, MINI_MAP, type MiniRoom, miniKeys, miniSplit, nameTag, scrollWindow, SETTLE_STOPS, settleLayers, settleLevels, sessionMap, settlingPanel, stackLayers, tokensPanel, topChoices, topsOf } from "../board.ts";
+import { BOARD_MIN_ROWS, BOARD_MIN_WIDTH, BOARD_TOP, KEYS_W, LAYER_WINDOW, LIST_ROWS, MIDDLE_MIN, MINI_WIDTH, type Panel, PANEL_KEY, PANELS, RIGHT_W, TOP_N, arrange, boardFits, boardKeys, columns, layoutKeys, panelNums,
+	DOCK_MIN_ROWS, DOCK_MIN_WIDTH, miniAt, steerColumns, steerKeys, tabRow, wrapKeys, editKeys, explainOf, expertsLayers, expertsStack, layerWindow, lensSplit, MAP_CELL_LINES, MAP_LINES, mapCells, type MapPaint, type MapRun, mapPanel, mapStarts, mapWindow, MINI_MAP, type MiniRoom, miniKeys, miniSplit, nameTag, scrollWindow, SETTLE_STOPS, settleLayers, settleLevels, sessionMap, settlingPanel, stackLayers, tokensPanel, topChoices, topsOf } from "../board.ts";
 import { COLOURS, EXPLAIN, LABELS, ansiBold, ansiInverse, colourCode, cut, dockTheme, label, tint, wrapTokens } from "../draw.ts";
 import { createHash } from "node:crypto";
 import { TuiMainScreen, wrapTextWithAnsi } from "@earendil-works/pi-tui";
 import * as lights from "../lights.ts";
 import { STOPS, colourMode, gridCells, mix, palette, rampAt, reshapeGrid } from "../lights.ts";
 import { MIN_LINES, swapFrames } from "../telescope.ts";
-import { Dock } from "../dock.ts";
+import { Dock, SETTLE_MOST, settleRoom } from "../dock.ts";
 import { fillRouting } from "../expert.ts";
 import { registerJobs } from "../job-runner.ts";
 import { type Live, type Reply, type TokenEvent, editMark, mapReply, onEvent, switchServer, thinkEnd } from "../state.ts";
@@ -97,10 +97,10 @@ test("wrapKeys: whole keys a line, split at the separator; a key wider than the 
 		}
 	// The tightest: a 44-column dock, LENS, a token held, a steer on, the lens steps known: -/+ layers gives way, then
 	// the numbers (1-4 6 panel, four columns wider than 6 steer).
-	assert.deepEqual(wrapKeys(boardKeys("LENS", true, false, PANELS, true, true, true, true, "", 41, "", true, "", true, true, ["MAP", "LENS", "TOKENS", "EXPERTS"]), 41),
-		["tab tokens · ←/→ token · f live", "↑/↓ layer · enter edit · x off"]);
-	assert.deepEqual(wrapKeys(boardKeys("LENS", true, false, PANELS, true, false, true, true, "", 41, "", true, "", true, true, ["MAP", "LENS", "TOKENS", "EXPERTS"]), 41),
-		["tab tokens · ←/→ token · f live", "↑/↓ layer · enter edit · 1-4 6 panel"], "no steer: the numbers kept");
+	assert.deepEqual(wrapKeys(boardKeys("LENS", true, false, PANELS, true, true, true, true, "", 41, "", true, "", true, true, ["TOKENS", "MAP", "LENS", "EXPERTS"]), 41),
+		["tab experts · ←/→ token · f live", "↑/↓ layer · enter edit · x off"]);
+	assert.deepEqual(wrapKeys(boardKeys("LENS", true, false, PANELS, true, false, true, true, "", 41, "", true, "", true, true, ["TOKENS", "MAP", "LENS", "EXPERTS"]), 41),
+		["tab experts · ←/→ token · f live", "↑/↓ layer · enter edit · 1-4 6 panel"], "no steer: the numbers kept");
 	// The word edit's keys on two lines: typing and tab kept from 41 columns.
 	for (const w of [41, 51, 61]) assert.match(editKeys(w, 2), /type or ↑\/↓ a word · tab next/, `${w}`);
 	assert.equal(editKeys(41), "⌫ remove · enter apply · esc cancel");
@@ -115,9 +115,9 @@ test("miniAt: the mini dock where chosen, or in a terminal too short for the ful
 	// The tab row: each panel with its number; on the board its number again back where it fits, on the one-panel
 	// board nothing to go back to. Every name whole at the widths the dock draws it: the board's full-size panel from 97
 	// columns, the one-panel board's (no STREAM) from 41.
-	assert.equal(plain(tabRow(piTheme, "LENS", 97, PANELS)).trimEnd(), " 1 MAP   2 LENS   3 TOKENS   4 EXPERTS   5 STREAM   2 back");
-	assert.equal(plain(tabRow(piTheme, "STREAM", 56, PANELS)).trimEnd(), " 1 MAP   2 LENS   3 TOKENS   4 EXPERTS   5 STREAM", "back first to go");
-	assert.equal(plain(tabRow(piTheme, "LENS", 41, ["MAP", "LENS", "TOKENS", "EXPERTS"], true)).trimEnd(), " 1 MAP   2 LENS   3 TOKENS   4 EXPERTS");
+	assert.equal(plain(tabRow(piTheme, "LENS", 97, PANELS)).trimEnd(), " 1 TOKENS   2 MAP   3 LENS   4 EXPERTS   5 STREAM   3 back");
+	assert.equal(plain(tabRow(piTheme, "STREAM", 56, PANELS)).trimEnd(), " 1 TOKENS   2 MAP   3 LENS   4 EXPERTS   5 STREAM", "back first to go");
+	assert.equal(plain(tabRow(piTheme, "LENS", 41, ["TOKENS", "MAP", "LENS", "EXPERTS"], true)).trimEnd(), " 1 TOKENS   2 MAP   3 LENS   4 EXPERTS");
 	for (const one of [false, true]) for (let w = one ? 41 : 97; w <= 141; w++) for (const shown of SHOWN.filter((s) => !one || !s.includes("STREAM")))
 		assert.ok(shown.every((p) => plain(tabRow(piTheme, "MAP", w, shown, one)).includes(` ${PANEL_KEY[p]} ${p} `)), `${w} ${one}`);
 });
@@ -130,15 +130,15 @@ test("the one-panel board: tab cycles the four panels, a number picks one, the r
 	for (let k = 0; k < 4; k++) {
 		const lines = text(d.render(80));
 		assert.equal(lines.length, 30);
-		assert.ok(lines.some((l) => /^ ?1 MAP +2 LENS +3 TOKENS +4 EXPERTS$/.test(l)), "the tab row");
+		assert.ok(lines.some((l) => /^ ?1 TOKENS +2 MAP +3 LENS +4 EXPERTS$/.test(l)), "the tab row");
 		assert.equal(lines[2], "REPLY");
 		assert.equal(lines[6], "─".repeat(77), "three lines of the reply, then the rule");
 		order.push(host.panel ?? "LENS");
 		d.handleInput("\t");
 	}
-	assert.deepEqual(order, ["LENS", "TOKENS", "EXPERTS", "MAP"]);
+	assert.deepEqual(order, ["LENS", "EXPERTS", "TOKENS", "MAP"]);
 	assert.equal(host.panel, "LENS", "round again");
-	d.handleInput("3");
+	d.handleInput("1");
 	assert.deepEqual([host.panel, d.full], ["TOKENS", false], "a number: that panel, nothing full size");
 	assert.ok(text(d.render(80)).some((l) => /^#20 /.test(l)), "TOKENS drawn");
 	d.handleInput("5");
@@ -148,14 +148,14 @@ test("the one-panel board: tab cycles the four panels, a number picks one, the r
 	await tick();
 	kept.d.stepIn(20);
 	kept.d.render(104);
-	kept.d.handleInput("3");
+	kept.d.handleInput("1");
 	(kept.d as any).tui.terminal.rows = 30;
 	kept.d.render(104);
-	kept.d.handleInput("2");
+	kept.d.handleInput("3");
 	(kept.d as any).tui.terminal.rows = 40;
 	const back = text(kept.d.render(104));
 	assert.deepEqual([kept.d.full, kept.host.panel], [true, "LENS"]);
-	assert.ok(back.some((l) => /^ ?1 MAP +2 LENS +3 TOKENS +4 EXPERTS +2 back$/.test(l)), "LENS full size on the board");
+	assert.ok(back.some((l) => /^ ?1 TOKENS +2 MAP +3 LENS +4 EXPERTS +3 back$/.test(l)), "LENS full size on the board");
 	// Tall enough: TOKENS with EXPERTS under it.
 	const tall = board(40, 67);
 	await tick();
@@ -186,7 +186,7 @@ test("board: drawn from 100 columns and 36 lines (the fixed parts, the middle at
 	assert.ok(boardFits(104, 60) && boardFits(104, 36) && !boardFits(99, 60) && !boardFits(104, 35));
 	const { d } = board();
 	await tick();
-	const one = (lines: string[]) => lines.some((l) => /^ ?1 MAP +2 LENS /.test(l));        // the one-panel board's tab row
+	const one = (lines: string[]) => lines.some((l) => /^ ?1 TOKENS +2 MAP /.test(l));        // the one-panel board's tab row
 	assert.ok(!one(text(d.render(104))));
 	assert.ok(one(text(d.render(99))), "99 columns: the one-panel board");
 	const short = board(40, BOARD_MIN_ROWS - 1);                           // the dock is the terminal's whole height
@@ -210,27 +210,26 @@ test("board at 104 columns: every line exactly the dock's width, the columns whe
 	assert.equal(lines[2], "REPLY");
 	assert.ok(lines.some((l) => /^MAP {2}40 tok · 8 unsure +│/.test(l)), "MAP: the reply's size and unsure count");
 	assert.ok(plain(raw[0]).replace(/^[▌▐] /, "").startsWith("◆") && plain(raw[0]).slice(2, 2 + w).endsWith("no steering"));
-	// The middle: MAP and LENS (SETTLING in it) on the left, TOKENS / EXPERTS on the right, " │ " between at
-	// column lw, down to the key line's rule (STEER is a page of its own).
-	const mid = lines.findIndex((l) => /^ ?MAP /.test(l));
-	assert.ok(mid > 0 && / │ TOKENS {2}#20 /.test(lines[mid]), lines[mid]);
-	assert.ok(lines.some((l) => /│ EXPERTS {2}4 layers · 64 experts · 2 a token$/.test(l)), "every layer: the room is there");
+	// The middle: TOKENS, MAP and LENS (SETTLING in it) on the left, EXPERTS on the right (no writes: no STREAM under
+	// it), " │ " between at column lw, down to the key line's rule (STEER is a page of its own).
+	const mid = lines.findIndex((l) => /^ ?TOKENS /.test(l));
+	assert.ok(mid > 0 && / │ EXPERTS {2}4 layers · 64 experts · 2 a token$/.test(lines[mid]), `every layer: the room is there\n${lines[mid]}`);
 	for (let i = mid; i < lines.length - 2; i++) assert.equal([...plain(raw[i]).slice(2)].slice(lw, lw + 3).join(""), " │ ", `line ${i}: ${lines[i]}`);
-	for (const name of ["TOKENS", "EXPERTS"]) assert.ok(lines.some((l) => l.includes(` │ ${name}  `)), name);
 	assert.ok(!lines.some((l) => /FEATURES|SAE/.test(l)), "no FEATURES");
-	for (const name of ["SETTLING", "MAP"]) assert.ok(lines.some((l) => l.startsWith(`${name}  `)), name);
+	for (const name of ["TOKENS", "SETTLING", "MAP"]) assert.ok(lines.some((l) => l.startsWith(`${name}  `)), name);
+	assert.ok(lines.findIndex((l) => l.startsWith("MAP")) > mid, "TOKENS over MAP");
 	assert.ok(lines.findIndex((l) => l.startsWith("MAP")) < lines.findIndex((l) => /^ ?LENS /.test(l)), "MAP over LENS");
 	assert.ok(lines.findIndex((l) => /^ ?LENS /.test(l)) < lines.findIndex((l) => l.startsWith("SETTLING")), "SETTLING in LENS, under the telescope");
 	assert.ok(!lines.some((l) => /RECENT/.test(l)), "no RECENT");
 	// EXPERTS: as many layers as its lines hold, here all four.
 	assert.deepEqual(lines.filter((l) => /│ [▸ ] layer \d of 4$/.test(l)).map((l) => l.slice(-14)), ["  layer 1 of 4", "  layer 2 of 4", "▸ layer 3 of 4", "  layer 4 of 4"]);
-	assert.ok(lines.some((l) => / │ TOKENS {2}#20 " w20" · 30% · rank 2 · entropy 0\.50$/.test(l)), "off-top left out: it does not fit");
+	assert.ok(lines.some((l) => /^TOKENS {2}#20 " w20" · 30% · rank 2 · entropy 0\.50 │ /.test(l)), "off-top left out: it does not fit");
 	d.sel = 21;
-	assert.ok(text(d.render(104)).some((l) => / │ TOKENS {2}#21 " w21" · 95% · entropy 0\.50$/.test(l)), "not off-top");
+	assert.ok(text(d.render(104)).some((l) => /^TOKENS {2}#21 " w21" · 95% · entropy 0\.50 +│ /.test(l)), "not off-top");
 	assert.ok(lines.some((l) => /#20 "w20" · settles L40\/48/.test(l)));
 	assert.ok(!lines.some((l) => /STEER|by the chat test/.test(l)), "STEER is a page of its own (6)");
 	// The key line last; a rule over it.
-	assert.match(lines.at(-1)!, /^tab tokens · ←\/→ token · /);
+	assert.match(lines.at(-1)!, /^tab experts · ←\/→ token · /);
 	assert.match(lines.at(-2)!, /^─+$/);
 });
 
@@ -260,15 +259,15 @@ test("board: every key line fits the narrowest board, whatever is shown; tab nam
 	assert.equal(editKeys(41), "⌫ remove · enter apply · esc cancel");                // the narrowest pages dock
 	assert.match(boardKeys("LENS", false), /6 steer/);
 	assert.equal(boardKeys("LENS", false), "ctrl+\\ steps in: tab a panel, ? explain, 1-5 open, 6 steer · /scope help dock", "not stepped in: the numbers");
-	assert.match(boardKeys("LENS", true), /^tab tokens · ←\/→ token · ↑\/↓ layer · enter edit · s other lens · 1-6 panel/);
+	assert.match(boardKeys("LENS", true), /^tab experts · ←\/→ token · ↑\/↓ layer · enter edit · s other lens · 1-6 panel/);
 	assert.match(boardKeys("MAP", true), /^tab lens · ←\/→ token · u\/U unsure · 1-6 panel/);
-	assert.equal(boardKeys("TOKENS", true, false, ["LENS", "TOKENS"]), "tab lens · ←/→ token · ↑/↓ unsure token · 2-3 6 panel · ? explain · esc back");
+	assert.equal(boardKeys("TOKENS", true, false, ["TOKENS", "LENS"]), "tab lens · ←/→ token · ↑/↓ unsure token · 1 3 6 panel · ? explain · esc back");
 	// The numbers: those that do something (the panels a number opens, 6 the Steer page) as one part, in 6 steer's slot.
-	const four: Panel[] = ["MAP", "LENS", "TOKENS", "EXPERTS"], dense: Panel[] = ["MAP", "LENS", "TOKENS"];
+	const four: Panel[] = ["TOKENS", "MAP", "LENS", "EXPERTS"], dense: Panel[] = ["TOKENS", "MAP", "LENS"];
 	assert.equal(boardKeys("STREAM", true, false, PANELS, true, true, false, true, "", KEYS_W, LABELS.engramKey),
-		"tab map · ←/→ token · f live · s view · g engram inspection · 1-6 panel · ? explain · esc back");
+		"tab tokens · ←/→ token · f live · s view · g engram inspection · 1-6 panel · ? explain · esc back");
 	assert.equal(boardKeys("LENS", true, false, PANELS, true, true, true, true, "", KEYS_W),
-		"tab tokens · ←/→ token · f live · ↑/↓ layer · -/+ layers · enter edit · x off · 1-6 panel", "the tightest: kept last");
+		"tab experts · ←/→ token · f live · ↑/↓ layer · -/+ layers · enter edit · x off · 1-6 panel", "the tightest: kept last");
 	assert.equal(boardKeys("LENS", true, false, dense, false, false, true, true, "", KEYS_W, "", false, "", true, false, dense),
 		"tab tokens · ←/→ token · ↑/↓ layer · -/+ layers · enter edit · s other lens · 1-3 6 panel", "a model without experts or writes");
 	assert.deepEqual(wrapKeys(boardKeys("MAP", true, false, four, false, false, true, true, "", 57, LABELS.engramKey, true, "", true, true, four), 57),
@@ -289,13 +288,13 @@ test("board: ? texts are one or two lines at the narrowest board; the layout's k
 	assert.deepEqual([layoutKeys("1-5"), layoutKeys()], ["1-5 open a panel · 6 steer page · m mini · ? keys", "6 steer page · m mini · ? keys"]);
 	assert.deepEqual(SHOWN.map((s) => panelNums(s)), ["1-5", "1-3 5", "1-4", "1-3"], "the numbers of the panels that can be opened");
 	assert.deepEqual(SHOWN.map((s) => panelNums(s, true)), ["1-6", "1-3 5-6", "1-4 6", "1-3 6"], "with the Steer page's");
-	assert.deepEqual(PANEL_KEY, { MAP: "1", LENS: "2", TOKENS: "3", EXPERTS: "4", STREAM: "5" }, "6 the Steer page (STEER_KEY)");
+	assert.deepEqual(PANEL_KEY, { TOKENS: "1", MAP: "2", LENS: "3", EXPERTS: "4", STREAM: "5" }, "6 the Steer page (STEER_KEY)");
 	assert.equal(explainOf("LENS"), EXPLAIN.BOARD_LENS, "LENS's ? covers SETTLING too");
 	assert.match(explainOf("LENS"), /SETTLING/);
 	for (const inspecting of [false, true]) assert.ok(miniKeys(inspecting).length <= MINI_WIDTH - 3, miniKeys(inspecting));
 });
 
-test("board: tab moves the focus down the left column, down the right (TOKENS, EXPERTS) and round; the title in focus is drawn inverse", async () => {
+test("board: tab moves the focus down the left column (TOKENS, MAP, LENS), down the right (EXPERTS) and round; the title in focus is drawn inverse", async () => {
 	const { d, host } = board();
 	await tick();
 	d.sel = 10;
@@ -306,14 +305,16 @@ test("board: tab moves the focus down the left column, down the right (TOKENS, E
 		d.handleInput(KEY.tab);
 		order.push(host.panel);
 	}
-	assert.deepEqual(order, ["TOKENS", "EXPERTS", "MAP", "LENS"], "SETTLING no tab stop: it is in LENS; STEER a page");
+	assert.deepEqual(order, ["EXPERTS", "TOKENS", "MAP", "LENS"], "SETTLING no tab stop: it is in LENS; STEER a page");
 	d.handleInput(KEY.shiftTab);
 	assert.equal(host.panel, "MAP");
+	d.handleInput(KEY.shiftTab);
+	assert.equal(host.panel, "TOKENS");
 	d.handleInput(KEY.shiftTab);
 	assert.equal(host.panel, "EXPERTS");
 	const raw = d.render(104);
 	assert.ok(raw.some((l) => l.includes("\x1b[7m EXPERTS \x1b[27m")) && !raw.some((l) => l.includes("\x1b[7m LENS \x1b[27m")));
-	assert.match(text(raw).at(-1)!, /^tab map · ←\/→ token · f live · \[ \] layers/);
+	assert.match(text(raw).at(-1)!, /^tab tokens · ←\/→ token · f live · \[ \] layers/);
 });
 
 test("board: the panel in focus takes the arrows", async () => {
@@ -356,15 +357,15 @@ test("board: a panel's number opens it under the reply, tab switches it, another
 	await tick();
 	d.sel = 20;
 	d.render(104);
-	d.handleInput("2");
+	d.handleInput("3");
 	assert.deepEqual([host.panel, d.full], ["LENS", true]);
 	let lines = text(d.render(104));
-	const tabs = lines.findIndex((l) => /^ ?1 MAP +2 LENS +3 TOKENS +4 EXPERTS +2 back$/.test(l));
+	const tabs = lines.findIndex((l) => /^ ?1 TOKENS +2 MAP +3 LENS +4 EXPERTS +3 back$/.test(l));
 	assert.ok(tabs > 0, "the tab row, no SETTLING in it");
 	// SETTLING over both lenses (no steps: no step line), across the width: its sub-heading, its bands each labelled
 	// once; a blank line, both lenses side by side, no second LENS title.
 	const s = tabs + 1, names = lines.findIndex((l) => /^J-lens +│ logit lens$/.test(l));
-	assert.equal(lines[s], "SETTLING  J-lens · old → now");
+	assert.equal(lines[s], "SETTLING");
 	assert.ok(names > s + 3 && lines[names - 1] === "", "a blank line, then the lenses");
 	assert.ok(lines.filter((l) => /#20 "w20" · settles L4\d\/48/.test(l)).length === 1);
 	assert.ok(lines.some((l) => /#20 "w20" · settles L40\/48 +│ #20 "w20" · settles L44\/48/.test(l)));
@@ -373,21 +374,20 @@ test("board: a panel's number opens it under the reply, tab switches it, another
 	assert.ok(/^L\d+/.test(bands[0]) && new Set(labels).size === labels.length, `a band labelled once: ${labels}`);
 	assert.ok(lines[s + 1].length > 90, "across the width");
 	assert.match(lines.at(-3)!, /^both lenses · .* · ◆ the steered layer\s*$/, "the legend last, whole");
-	assert.match(lines.at(-1)!, /^tab tokens · ←\/→ token · f live · ↑\/↓ layer · enter edit · s other lens · /);
+	assert.match(lines.at(-1)!, /^tab experts · ←\/→ token · f live · ↑\/↓ layer · enter edit · s other lens · /);
 	d.handleInput(KEY.shiftTab);
 	assert.equal(host.panel, "MAP", "MAP before LENS");
 	lines = text(d.render(104));
 	assert.equal(lines[tabs + 1], "1 reply · 40 tok · 8 unsure");
-	d.handleInput(KEY.tab);
-	d.handleInput(KEY.tab);
+	d.handleInput(KEY.shiftTab);
 	assert.equal(host.panel, "TOKENS");
 	lines = text(d.render(104));
 	const top = lines.findIndex((l) => /^#20 " w20" · 30% · rank 2 · entropy 0\.50 · off-top$/.test(l));
 	assert.ok(top > 0, "no second TOKENS title; off-top where it fits (60% on another: sampling chose it)");
 	assert.match(lines[top + 1], /^ {2}" other" +█+[▏▎▍▌▋▊▉]? +60%$/, "across the width");
 	assert.ok(visibleWidth(lines[top + 1]) > 90);
-	d.handleInput(KEY.tab);
-	assert.equal(host.panel, "EXPERTS");
+	d.handleInput(KEY.shiftTab);
+	assert.equal(host.panel, "EXPERTS", "round back to the right column's");
 	assert.equal(d.full, true);
 	const raw = d.render(104);
 	lines = text(raw);
@@ -398,16 +398,16 @@ test("board: a panel's number opens it under the reply, tab switches it, another
 	assert.ok(lines.some((l) => /^ {2}#5 +█+ +100%/.test(l)), "share bars");
 	assert.ok(raw.every((l) => visibleWidth(l) === 104));
 	d.handleInput(KEY.tab);
-	assert.equal(host.panel, "MAP", "round to MAP");
+	assert.equal(host.panel, "TOKENS", "round to TOKENS");
 	d.handleInput("1");
 	assert.equal(d.full, false);
 	assert.equal(d.sel, 20, "its number left the full-size panel, not the reply");
 	d.handleInput("4");
-	d.handleInput("3");
+	d.handleInput("1");
 	assert.deepEqual([host.panel, d.full], ["TOKENS", true], "another number: straight to that panel");
 	d.handleInput("5");
 	assert.deepEqual([host.panel, d.full], ["TOKENS", true], "5: no STREAM here (no writes)");
-	d.handleInput("3");
+	d.handleInput("1");
 	assert.equal(d.full, false);
 	const before = text(d.render(104));
 	d.handleInput("z");
@@ -425,7 +425,7 @@ test("board: esc on a full-size panel hands the keyboard back, the panel kept an
 	assert.deepEqual([d.full, d.stepped, d.sel, closed], [true, false, -1, 0], "the keyboard back, the dock open, EXPERTS full size");
 	onEvent(live, tok(40));
 	let lines = text(d.render(104));
-	assert.ok(lines.some((l) => /^ ?1 MAP +2 LENS +3 TOKENS +4 EXPERTS +4 back$/.test(l)), "still full size");
+	assert.ok(lines.some((l) => /^ ?1 TOKENS +2 MAP +3 LENS +4 EXPERTS +4 back$/.test(l)), "still full size");
 	assert.ok(lines.some((l) => l.startsWith(LABELS.forToken('" w40"'))), "following the newest token");
 	assert.match(lines.at(-1)!, /^ctrl\+\\ steps in: tab a panel, \? explain, 1-4 open, .*6 steer · \/scope help dock$/);
 	d.stepIn(-1);
@@ -448,7 +448,7 @@ test("board: from a full-size panel, an edit takes the numbers as letters; the S
 	await tick();
 	d.sel = 7;
 	d.render(104);
-	d.handleInput("2");
+	d.handleInput("3");
 	d.render(104);
 	d.handleInput(KEY.enter);
 	d.handleInput("\x7f");
@@ -784,7 +784,7 @@ test("board: the served model's flags: untested dim in the header; the LENS edit
 	const raw = d.render(104), lines = text(raw);
 	assert.match(lines[0], /^◆ metalscope {2}untested {2}paused at #7 {3,}no steering$/);
 	assert.ok(raw[0].includes(dockTheme().fg("dim", "untested")), "dim");
-	assert.equal(lines.at(-1), "tab tokens · ←/→ token · f live · ↑/↓ layer · s other lens · 1-4 6 panel · ? explain · esc back");   // the dock's own width, past the least
+	assert.equal(lines.at(-1), "tab experts · ←/→ token · f live · ↑/↓ layer · s other lens · 1-4 6 panel · ? explain · esc back");   // the dock's own width, past the least
 	d.handleInput(KEY.enter);                                                          // not offered: enter edits nothing
 	assert.ok(!text(d.render(104)).some((l) => /^│▸w7 /.test(l)) && !/⌫ remove/.test(text(d.render(104)).at(-1)!));
 	assert.match(text(d.render(99))[0], /^◆ metalscope {2}untested {2}paused at #7/);  // the one-panel board's header too
@@ -1035,9 +1035,17 @@ test("board: ? at the shortest board keeps the middle's least rows", async () =>
 	const before = text(d.render(104));
 	d.handleInput("?");
 	const after = text(d.render(104));
-	const choices = (ls: string[]) => ls.filter((l) => /│ [▸ ] " (w\d+|c\d)"/.test(l)).length;
-	assert.ok(choices(after) === TOP_N && choices(before) === TOP_N, `${choices(before)} → ${choices(after)}`);
-	assert.ok(after.some((l) => l.startsWith("The model's top 10 choices")), "the explanation");
+	// The left column's leasts are more than the middle's least: SETTLING's lines go first, then TOKENS' last choices
+	// (down to 4, the written one kept), before MAP's two lines of cells or the telescope's six rows of tube.
+	const choices = (ls: string[]) => ls.filter((l) => /^[▸ ] " (w\d+|c\d)"/.test(l)).length;
+	const mapCells = (ls: string[]) => ls.slice(ls.findIndex((l) => /^MAP {2}40 tok/.test(l)) + 1).findIndex((l) => !/^▀+ +│/.test(l));
+	const tube = (ls: string[]) => ls.filter((l) => /^ *│[ ▸]L\d+ .*│ +│/.test(l)).length;
+	assert.ok(choices(before) >= 4 && choices(after) >= 4, `${choices(before)} → ${choices(after)} choices`);
+	assert.ok([before, after].every((ls) => ls.some((l) => /^▸ " w30"/.test(l))), "the written one kept");
+	assert.ok(!before.some((l) => l.startsWith("SETTLING")) && before.some((l) => /^ ?LENS /.test(l)), "SETTLING gone, the telescope kept");
+	assert.ok(mapCells(before) === MAP_LINES && mapCells(after) === MAP_LINES, "MAP's title and two lines of cells");
+	assert.ok(tube(before) >= 5, `${tube(before)} rows of tube`);
+	assert.ok(after.some((l) => l.startsWith("The model's top choices")), "the explanation");
 	assert.equal(after.at(-1), layoutKeys("1-4"), "and the layout's keys under it");
 	const middle = after.filter((l) => l.includes(" │")).length;
 	assert.ok(middle >= MIDDLE_MIN, `${middle} lines of middle`);
@@ -1175,7 +1183,8 @@ test("board: exact widths from 100 to 200 columns, focus on TOKENS, inspecting a
 		d.full = false;
 		const lines = text(d.render(w));
 		for (const p of ["SETTLING", "MAP"]) assert.ok(lines.some((l) => l.startsWith(`${p}  `)), `${w}: ${p}`);   // SETTLING: in LENS
-		for (const p of ["EXPERTS", "TOKENS"]) assert.ok(lines.some((l) => new RegExp(`│ {1,2}${p} `).test(l)), `${w}: ${p}`);
+		assert.ok(lines.some((l) => /^ TOKENS /.test(l)), `${w}: TOKENS in focus, inverse`);
+		assert.ok(lines.some((l) => /│ EXPERTS /.test(l)), `${w}: EXPERTS`);
 	}
 });
 
@@ -1205,7 +1214,7 @@ test("EXPERTS full size at 51 lines: six layers, two whole rows of three; the ba
 	assert.equal(b, r2 + 10, "the band under the grids, after a blank");
 	assert.equal(lines[b - 1], "");
 	assert.match(lines[b + 1], /^ {2}#20 +█+▋? +78%$/);             // 200 / 255 of the mix at layer 7's first slot
-	assert.match(lines.at(-1)!, /^tab map · ←\/→ token · f live · ↑\/↓ layer · enter open · 1-4 6 panel · \? explain · esc back$/);
+	assert.match(lines.at(-1)!, /^tab tokens · ←\/→ token · f live · ↑\/↓ layer · enter open · 1-4 6 panel · \? explain · esc back$/);
 });
 
 test("EXPERTS full size, taller: every whole grid row that fits over the band; [ ] a layer, the window following", async () => {
@@ -1345,7 +1354,7 @@ test("board: the token that went into the lens's pass is on violet in the reply,
 	host.panel = "LENS";
 	d.sel = 20;
 	d.render(104);
-	d.handleInput("2");
+	d.handleInput("3");
 	const both = text(d.render(104)).filter((l) => /in: "w19"/.test(l));
 	assert.equal(both.length, 1);
 	assert.match(both[0], /in: "w19".*│.*in: "w19"/, "both lenses full size name it");
@@ -1375,7 +1384,7 @@ test("board: at 100-200 columns and 49-80 lines it fills the dock exactly, every
 });
 
 test("board: [ ] move EXPERTS' layers by one", async () => {
-	const { d, host } = board(40, ROWS_51 + 6, {}, TWELVE_BIG);                   // room for four layers of 512, no more
+	const { d, host } = board(40, 43, {}, TWELVE_BIG);                            // room for four layers of 512, no more
 	await tick();
 	d.sel = 20;
 	host.panel = "EXPERTS";
@@ -1507,13 +1516,13 @@ test("mini dock: MAP and SETTLING under the lights, the board's own drawn the ri
 		const raw = d.render(MINI_WIDTH), lines = text(raw), toks = live.reply!.tokens;
 		assert.equal(raw.length, 38);
 		assert.ok(raw.every((l) => visibleWidth(l) === MINI_WIDTH));
-		const map = lines.findIndex((l) => /^MAP {2}40 tok · /.test(l)), settle = lines.indexOf("SETTLING  J-lens · old → now");
+		const map = lines.findIndex((l) => /^MAP {2}40 tok · /.test(l)), settle = lines.findIndex((l) => /^SETTLING\b/.test(l));
 		assert.ok(lines.map((l) => /^[▸ ] layer \d+ of \d+$/.test(l)).lastIndexOf(true) < map && map < settle, lines.join("\n"));
 		assert.deepEqual(lines.filter((l) => /^[▸ ] layer \d+ of \d+$/.test(l)).length, 12, "every grid");
-		assert.equal(settle + 7, 37, "SETTLING down to the key line: every layer read, two to a line");
+		assert.equal(settle + 1 + SETTLE_MOST, 37, "SETTLING down to the key line, at its most: SETTLE_MOST lines of the 12 layers read");
 		const at = sel < 0 ? -1 : sel, k = sel < 0 ? 39 : sel;
 		assert.deepEqual(raw.slice(map, settle), framed(mapPanel(th, toks, at, RIGHT_W, settle - map, false, true, mapWindow(40, RIGHT_W, settle - map - 1, at))), `MAP ${sel}`);
-		assert.deepEqual(raw.slice(settle, 37), framed(settlingPanel(th, toks, k, undefined, RIGHT_W, 7, palette(th), sel >= 0)), `SETTLING ${sel}`);
+		assert.deepEqual(raw.slice(settle, 37), framed(settlingPanel(th, toks, k, undefined, RIGHT_W, 1 + SETTLE_MOST, palette(th), sel >= 0)), `SETTLING ${sel}`);
 		const focus = halfRows(raw.slice(map + 1, settle)).flat().some((c) => c.join() === COLOURS.text.join());
 		assert.equal(focus, sel >= 0, "the token stepped to: white in MAP");
 	}
@@ -1532,7 +1541,7 @@ test("mini dock: no lens read, no SETTLING; no routing, the maps under the reaso
 	const mapAt = lines.findIndex((l) => /^MAP /.test(l));
 	assert.ok(mapAt > 0 && mapAt <= 4 && lines.slice(0, mapAt - 1).every((l) => l.length > 0) && lines[mapAt - 1] === "",
 		"the maps under the reason, a blank line between: " + lines.join("\n"));
-	assert.ok(lines.findIndex((l) => /^SETTLING /.test(l)) > mapAt);
+	assert.ok(lines.findIndex((l) => /^SETTLING\b/.test(l)) > mapAt);
 });
 
 test("mini dock, short: the maps drop out before the one grid of lights (SETTLING first)", async () => {
@@ -1543,7 +1552,7 @@ test("mini dock, short: the maps drop out before the one grid of lights (SETTLIN
 		const raw = d.render(MINI_WIDTH), lines = text(raw);
 		assert.equal(raw.length, rows);
 		assert.ok(raw.every((l) => visibleWidth(l) === MINI_WIDTH));
-		return [lines.filter((l) => /^[▸ ] layer \d+ of \d+$/.test(l)).length, lines.some((l) => /^MAP /.test(l)), lines.some((l) => /^SETTLING /.test(l))];
+		return [lines.filter((l) => /^[▸ ] layer \d+ of \d+$/.test(l)).length, lines.some((l) => /^MAP /.test(l)), lines.some((l) => /^SETTLING\b/.test(l))];
 	};
 	assert.deepEqual(await shown(16), [1, false, false], "the token's line, EXPERTS' title, the grid alone");
 	assert.deepEqual(await shown(12), [1, false, false], "the dock's least: the grid cut, still alone");
@@ -1561,7 +1570,7 @@ test("mini dock while a reply streams: the maps follow the newest token; no end 
 	const d = new Dock({ terminal: { rows: 40 }, requestRender() {} }, piTheme, { live, mini: true, close() {}, unfocus() {}, fetchJson: async () => null } as any);
 	await tick();
 	let lines = text(d.render(MINI_WIDTH));
-	assert.ok(lines.some((l) => /^MAP {2}30 tok/.test(l)) && lines.includes("SETTLING  J-lens · old → now"), lines.join("\n"));
+	assert.ok(lines.some((l) => /^MAP {2}30 tok/.test(l)) && lines.some((l) => /^SETTLING\b/.test(l)), lines.join("\n"));
 	for (let i = 30; i < 600; i++) onEvent(live, tok(i, TWELVE as any));
 	lines = text(d.render(MINI_WIDTH));
 	assert.ok(lines.some((l) => /^MAP {2}600 tok · .* \d+-600$/.test(l)), String(lines.find((l) => /^MAP/.test(l))));   // the newest lines
@@ -1614,7 +1623,7 @@ test("mini dock, a token before the first lens reading: SETTLING keeps its room 
 	for (const t of live.reply!.tokens.slice(0, 10)) Object.assign(t, { lens: [], lens_logit: [] });
 	const places = () => {
 		const lines = text(d.render(MINI_WIDTH));
-		return { map: lines.findIndex((l) => /^MAP /.test(l)), settle: lines.indexOf("SETTLING  J-lens · old → now"), lines };
+		return { map: lines.findIndex((l) => /^MAP /.test(l)), settle: lines.findIndex((l) => /^SETTLING\b/.test(l)), lines };
 	};
 	const follow = places();
 	d.sel = 3;
@@ -1646,7 +1655,7 @@ test("mini dock: [ ] page the lights with the maps shown, the maps where they we
 	long.d.stepIn(100);
 	const raw = long.d.render(MINI_WIDTH), lines = text(raw);
 	assert.match(lines[0], /^#100 /);
-	const m = lines.findIndex((l) => /^MAP /.test(l)), s = lines.findIndex((l) => /^SETTLING /.test(l));
+	const m = lines.findIndex((l) => /^MAP /.test(l)), s = lines.findIndex((l) => /^SETTLING\b/.test(l));
 	const [, a, b] = /(\d+)-(\d+)$/.exec(lines[m])!.map(Number);
 	assert.ok(a <= 101 && 101 <= b, lines[m]);
 	assert.ok(halfRows(raw.slice(m + 1, s)).flat().some((c) => c.join() === COLOURS.text.join()), "the token stepped to: white in MAP");
@@ -1695,7 +1704,7 @@ test("widget: the mini dock is remembered (pi.json), per user; an older pi.json'
 	let a = mk();
 	assert.equal(a.gap(), dockColumns(160));
 	a.dock().render(104);
-	assert.ok(text(a.dock().render(104)).some((l) => /│ TOKENS /.test(l)), "the old `hidden` ignored");
+	assert.ok(text(a.dock().render(104)).some((l) => /^ ?TOKENS /.test(l)), "the old `hidden` ignored");
 	a.dock().sel = 0;
 	a.dock().handleInput("m");
 	assert.deepEqual(readPrefs(path), { hidden: ["TOKENS"], dock: true, mini: true }, "left as it was, never written");
@@ -1713,6 +1722,27 @@ test("widget: the mini dock is remembered (pi.json), per user; an older pi.json'
 	assert.equal(a.gap(), dockColumns(160));
 	assert.deepEqual([a.opts().width, a.opts().minWidth, a.opts().visible(100), a.opts().visible(99)], ["36%", 44, true, false]);   // under 100: hidden
 	assert.deepEqual(readPrefs(path), { hidden: ["TOKENS"], dock: true, mini: false });
+});
+
+test("TOKENS in fewer lines than its choices: the last ones go, the written one kept in the last line", () => {
+	const t = ten(0.04);                                                             // written: rank 8 of 10
+	assert.equal(topChoices(t).rank, 8);
+	const ls = text(tokensPanel(piTheme, t, 3, 50, false, true, 5));
+	assert.equal(ls.length, 5);
+	assert.match(ls[4], /^▸ /, "the written one, in the last of its 4 choices' lines");
+	assert.ok(ls.slice(1, 4).every((l) => /^ {2}"/.test(l)), "the likeliest 3 over it");
+	assert.match(text(tokensPanel(piTheme, ten(0.12), 3, 50, false, true, 5))[4], /^ {2}"/, "written among the first 4 (third): as ever");
+});
+
+test("TOKENS on the board (BOARD_TOP): its first 5 choices, the written one under them where it is not among them; in fewer lines the last go, the written one kept", () => {
+	const ls = text(tokensPanel(piTheme, ten(0.04), 3, 50, false, true, 1 + BOARD_TOP + 1, BOARD_TOP));   // written: rank 8
+	assert.equal(ls.length, 1 + BOARD_TOP + 1);
+	assert.ok(ls.slice(1, -1).every((l) => /^ {2}"/.test(l)) && /^▸ /.test(ls.at(-1)!), "5 choices, then the written one");
+	assert.match(ls[0], /rank 8/);
+	const among = text(tokensPanel(piTheme, ten(0.12), 3, 50, false, true, 1 + BOARD_TOP + 1, BOARD_TOP));   // written: third
+	assert.deepEqual([among.length, among.filter((l) => /^▸ /.test(l)).length], [1 + BOARD_TOP, 1], "among them: 5 rows, no row more");
+	const short = text(tokensPanel(piTheme, ten(0.04), 3, 50, false, true, 5, BOARD_TOP));
+	assert.ok(short.length === 5 && /^▸ /.test(short[4]), "4 lines under the title: 3 choices and the written one");
 });
 
 test("TOKENS: the written token's rank among the top 10", () => {
@@ -1770,12 +1800,12 @@ test("widget: /scope dock full is refused where the terminal is too short for th
 
 // -- the new panels: SETTLING (in LENS), MAP, CONCEPTS; EXPERTS' three layers; the layout -----------------------------------
 
-test("arrange: the left column MAP, LENS, the right TOKENS, EXPERTS (a model with experts), STREAM (where it is drawn)", () => {
-	assert.deepEqual(arrange(true, true), { left: ["MAP", "LENS"], right: ["TOKENS", "EXPERTS", "STREAM"] });
-	assert.deepEqual(arrange(true, false), { left: ["MAP", "LENS"], right: ["TOKENS", "EXPERTS"] });
+test("arrange: with experts TOKENS, MAP, LENS on the left, EXPERTS on the right; without, MAP and LENS on the left, TOKENS on the right; STREAM under the right column's top where it is drawn", () => {
+	assert.deepEqual(arrange(true, true), { left: ["TOKENS", "MAP", "LENS"], right: ["EXPERTS", "STREAM"] });
+	assert.deepEqual(arrange(true, false), { left: ["TOKENS", "MAP", "LENS"], right: ["EXPERTS"] });
 	assert.deepEqual(arrange(false, true), { left: ["MAP", "LENS"], right: ["TOKENS", "STREAM"] });
-	assert.deepEqual(arrange(false, false), { left: ["MAP", "LENS"], right: ["TOKENS"] });
-	assert.deepEqual(PANELS, ["MAP", "LENS", "TOKENS", "EXPERTS", "STREAM"], "tab order: MAP over LENS, then the right column top down");
+	assert.deepEqual(arrange(false, false), { left: ["MAP", "LENS"], right: ["TOKENS"] }, "a frame without STREAM: the columns as they were");
+	assert.deepEqual(PANELS, ["TOKENS", "MAP", "LENS", "EXPERTS", "STREAM"], "tab order");
 });
 
 test("lensSplit: the leasts first, the telescope whole, then SETTLING, a blank line between out of SETTLING's share; too short, SETTLING shrinks, the blank goes, then SETTLING; the telescope keeps its least", () => {
@@ -1807,7 +1837,7 @@ test("board: LENS is one panel under MAP, SETTLING over the telescope (a violet 
 	d.sel = 20;
 	let raw = d.render(104), lines = text(raw);
 	if (process.env.SHOW_DOCK) console.log(lines.join("\n"));
-	const lens = lines.findIndex((l) => /^ ?LENS /.test(l)), s = lines.findIndex((l) => l.startsWith("SETTLING  J-lens · old → now"));
+	const lens = lines.findIndex((l) => /^ ?LENS /.test(l)), s = lines.findIndex((l) => l.startsWith("SETTLING"));
 	const map = lines.findIndex((l) => l.startsWith("MAP  "));
 	const scope = lines.findIndex((l) => /^#20 "w20" · settles L40\/48/.test(l)), rule = lines.findIndex((l, i) => i > s && /^─+/.test(l));
 	assert.ok(map > 0 && map < lens && s === lens + 1 && scope > s, `${map} ${lens} ${s} ${scope}`);
@@ -1816,15 +1846,22 @@ test("board: LENS is one panel under MAP, SETTLING over the telescope (a violet 
 	assert.equal(lens - map, 1 + 1 + MAP_LINES, "MAP its least at 51 lines: its title and two lines");
 	assert.ok(rule - scope >= MIN_LINES, "the telescope keeps its least");
 	const bar = lines[s].indexOf(" │");   // the left column's width
-	assert.deepEqual(lines.slice(s + 1, s + 7).map((l) => l.slice(0, 4).trimEnd()), ["L44", "L36", "L28", "L20", "L12", "L4"],
-		"SETTLING whole at 51 lines (the telescope's 12 layers read): two a line");
-	assert.equal(scope, s + 8, "then a blank line, the telescope");
+	assert.deepEqual(lines.slice(s + 1, s + 4).map((l) => l.slice(0, 4).trimEnd()), ["L44", "L28", "L12"],
+		"SETTLING its least at 51 lines under TOKENS and MAP (the telescope whole first): the 12 layers read four a line");
+	assert.equal(scope, s + 5, "then a blank line, the telescope");
 	assert.equal(lines[scope - 1].slice(0, bar).trim(), "", "a blank line between SETTLING and the telescope");
 	assert.ok(raw[s].includes("\x1b[1mSETTLING\x1b[22m"), "SETTLING bold");
 	// The tab row and the panels: no SETTLING; its focus column grey stepped in (it shares LENS's token).
-	d.handleInput("2");
+	d.handleInput("3");
 	assert.ok(!text(d.render(104)).some((l) => /^ ?LENS +SETTLING/.test(l)));
-	d.handleInput("2");
+	d.handleInput("3");
+});
+
+test("settleRoom: SETTLING's least four lines of layers (fewer where fewer), its most two layers a line, capped at SETTLE_MOST", () => {
+	assert.equal(SETTLE_MOST, 5);
+	assert.deepEqual(settleRoom(3), [3, 3], "two lines of layers: both");
+	assert.deepEqual(settleRoom(9), [5, 6], "five lines: the cap");
+	for (const n of [15, 22, 47]) assert.deepEqual(settleRoom(n), [5, 1 + SETTLE_MOST], `${n} layers: no more than SETTLE_MOST lines`);
 });
 
 test("stackLayers: three layers a quarter of the model apart around the focus one; near an end the third on the other side", () => {
@@ -1837,26 +1874,16 @@ test("stackLayers: three layers a quarter of the model apart around the focus on
 	assert.deepEqual(stackLayers(1, 0), [0]);
 });
 
-test("EXPERTS' grids as full rectangles (the mini dock's `plate`): the columns past the grid and the short last row's cells unlit, an odd row count's last lower half the background; without, the board's grids as they draw them", () => {
+test("EXPERTS' grids reshaped to the column: Flash Next's 512 at 48 columns 11 rows of 47; the board's grids as they draw them", () => {
 	const th = dockTheme(piTheme), pal = palette(th), E = 512, v = { layer: 3, L: 48, E, k: 10 };
-	const shape = reshapeGrid(E, { cols: 32, rows: 16, pos: null }, 48), unlit = STOPS[0][1];
+	const shape = reshapeGrid(E, { cols: 32, rows: 16, pos: null }, 48);
 	assert.deepEqual([shape.cols, shape.rows], [47, 11], "Flash Next's 512 at 48 columns: 11 rows of 47, the last 42");
 	const levels = Array.from({ length: E }, (_, e) => ((e * 37) % 100) / 100);
 	const layers = [3, 4].map((layer) => ({ layer, cells: gridCells(levels, shape), cols: shape.cols, rows: shape.rows }));
-	// Without a plate: the board's EXPERTS, pinned by the hash of its lines.
+	// The board's EXPERTS, pinned by the hash of its lines.
 	const out: string[][] = [];
 	for (const [w, rows, noMap] of [[50, 40, false], [50, 9, true], [48, 20, false], [97, 30, true]] as const) out.push(expertsStack(th, v, layers, pal, w, rows, true, noMap));
 	assert.equal(createHash("sha256").update(JSON.stringify(out)).digest("hex").slice(0, 16), "6816b496383cbc31");
-	const plated = expertsStack(th, v, layers, pal, 50, 40, false, false, 48), plain0 = expertsStack(th, v, layers, pal, 50, 40, false);
-	assert.deepEqual(plated.map((l) => plain(l).trimEnd()).slice(0, 9), [plain(plated[0]), "▸ layer 4 of 48", ...Array(6).fill("▀".repeat(48)), "  layer 5 of 48"],
-		"the title and labels as ever, the grid 48 wide");
-	assert.ok(plated.slice(1).every((l) => visibleWidth(l) === 50), "each line under the title the width");
-	const got = halfRows(plated.slice(2, 8)), was = halfRows(plain0.slice(2, 8));
-	for (let r = 0; r < 12; r++)
-		for (let c = 0; c < 48; c++) {
-			const want = r === 11 ? [] : c >= 47 || (r === 10 && c >= 42) ? unlit : was[r][c];
-			assert.deepEqual(got[r][c], want, `row ${r}, column ${c}`);
-		}
 });
 
 test("EXPERTS on the board: the layers stacked, each a dim heading over its grid, the lights only; as many as the rows hold, at least one", () => {
@@ -1960,24 +1987,20 @@ test("board: one blank line between SETTLING and the telescope, on the board and
 	// without STEER) the blank line fits too (lensSplit's own test: tight, it goes rather than SETTLING).
 	const { d } = board(40, 51, {}, { lens: [[40, 0, " x"], [44, 0, " x"]], lens_logit: [[40, 0, " x"], [44, 0, " x"]] });
 	await tick();
-	const lines = text(d.render(104)), s = lines.findIndex((l) => l.startsWith("SETTLING  "));
+	const lines = text(d.render(104)), s = lines.findIndex((l) => /^SETTLING\b/.test(l));
 	assert.ok(s > 0 && /^L44 /.test(lines[s + 1]), "SETTLING shown");
 	assert.equal(gapOver(lines), 1, "room for the blank line");
 });
 
-// Flash Next's lens steps (tracer.lens_steps: the J-lens's and the logit lens's layers; 4, 8, 15, 24 and 47 J-lens layers).
+// Flash Next's lens steps (tracer.lens_steps: the J-lens's layers, spread over its 47, and the logit lens's: the same
+// and the model's last; small, medium and large: 4, 16 and 24 J-lens layers).
 const upTo = (n: number) => Array.from({ length: n }, (_, l) => l);
-const FLASH_STEPS: [number[], number[]][] = [
-	[[24, 31, 38, 46], [24, 38, 46, 47]],
-	[[4, 16, 24, 28, 31, 38, 40, 46], [4, 16, 24, 28, 38, 40, 46, 47]],
-	[[0, 4, 8, 12, 16, 20, 24, 28, 31, 32, 36, 38, 40, 44, 46], [0, 4, 8, 12, 16, 20, 24, 28, 32, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47]],
-	[[0, 2, 4, 7, 8, 11, 12, 16, 17, 20, 22, 24, 26, 28, 31, 32, 33, 36, 37, 38, 40, 43, 44, 46],
-		[0, 2, 4, 7, 8, 11, 12, 16, 17, 20, 22, 24, 26, 28, 31, 32, 33, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47]],
-	[upTo(47), upTo(48)],
-];
+const FLASH_J = [[10, 22, 34, 46], upTo(16).map((i) => 3 * i + 1), upTo(24).map((i) => 2 * i)];
+const FLASH_STEPS: [number[], number[]][] = FLASH_J.map((j) => [j, [...j, 47]]);
+const SIZES = ["small", "medium", "large"];
 /** A host answering the lens steps route as the server does, at step `at`; `answer` replaces its answers. */
-function stepsHost(at = 2) {
-	const data = { model: MODEL, at, steps: FLASH_STEPS.map(([j, l]) => ({ n: j.length, layers: [...new Set([...j, ...l])].sort((a, b) => a - b), tps: null, replies: 0 })) };
+function stepsHost(at = 1) {
+	const data = { model: MODEL, at, steps: FLASH_STEPS.map(([j, l], i) => ({ name: SIZES[i], n: j.length, layers: [...new Set([...j, ...l])].sort((a, b) => a - b), tps: null, replies: 0 })) };
 	const host: any = { data, asked: [] as (number | undefined)[], answer: undefined as any,
 		lensLayers: async (step?: number) => {
 			host.asked.push(step);
@@ -1993,25 +2016,27 @@ const places = (lines: string[]) => {
 	const reply = lines.indexOf("REPLY"), map = lines.findIndex((l) => /^ ?MAP /.test(l)), lens = lines.findIndex((l) => /^ ?LENS /.test(l));
 	return { reply, map, lens, end: lines.findIndex((l, i) => i > lens && /^─+$/.test(l)) };
 };
-const dots = (lines: string[]) => lines.reduce((n, l) => n + (l.match(/│ L\d+(?: \+\d+)? +· +│/g)?.length ?? 0), 0);
+/** The tube's rows of layers wanted, not read yet, on the dock's raw lines: their label faint, the row blank. */
+const FAINT_ROW = new RegExp(`${colourCode(COLOURS.faint, "truecolor").replace(/[[\]]/g, "\\$&")}[ ▸]L\\d+(?: \\+\\d+)? +\x1b`, "g");
+const dots = (raw: string[]) => raw.reduce((n, l) => n + (l.match(FAINT_ROW)?.length ?? 0), 0);
 const lensRows = (lines: string[]) => lines.reduce((n, l) => n + (l.match(/│[ ▸]L\d+/g)?.length ?? 0), 0);
 
 test("board: LENS sized on the server's steps, whatever the step in use: REPLY, MAP and LENS stay put between replies read at other steps; without the steps, on the reply's", async () => {
 	for (const rows of [ROWS_51, 75]) {
 		const got: any[] = [];
-		for (const s of [0, 2, 4]) {
-			const { d } = board(40, rows, stepsHost(2), readAt(s));
+		for (const s of [0, 1, 2]) {
+			const { d } = board(40, rows, stepsHost(1), readAt(s));
 			d.sel = 20;
 			d.render(104);
 			await tick();
 			got.push(places(text(d.render(104))));
 			d.dispose();
 		}
-		assert.deepEqual(got[1], got[0], `${rows} lines: replies read at steps 0 and 2`);
-		assert.deepEqual(got[2], got[0], `${rows} lines: replies read at steps 4 and 2`);
+		assert.deepEqual(got[1], got[0], `${rows} lines: replies read at small and medium`);
+		assert.deepEqual(got[2], got[0], `${rows} lines: replies read at large and medium`);
 	}
 	// No steps (a server without the route, a failure, not answered): over the layers the reply read.
-	const few = board(40, 75, {}, readAt(0)), many = board(40, 75, {}, readAt(4));
+	const few = board(40, 75, {}, readAt(0)), many = board(40, 75, {}, readAt(2));
 	for (const x of [few, many]) x.d.sel = 20;
 	const [a, b] = [few, many].map((x) => places(text(x.d.render(104))));
 	assert.ok(b.end - b.lens > a.end - a.lens, "a reply that read more: a taller LENS");
@@ -2019,9 +2044,9 @@ test("board: LENS sized on the server's steps, whatever the step in use: REPLY, 
 
 test("board: a lens-steps answer of another shape is a failure, not a blank dock; a panel that throws says so in its place only", async () => {
 	for (const bad of [{}, null, { model: MODEL, at: 0, steps: null }, { model: MODEL, at: 0, steps: [{ n: 4 }] }]) {
-		const host = stepsHost(2);
+		const host = stepsHost(1);
 		host.answer = bad;
-		const { d } = board(40, 75, host, readAt(2));
+		const { d } = board(40, 75, host, readAt(1));
 		d.sel = 20;
 		d.render(104);
 		await tick();
@@ -2031,54 +2056,80 @@ test("board: a lens-steps answer of another shape is a failure, not a blank dock
 		assert.doesNotThrow(() => d.handleInput("+"));
 		d.dispose();
 	}
-	const { d } = board(40, 75, {}, readAt(2));
+	const { d } = board(40, 75, {}, readAt(1));
 	d.sel = 20;
 	(d as any).tokens = () => { throw new Error("boom\n\x1b]8;;x\x07"); };
 	let lines = text(d.render(104));
-	const at = lines.findIndex((l) => / │ TOKENS$/.test(l));
-	assert.match(lines[at + 1], / │ the dock: boom ·\]8;;x·$/, "under its title, one line, cleaned");
+	const at = lines.findIndex((l) => /^TOKENS +│ /.test(l));
+	assert.match(lines[at + 1], /^the dock: boom ·\]8;;x· +│ /, "under its title, one line, cleaned");
 	assert.ok(lines.includes("REPLY") && lines.some((l) => /^ ?MAP /.test(l)) && lines.some((l) => /^ ?LENS /.test(l)), "the other panels drawn");
 	// Working out its lines failing: the same, not a panel squeezed in silence.
-	const other = board(40, 75, {}, readAt(2));
+	const other = board(40, 75, {}, readAt(1));
 	other.d.sel = 20;
 	const needOf = (other.d as any).needOf.bind(other.d);
 	(other.d as any).needOf = (p: string, ...a: any[]) => { if (p === "TOKENS") throw new Error("no size"); return needOf(p, ...a); };
 	lines = text(other.d.render(104));
-	assert.match(lines[lines.findIndex((l) => / │ TOKENS$/.test(l)) + 1], / │ the dock: no size$/);
+	assert.match(lines[lines.findIndex((l) => /^TOKENS +│ /.test(l)) + 1], /^the dock: no size +│ /);
 });
 
-test("board: LENS's blank lines: the one over the telescope, and those a short tube frees at the bottom; - + move nothing: LENS keeps its lines and the lines above theirs", async () => {
+test("board: - + size LENS by the step, small to large, large to the column's foot; a smaller step's lines go to MAP up to its most, the rest blank at the bottom; REPLY, TOKENS and the right column stay", async () => {
 	mock.timers.enable({ apis: ["setInterval"] });
 	try {
-		const host = stepsHost(2), { d } = board(40, 75, host, readAt(2));
+		const host = stepsHost(1), { d } = board(40, 75, host, readAt(1));
 		d.sel = 20;
 		d.render(104);
 		await tick();
-		const lines = text(d.render(104)), p = places(lines);
-		const bar = lines[p.lens].indexOf(" │");
-		// Blank in LENS besides the line over the telescope: how many, all at its bottom (-1: some elsewhere).
-		const blanks = (ls: string[]) => {
-			const tel = ls.findIndex((l) => /^#20 "/.test(l)), at = ls.map((_, i) => i).filter((i) => i > p.lens && i < p.end && !ls[i].slice(0, bar).trim());
-			const foot = at.filter((i) => i !== tel - 1);
-			return at.includes(tel - 1) && foot.every((b, i) => b === p.end - foot.length + i) ? foot.length : -1;
+		const first = text(d.render(104)), lw = first[places(first).lens].indexOf(" │");
+		// Where the parts are, MAP's lines, the tube's rows, and the blank lines in LENS besides the one over the telescope
+		// (all at the column's foot; -1: some elsewhere).
+		const shape = (ls: string[]) => {
+			const p = places(ls), tel = ls.findIndex((l) => /^#20 "/.test(l));
+			const at = ls.map((_, i) => i).filter((i) => i > p.lens && i < p.end && !ls[i].slice(0, lw).trim()), foot = at.filter((i) => i !== tel - 1);
+			return { ...p, map: p.lens - 1 - p.map, tube: lensRows(ls), foot: at.includes(tel - 1) && foot.every((b, i) => b === p.end - foot.length + i) ? foot.length : -1,
+				above: ls.slice(0, p.map + 1), right: ls.map((l) => l.slice(lw)).slice(0, -1) };
 		};
-		assert.equal(blanks(lines), 0, `blank lines in LENS:\n${lines.join("\n")}`);
-		assert.match(lines[p.lens], /^ LENS +J-lens ◉────○ logit +▮▮▮▯▯ 15 layers/, "the step in LENS's title");
-		assert.match(lines.at(-1)!, /↑\/↓ layer · -\/\+ layers · enter edit/);
-		for (const key of ["+", "+", "-", "-", "-"]) {
+		const by: Record<number, ReturnType<typeof shape>> = { 1: shape(text(d.render(104))) };
+		assert.match(text(d.render(104))[by[1].lens], /^ LENS +J-lens ◉────○ logit +▮▮▯ medium/, "the step in LENS's title");
+		for (const key of ["+", "-", "-", "+"]) {
 			d.handleInput(key);
 			await tick();
 			mock.timers.tick(70 * 60);
-			const now = text(d.render(104));
-			assert.deepEqual(places(now), p, `${key}: REPLY, MAP and LENS where they were`);
-			assert.ok(blanks(now) >= 0, `${key}: blank lines only at LENS's bottom besides the one over the telescope`);
-			if (host.data.at >= 2) assert.equal(blanks(now), 0, `${key}: the tube whole at step ${host.data.at}`);
+			const now = text(d.render(104)), s = shape(now);
+			assert.ok(!now.some((l) => /shallower layer/.test(l)), `${key}: every layer on the tube`);
+			for (const f of ["reply", "end", "above", "right"] as const) assert.deepEqual(s[f], by[1][f], `${key}: ${f} as it was`);
+			assert.ok(s.foot === 0 || s.map === 1 + MAP_CELL_LINES, `${key}: blank at the foot only once MAP has its most (${s.foot} blank, MAP ${s.map})`);
+			by[host.data.at] ??= s;
+			assert.deepEqual(s, by[host.data.at], `${key}: step ${host.data.at} as before`);
 		}
-		assert.deepEqual(host.asked.filter((x: any) => x !== undefined), [3, 4, 3, 2, 1]);
+		const [small, medium, large] = [by[0], by[1], by[2]];
+		assert.deepEqual([large.map, large.foot], [1 + MAP_LINES, 0], "large: MAP its least, LENS to the column's foot");
+		const tall = (s: typeof small) => s.end - s.lens - s.foot;
+		assert.ok(tall(small) < tall(medium) && tall(medium) <= tall(large) && small.tube < medium.tube && medium.tube <= large.tube,
+			`LENS ${tall(small)}, ${tall(medium)}, ${tall(large)} lines; the tube ${small.tube}, ${medium.tube}, ${large.tube} rows`);
+		assert.ok(small.map >= medium.map && medium.map >= large.map && small.map > large.map, `MAP ${small.map}, ${medium.map}, ${large.map} lines`);
+		assert.ok(small.foot > 0, "small: blank under it");
+		assert.deepEqual(host.asked.filter((x: any) => x !== undefined), [2, 1, 0, 1]);
 		d.dispose();
 	} finally {
 		mock.timers.reset();
 	}
+});
+
+test("board: a reply read at large shown at medium (the sizes not nested): the step's rows, those large read with their words, the rest their label alone", async () => {
+	const { d } = board(40, 75, stepsHost(1), readAt(2));
+	d.sel = 20;
+	d.render(104);
+	await tick();
+	const raw = d.render(104), lines = text(raw), lw = lines[places(lines).lens].indexOf(" │");
+	const tube = lines.map((l) => l.slice(0, lw)).filter((l) => /│[ ▸]L\d+/.test(l));
+	const label = (l: string) => Number(/L(\d+)/.exec(l)![1]);
+	// Medium's J-lens layers (1, 4, .. 46) and the logit lens's last (47); large read every second (0, 2, .. 46) and 47.
+	assert.deepEqual(tube.map(label), [47, ...FLASH_STEPS[1][0].slice().reverse()]);
+	const worded = tube.filter((l) => /L\d+ +the +/.test(l)).map(label), blank = tube.filter((l) => /^ *│[ ▸]L\d+ +│ *$/.test(l)).map(label);
+	assert.deepEqual(worded, [46, 40, 34, 28, 22, 16, 10, 4], "the 8 of 16 large read: their words");
+	assert.deepEqual(blank, [47, 43, 37, 31, 25, 19, 13, 7, 1], "the rest: the label, nothing else (47 the logit lens's)");
+	assert.equal(dots(raw), 8, "the 8 not read faint; 47 dim, read by the other lens");
+	d.dispose();
 });
 
 test("board: - + in every view of the lens: its column, full size with both lenses and with one; the tube follows", async () => {
@@ -2088,25 +2139,27 @@ test("board: - + in every view of the lens: its column, full size with both lens
 			d.handleInput(key);
 			await tick();
 			mock.timers.tick(70 * 60);
-			return text(d.render(104));
+			return d.render(104);
 		};
-		for (const [name, tx, full] of [["its column", readAt(2), false], ["full size, both lenses", readAt(2), true],
-			["full size, one lens", { lens: [...new Set(FLASH_STEPS[2].flat())].map((l) => [l, 7, " the"]), lens_logit: undefined }, true]] as [string, any, boolean][]) {
-			const host = stepsHost(2), { d } = board(40, 75, host, tx);
+		for (const [name, tx, full] of [["its column", readAt(1), false], ["full size, both lenses", readAt(1), true],
+			["full size, one lens", { lens: [...new Set(FLASH_STEPS[1].flat())].map((l) => [l, 7, " the"]), lens_logit: undefined }, true]] as [string, any, boolean][]) {
+			const host = stepsHost(1), { d } = board(40, 75, host, tx);
 			d.sel = 20;
 			d.render(104);
 			await tick();
-			if (full) d.handleInput("2");
-			let lines = text(d.render(104));
-			assert.equal(dots(lines), 0, `${name}: the step's layers, all read`);
-			if (full) assert.match(lines.find((l) => /^▮/.test(l)) ?? "", /^▮▮▮▯▯  reads 15 layers/, `${name}: the step's line`);
+			if (full) d.handleInput("3");
+			let raw = d.render(104), lines = text(raw);
+			assert.equal(dots(raw), 0, `${name}: the step's layers, all read`);
+			if (full) assert.match(lines.find((l) => /^▮/.test(l)) ?? "", /^▮▮▯  medium · reads 16 layers/, `${name}: the step's line`);
 			const rows = lensRows(lines);
-			lines = await press(d, "+");
-			assert.ok(dots(lines) > 0 && lensRows(lines) >= rows, `${name}: + the layers no reply read yet, faint`);
-			if (full) assert.match(lines.find((l) => /^▮/.test(l)) ?? "", /^▮▮▮▮▯  reads 24 layers/);
-			lines = await press(d, "-");
-			lines = await press(d, "-");
-			assert.ok(dots(lines) === 0 && lensRows(lines) < rows, `${name}: - fewer, at once`);
+			raw = await press(d, "+");
+			lines = text(raw);
+			assert.ok(dots(raw) > 0 && lensRows(lines) >= rows, `${name}: + the layers no reply read yet, faint`);
+			if (full) assert.match(lines.find((l) => /^▮/.test(l)) ?? "", /^▮▮▮  large · reads 24 layers/);
+			await press(d, "-");
+			raw = await press(d, "-");
+			lines = text(raw);
+			assert.ok(dots(raw) === 0 && lensRows(lines) < rows, `${name}: - fewer, at once`);
 			assert.match(lines.at(-1)!, /-\/\+ layers/, `${name}: the key line says so`);
 			d.dispose();
 		}
@@ -2116,9 +2169,9 @@ test("board: - + in every view of the lens: its column, full size with both lens
 });
 
 test("board: a server without the route (404): no step and no -/+; one without the model loaded (409) says so where the step has its line", async () => {
-	const host = stepsHost(2);
+	const host = stepsHost(1);
 	host.answer = { error: "oMLX at h answered: Not Found", missing: true };
-	const { d } = board(40, 75, host, readAt(2));
+	const { d } = board(40, 75, host, readAt(1));
 	d.sel = 20;
 	d.render(104);
 	await tick();
@@ -2128,17 +2181,17 @@ test("board: a server without the route (404): no step and no -/+; one without t
 	d.handleInput("+");
 	await tick();
 	assert.deepEqual(host.asked, [undefined], "- + do nothing");
-	d.handleInput("2");
+	d.handleInput("3");
 	lines = text(d.render(104));
 	assert.ok(!lines.some((l) => /Not Found|▮/.test(l)), "full size: nothing either");
 	d.dispose();
-	const other = stepsHost(2);
+	const other = stepsHost(1);
 	other.answer = { error: "model 'Flash' is not loaded" };
-	const o = board(40, 75, other, readAt(2));
+	const o = board(40, 75, other, readAt(1));
 	o.d.sel = 20;
 	o.d.render(104);
 	await tick();
-	o.d.handleInput("2");
+	o.d.handleInput("3");
 	assert.ok(text(o.d.render(104)).some((l) => l.startsWith("model 'Flash' is not loaded")), "full size: the reason");
 	o.d.dispose();
 });
@@ -2146,14 +2199,14 @@ test("board: a server without the route (404): no step and no -/+; one without t
 test("board: the layout at 100 to 200 columns: the dock's height and width at any step, replies read at any step; nothing moves at one step", async () => {
 	for (const width of [100, 120, 140, 200])
 		for (const full of [false, true])
-			for (const at of [0, 2, 4]) {
+			for (const at of [0, 1, 2]) {
 				const seen: string[] = [];
-				for (const read of [0, 2, 4]) {
+				for (const read of [0, 1, 2]) {
 					const { d } = board(40, 75, stepsHost(at), readAt(read));
 					d.sel = 20;
 					d.render(width);
 					await tick();
-					if (full) d.handleInput("2");
+					if (full) d.handleInput("3");
 					const raw = d.render(width), why = `${width} columns, full ${full}, step ${at}, read at ${read}`;
 					assert.equal(raw.length, 75, why);
 					for (const l of raw) assert.ok(visibleWidth(l) <= width, `${why}: ${plain(l)}`);
@@ -2168,10 +2221,10 @@ test("board: - + do nothing on the EXPERTS pages, the Steer page, on another pan
 	for (const [name, setup] of [
 		["EXPERTS' layer page", (d: any) => { d.handleInput("4"); d.handleInput(KEY.enter); }],
 		["the Steer page", (d: any) => d.handleInput("6")],
-		["TOKENS full size", (d: any) => d.handleInput("3")],
+		["TOKENS full size", (d: any) => d.handleInput("1")],
 		["a word edited", (d: any) => d.handleInput(KEY.enter)],
 	] as [string, (d: any, h: any) => void][]) {
-		const host = stepsHost(2), { d, host: h } = board(40, 75, host, readAt(2));
+		const host = stepsHost(1), { d, host: h } = board(40, 75, host, readAt(1));
 		d.sel = 20;
 		d.render(104);
 		await tick();
@@ -2180,13 +2233,13 @@ test("board: - + do nothing on the EXPERTS pages, the Steer page, on another pan
 		for (const k of "-+=_") d.handleInput(k);
 		await tick();
 		assert.deepEqual(host.asked.filter((x: any) => x !== undefined), [], name);
-		assert.equal(host.data.at, 2, name);
+		assert.equal(host.data.at, 1, name);
 		d.dispose();
 	}
 });
 
 test("board: a failure with steps held (409: the model unloaded) says so in LENS's title, why full size; - + and their hint off until the steps are back", async () => {
-	const host = stepsHost(2), { d, live } = board(40, 75, host, readAt(2));
+	const host = stepsHost(1), { d, live } = board(40, 75, host, readAt(1));
 	d.sel = 20;
 	d.render(104);
 	await tick();
@@ -2204,18 +2257,18 @@ test("board: a failure with steps held (409: the model unloaded) says so in LENS
 	d.handleInput("+");
 	await tick();
 	assert.deepEqual(host.asked.filter((x: any) => x !== undefined), [], "no POST");
-	assert.equal(host.data.at, 2);
+	assert.equal(host.data.at, 1);
 	host.answer = undefined;
 	live.reply!.traceId = "T3";
 	d.render(104);
 	await tick();
 	lines = text(d.render(104));
-	assert.match(lines[places(lines).lens], /▮▮▮▯▯ 15 layers/, "the steps back");
+	assert.match(lines[places(lines).lens], /▮▮▯ medium/, "the steps back");
 	d.dispose();
 });
 
 test("board: a failed lens-steps request is asked again as the next reply starts, even after a reply that was not saved", async () => {
-	const host = stepsHost(2), { d, live } = board(40, 75, host, readAt(2));
+	const host = stepsHost(1), { d, live } = board(40, 75, host, readAt(1));
 	host.answer = { error: "ds4 at 127.0.0.1:8009 answered: Service Unavailable" };
 	d.render(104);
 	await tick();
@@ -2224,14 +2277,14 @@ test("board: a failed lens-steps request is asked again as the next reply starts
 	assert.doesNotMatch(lens(), /127\.0/);
 	host.answer = undefined;
 	onEvent(live, { type: "start", rid: "r2", model: MODEL });                         // ended unsaved: no trace to wait for
-	for (let i = 0; i < 3; i++) onEvent(live, { ...tok(i, readAt(2) as any), rid: "r2" });
+	for (let i = 0; i < 3; i++) onEvent(live, { ...tok(i, readAt(1) as any), rid: "r2" });
 	onEvent(live, { type: "end", rid: "r2", n_tokens: 3 });
 	d.render(104);
 	await tick();
-	assert.match(lens(), /▮▮▮▯▯ 15 layers/, "asked as it started");
+	assert.match(lens(), /▮▮▯ medium/, "asked as it started");
 	host.answer = { error: "ds4 at 127.0.0.1:8009 answered: Service Unavailable" };
 	onEvent(live, { type: "start", rid: "r3", model: MODEL });
-	onEvent(live, { ...tok(0, readAt(2) as any), rid: "r3" });
+	onEvent(live, { ...tok(0, readAt(1) as any), rid: "r3" });
 	d.render(104);
 	await tick();
 	assert.match(lens(), /layers unknown/);
@@ -2239,17 +2292,17 @@ test("board: a failed lens-steps request is asked again as the next reply starts
 	const n = host.asked.length;
 	onEvent(live, { type: "end", rid: "r3", n_tokens: 1 });                           // unsaved again: same key as it streamed
 	onEvent(live, { type: "start", rid: "r4", model: MODEL });
-	onEvent(live, { ...tok(0, readAt(2) as any), rid: "r4" });
+	onEvent(live, { ...tok(0, readAt(1) as any), rid: "r4" });
 	d.render(104);
 	await tick();
 	assert.equal(host.asked.length, n + 1, "the next reply asks again");
-	assert.match(lens(), /▮▮▮▯▯ 15 layers/);
+	assert.match(lens(), /▮▮▯ medium/);
 	d.dispose();
 });
 
 test("board: the lens steps of another server or model are never shown; asked again for the new one", async () => {
 	let model = MODEL;
-	const host = stepsHost(2), { d, live } = board(40, 75, { ...host, steerModel: () => model }, readAt(2));
+	const host = stepsHost(1), { d, live } = board(40, 75, { ...host, steerModel: () => model }, readAt(1));
 	host.answer = { error: "ds4 at 127.0.0.1:8009 answered: Service Unavailable" };
 	d.render(104);
 	await tick();
@@ -2259,7 +2312,7 @@ test("board: the lens steps of another server or model are never shown; asked ag
 	const answers: ((v: any) => void)[] = [];
 	(d as any).host.lensLayers = () => new Promise((res) => answers.push(res));
 	onEvent(live, { type: "start", rid: "r2", model });
-	onEvent(live, { ...tok(0, readAt(2) as any), rid: "r2" });
+	onEvent(live, { ...tok(0, readAt(1) as any), rid: "r2" });
 	d.render(104);
 	assert.equal(answers.length, 1);
 	model = "Qwen3.6-35B";
@@ -2267,13 +2320,13 @@ test("board: the lens steps of another server or model are never shown; asked ag
 	answers[0]({ error: "ds4 at 127.0.0.1:8009 answered: Service Unavailable" });     // the old pair's, arriving late
 	await tick();
 	onEvent(live, { type: "start", rid: "q", model });
-	for (let i = 0; i < 3; i++) onEvent(live, { ...tok(i, readAt(2) as any), rid: "q" });
+	for (let i = 0; i < 3; i++) onEvent(live, { ...tok(i, readAt(1) as any), rid: "q" });
 	assert.doesNotMatch(lens(), /layers unknown|ds4|▮/, "neither the old failure nor the late one");
 	assert.match(lens(), /s swaps +│/);
 	assert.equal(answers.length, 2, "asked for the new pair");
 	answers[1]({ ...structuredClone(host.data), model });
 	await tick();
-	assert.match(lens(), /▮▮▮▯▯ 15 layers/, "the new pair's own answer");
+	assert.match(lens(), /▮▮▯ medium/, "the new pair's own answer");
 	model = "Other";                                                                  // another model on the same server
 	assert.doesNotMatch(lens(), /▮/, "not the last model's steps");
 	assert.equal(answers.length, 3);
@@ -2281,7 +2334,7 @@ test("board: the lens steps of another server or model are never shown; asked ag
 });
 
 test("board: a reply of another model than the steps are for shows no step, takes no - +", async () => {
-	const host = stepsHost(2), { d, live } = board(40, 75, host, readAt(2));
+	const host = stepsHost(1), { d, live } = board(40, 75, host, readAt(1));
 	live.reply!.model = "Other";
 	d.sel = 20;
 	d.render(104);
@@ -2291,7 +2344,7 @@ test("board: a reply of another model than the steps are for shows no step, take
 	d.handleInput("+");
 	await tick();
 	assert.deepEqual(host.asked.filter((x: any) => x !== undefined), []);
-	d.handleInput("2");
+	d.handleInput("3");
 	lines = text(d.render(104));
 	assert.ok(!lines.some((l) => /▮|reads \d+ layers/.test(l)), "full size: no step line either");
 	d.dispose();
@@ -2308,21 +2361,21 @@ test("boardKeys: every combination fits the key line's width", () => {
 	assert.match(boardKeys("LENS", true, false, PANELS, true, true, true), /-\/\+ layers/, "kept: s other lens goes first");
 });
 
-test("board: MAP under the reply strip, over LENS; SETTLING's sub-heading in the lens's violet (the turret's), the word SETTLING bold, its tail dim", async () => {
-	const { d, live } = board(40, ROWS_51, stepsHost(2), readAt(2));
+test("board: TOKENS under the reply strip, MAP under it, over LENS; SETTLING's sub-heading in the lens's violet (the turret's), the word SETTLING bold, its tail dim", async () => {
+	const { d, live } = board(40, ROWS_51, stepsHost(1), readAt(1));
 	d.render(104);
 	await tick();
 	d.sel = 20;
 	for (const lines of [text(d.render(104)), text(d.render(130))]) {
-		const reply = lines.indexOf("REPLY"), map = lines.findIndex((l) => /^ ?MAP /.test(l)), lens = lines.findIndex((l) => /^ ?LENS /.test(l));
-		assert.ok(reply > 0 && reply < map && map < lens, `${reply} ${map} ${lens}`);
-		assert.equal(map, reply + 1 + 6 + 1, "MAP's title the first line under the reply strip's rule");
+		const reply = lines.indexOf("REPLY"), tokens = lines.findIndex((l) => /^ ?TOKENS /.test(l)), map = lines.findIndex((l) => /^ ?MAP /.test(l));
+		const lens = lines.findIndex((l) => /^ ?LENS /.test(l));
+		assert.ok(reply > 0 && reply < tokens && tokens < map && map < lens, `${reply} ${tokens} ${map} ${lens}`);
+		assert.equal(tokens, reply + 1 + 6 + 1, "TOKENS' title the first line under the reply strip's rule");
 	}
 	const th = dockTheme(), head = settlingPanel(th, live.reply!.tokens, 39, "jlens", 48, 9, palette(th))[0];
-	assert.equal(head, th.fg("lens", th.bold("SETTLING")) + th.fg("lens", "  J-lens") + th.fg("dim", " · old → now"));
+	assert.equal(head, th.fg("lens", th.bold("SETTLING")), "the name alone: no lens, no direction note");
 	const violet = colourCode(COLOURS.lens, "truecolor");
 	assert.ok(head.startsWith(`${violet}\x1b[1mSETTLING\x1b[22m`), "SETTLING bold, in the lens's violet");
-	assert.ok(head.includes(`${violet}  J-lens\x1b[39m`), "the lens's name in the violet too, not bold");
 	assert.equal(head.split("\x1b[1m").length, 2, "only SETTLING bold");
 	assert.ok(!head.includes("\x1b[7m"), "no inverse: a sub-heading, not a panel title");
 });
@@ -2331,7 +2384,7 @@ test("SETTLING: a column a token, the newest on the right, deep layers on top, e
 	const { live } = board(40);
 	const toks = live.reply!.tokens, pal = palette(piTheme);
 	const out = settlingPanel(piTheme, toks, 39, "jlens", 48, 9, pal);
-	assert.equal(plain(out[0]), "SETTLING  J-lens · old → now");
+	assert.equal(plain(out[0]), "SETTLING");
 	assert.deepEqual(out.slice(1).map((l) => plain(l).slice(0, 5).trimEnd()), ["L44", "L40", "L32", "L28", "L20", "L16", "L8", "L4"],
 		"12 read layers in 16 half lines: a band of one or two each, labelled on the line it starts (one a line where two start)");
 	// Fewer layers than lines: whole-line bands, each labelled once; no line blank.
@@ -2347,9 +2400,9 @@ test("SETTLING: a column a token, the newest on the right, deep layers on top, e
 	// Three lines: four layers to a half line.
 	assert.deepEqual(settlingPanel(piTheme, toks, 39, "jlens", 48, 3, pal).slice(1).map((l) => plain(l).slice(0, 5).trimEnd()), ["L44", "L20"],
 		"three layers to a half line");
-	assert.equal(plain(settlingPanel(piTheme, toks, 39, "logit", 48, 9, pal)[0]), "SETTLING  logit lens · old → now", "follows s");
+	assert.equal(plain(settlingPanel(piTheme, toks, 39, "logit", 48, 9, pal)[0]), "SETTLING", "the same heading on either lens");
 	const none = toks.map((t) => ({ ...t, lens: [], lens_logit: [] }));
-	assert.deepEqual(settlingPanel(piTheme, none, 39, "jlens", 48, 9, pal).map(plain), ["SETTLING  J-lens · old → now", "no lens read on these tokens"]);
+	assert.deepEqual(settlingPanel(piTheme, none, 39, "jlens", 48, 9, pal).map(plain), ["SETTLING", "no lens read on these tokens"]);
 	// The colours: the written word settled (L40, L44) bright, the rest unlit; on the violet SETTLE_STOPS, not the
 	// lights' amber (STOPS shares only its unlit colour).
 	const grid = settlingPanel(piTheme, toks, 39, "jlens", 48, 9, pal), lit = grid[1];
@@ -2383,8 +2436,8 @@ test("SETTLING: a row only for the layers the lens shown read, from the reply's 
 		t.lens_logit = Array.from({ length: 48 }, (_, l) => [l, 8, " a"] as [number, number, string]);
 		t.lens = Array.from({ length: 33 }, (_, j) => [12 + j, 8, " a"] as [number, number, string]);
 	}
-	assert.deepEqual(settleLayers(toks, 39, "jlens").layers, Array.from({ length: 33 }, (_, j) => 44 - j));
-	assert.equal(settleLayers(toks, 39, "logit").layers.length, 48);
+	assert.deepEqual(settleLayers(toks, 39, "jlens"), Array.from({ length: 33 }, (_, j) => 44 - j));
+	assert.equal(settleLayers(toks, 39, "logit").length, 48);
 	const labels = (view: "jlens" | "logit") => settlingPanel(piTheme, toks, 39, view, 48, 40, pal).slice(1).map((l) => plain(l).slice(0, 5).trim()).filter(Boolean).map((l) => Number(l.slice(1)));
 	const j = labels("jlens"), g = labels("logit");
 	assert.equal(j.length, 33, "33 layers in 39 lines: a band each, labelled once; no line for layers 0-11");
@@ -2436,7 +2489,7 @@ test("board: s plays the lens swap on SETTLING too, in step with the telescope, 
 	try {
 		// SETTLING's lines on the board (the right column does not move while the swap plays).
 		const settling = (d: Dock) => {
-			const raw = d.render(104), lines = text(raw), s = lines.findIndex((l) => l.startsWith("SETTLING  "));
+			const raw = d.render(104), lines = text(raw), s = lines.findIndex((l) => /^SETTLING\b/.test(l));
 			let e = s + 1;
 			while (/^L\d+ /.test(lines[e])) e++;
 			return { title: lines[s], rows: raw.slice(s + 1, e) };
@@ -2464,20 +2517,21 @@ test("board: s plays the lens swap on SETTLING too, in step with the telescope, 
 		assert.deepEqual(frames[3].rows, frames[4].rows);
 		for (let i = 0; i < 7; i++) assert.notDeepEqual(frames[i].rows, after.rows, `frame ${i} not yet sharp`);
 		assert.notDeepEqual(frames[5].rows, frames[6].rows, "clearing from the deep end");
-		assert.equal(frames[0].title, before.title, "the title follows the frame's lens");
-		assert.equal(frames[3].title, after.title);
+		assert.ok(frames.every((f) => f.title === before.title) && before.title === after.title, "the heading names no lens: still");
 		// LENS full size (2): s plays the swap on SETTLING there too; another panel full size stops it.
 		const full = litBoard();
 		full.d.sel = 20;
 		full.d.render(104);
-		full.d.handleInput("2");
+		full.d.handleInput("3");
 		const before2 = full.d.render(104);
 		full.d.handleInput("s");
 		const f0 = full.d.render(104);
 		assert.notDeepEqual(f0, before2, "frame 0 fogged");
-		assert.ok(text(f0).some((l) => l === "SETTLING  J-lens · old → now"), "still the J-lens in frame 0");
+		assert.ok(text(f0).some((l) => /^SETTLING\b/.test(l)), "SETTLING in frame 0");
 		mock.timers.tick(70 * 10);
-		assert.ok(text(full.d.render(104)).some((l) => l === "SETTLING  logit lens · old → now"), "the swap done");
+		const done = full.d.render(104);
+		assert.ok(text(done).some((l) => /^SETTLING\b/.test(l)), "SETTLING after the swap");
+		assert.notDeepEqual(done, before2, "the swap done: the logit lens's rows");
 	} finally {
 		mock.timers.reset();
 	}
@@ -2582,7 +2636,7 @@ test("MAP's half cells: token i on row floor(i / w), an even row a line's upper 
 test("board: MAP's window follows the token in focus; full size, the whole reply", async () => {
 	const { d, host } = board(1800, 78);
 	await tick();
-	const head = () => text(d.render(104)).find((l) => /^ ?MAP /.test(l))!.split(" │ ")[0].trim();
+	const head = () => text(d.render(104)).find((l) => /^ ?MAP /.test(l))!.split(" │")[0].trim();
 	const lines = text(d.render(104)), k = lines.findIndex((l) => /^ ?LENS /.test(l)) - 2 - lines.findIndex((l) => /^ ?MAP /.test(l));
 	assert.ok(k >= MAP_LINES && k <= 14, `${k} lines of cells`);
 	// 48 columns, two rows a line: 96 tokens a line, 19 lines.
@@ -2715,7 +2769,7 @@ test("board: a STEER name past 11 columns takes the tag's room: the dose dropped
 });
 
 
-test("board: the right column top down TOKENS, EXPERTS; EXPERTS takes the lines past its four layers a layer at a time, the rest blank under it", async () => {
+test("board: the right column EXPERTS alone (no writes): it takes the lines past its four layers a layer at a time, the rest blank under it", async () => {
 	const at = async (rows: number) => {
 		const { d } = board(40, rows, {}, TWELVE_BIG);
 		await tick();
@@ -2727,12 +2781,12 @@ test("board: the right column top down TOKENS, EXPERTS; EXPERTS takes the lines 
 		const col = right.slice(title("EXPERTS") + 1, end);
 		let last = col.length - 1;
 		while (last >= 0 && !col[last].trim()) last--;
-		return { order: ["TOKENS", "EXPERTS"].map(title), experts: Number(/^ ?EXPERTS {2}(\d+) layers?/.exec(right[title("EXPERTS")])![1]),
+		return { top: title("EXPERTS") === lines.findIndex((l) => /^ ?TOKENS /.test(l)), experts: Number(/^ ?EXPERTS {2}(\d+) layers?/.exec(right[title("EXPERTS")])![1]),
 			blank: col.length - 1 - last, block: col.findIndex((l, i) => i > 0 && /layer \d+ of 12$/.test(l)) };
 	};
 	const a51 = await at(51), a75 = await at(75), a125 = await at(125);
 	for (const a of [a51, a75, a125]) {
-		assert.ok(a.order[0] > 0 && a.order[0] < a.order[1], `${a.order}`);
+		assert.ok(a.top, "EXPERTS at the top of the right column, beside TOKENS");
 		assert.ok(a.blank < a.block, `${a.blank} blank lines under EXPERTS: fewer than a layer's ${a.block}`);
 	}
 	assert.ok(a51.experts >= 1 && a75.experts > a51.experts && a125.experts > a75.experts, `${a51.experts} ${a75.experts} ${a125.experts}: EXPERTS grows`);
@@ -2756,7 +2810,7 @@ test("board: 6 opens the Steer page over the dock (the header and its steer kept
 	assert.equal(raw.length, 75);
 	for (const l of raw) assert.equal(visibleWidth(l), 104, plain(l));
 	assert.match(lines[0], /^◆ metalscope {2}paused at #20 +STEER joyful@0\.4 L30$/, "the header as on the board");
-	assert.ok(!lines.some((l) => /^REPLY|│ TOKENS|^ ?MAP /.test(l)), "the whole dock: no reply strip, no panels");
+	assert.ok(!lines.some((l) => /^REPLY|^ ?TOKENS|^ ?MAP /.test(l)), "the whole dock: no reply strip, no panels");
 	const top = lines.findIndex((l) => /^ ?STEER +by the chat test · ★ top five/.test(l));
 	assert.ok(top > 0 && /│ Joyful · pushes at L30 of 48  on at 0\.4$/.test(lines[top]), lines[top]);
 	assert.match(lines[top + 1], /^▸ joyful {7}15\/18 @0\.4 +│ Upbeat and warm\.$/);
@@ -2783,7 +2837,7 @@ test("board: 6 opens the Steer page over the dock (the header and its steer kept
 	d.handleInput("6");
 	assert.equal(d.steerPage, false);
 	assert.equal(d.sel, 20, "6 on the page goes back to the board, not out of inspect");
-	assert.ok(text(d.render(104)).some((l) => / │ {1,2}TOKENS {2,3}#20/.test(l)));
+	assert.ok(text(d.render(104)).some((l) => /^ ?TOKENS {2,3}#20/.test(l)));
 	d.handleInput("6");
 	assert.ok(text(d.render(104)).some((l) => /^ ?STEER +by the chat test/.test(l)));
 	// esc (? text up or not): the keyboard back to Pi, the page kept, its key line how to step in; stepping in finds it.
@@ -2874,7 +2928,7 @@ test("following the newest while stepped in: only the token keys step to a token
 	const more = (a: number, b: number) => { for (let i = a; i < b; i++) onEvent(live, { ...tok(i), rid: "s" }); };
 	more(0, 30);
 	const lines = () => text(d.render(104));
-	const focusAt = () => Number(/TOKENS {2}#(\d+) /.exec(lines().join("\n"))![1]);
+	const focusAt = () => Number(/TOKENS {2,3}#(\d+) /.exec(lines().join("\n"))![1]);
 	d.stepIn(-1);
 	assert.equal(focusAt(), 29, "stepped in, following: the newest");
 	assert.ok(!/paused/.test(lines()[0]) && !/f live/.test(lines().at(-1)!));
@@ -3090,7 +3144,7 @@ test("a LENS edit applied: the word struck, burnt out in 210 ms, the tail after 
 });
 
 test("a LENS edit applied, the new word shorter than the burnt one: it ends the row above where it fits, as the reply's text is laid out; that row's text kept", async () => {
-	const { frames } = await applyEdit({ n: 3000, at: 2990 });
+	const { frames } = await applyEdit({ n: 3000, at: 2990, rows: 70 });            // the strip's rows: #2990 starts one
 	const row = (ms: number) => editStrip(frames, ms).split("\n").find((l) => / w2989/.test(l))!;
 	assert.match(row(0), / w2989 *$/);
 	assert.match(row(1400), / w2989 ▸new *$/);

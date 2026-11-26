@@ -794,7 +794,7 @@ def test_concepts_steer_whole_replies_and_a_word_steers_as_the_edit(served, home
         # A lens of another layout (the token's embedding block in: one source more at every visit) is refused.
         wide = {v: mx.zeros((D, (n + 1) * D)) for v, n in enumerate(SOURCES[:-1])}
         mx.eval(list(wide.values()))              # read in the route's thread: materialised in this one
-        tracer.lens = jlens.LensSetup(jlens.Lens(wide), setup.workspace)
+        tracer.lens = jlens.LensSetup(jlens.Lens(wide))
         r = client.post("/scope/api/steer/words", json=dict(model="inkling-test", name="w7", words=["7"]))
         assert r.status_code == 400 and "not as wide as the model's state at visit 0" in r.json()["detail"], r.json()
         tracer.lens = setup

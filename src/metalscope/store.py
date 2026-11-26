@@ -70,7 +70,7 @@ def index_entry(path: Path, meta: dict) -> dict:
                 prompt_tokens=meta.get("prompt_len"), generated_tokens=meta.get("generated_tokens"),
                 steer=f"{st.get('label')}{' FAILED' if st.get('failed') else ''}{' PARTIAL' if st.get('partial') else ''}"
                 if isinstance(st, dict) else None,
-                lens_step=meta.get("lens_step"), decode_tps=meta.get("decode_tps"), experts=experts,
+                lens_step=meta.get("lens_step"), lens_layers=meta.get("lens_layers"), decode_tps=meta.get("decode_tps"), experts=experts,
                 bytes=folder_bytes(path))       # the running total against the budget reads it
 
 

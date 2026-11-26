@@ -80,6 +80,12 @@ export const INDENT = [0, 4, 8];
 /** The telescope's lines over tube `lines`, room enough (as `telescope` draws them; the board's LENS is sized on it):
  * the token's line, the eyepiece (5) and the written word, the tube with a joint where a section narrows, its bottom. */
 export const scopeHeight = (lines: TubeLine[]) => 7 + lines.length + lines.filter((b, i) => i && lines[i - 1].sec !== b.sec).length + 1;
+/** The most lines the tube over `want` takes for the telescope to fit `room` lines (scopeHeight): a layer a line where
+ * that fits, else the shallow layers sharing lines; undefined where not even that fits. */
+export function fitCap(want: number[], room: number): number | undefined {
+	for (let c = new Set(want).size; c >= 1; c--) if (scopeHeight(tube(want, c)) <= room) return c;
+	return undefined;
+}
 
 /** The narrowest dock the telescope fits: the shallow section's word column needs a few characters. */
 export const MIN_WIDTH = 36;
@@ -148,14 +154,14 @@ export interface Frame {
 	turret?: number;
 }
 
-/** The turret: "J-lens ◉────○ logit", the lens in use bright, the other faint; `at` 0 (J-lens) .. 4 (logit). One lens
- * recorded: its name alone. */
-export function turret(theme: any, t: LensTok, view: LensName | undefined, at?: number): string {
+/** The turret: "J-lens ◉────○ logit", the lens in use bright, the other faint; `at` 0 (J-lens) .. 4 (logit); `short`
+ * "J-lens ◉─○ logit" (LENS's step needs the room). One lens recorded: its name alone. */
+export function turret(theme: any, t: LensTok, view: LensName | undefined, at?: number, short = false): string {
 	const by = lensOf(t, view).by;
 	const bright = (s: string) => theme.fg("lens", bold(theme, s));
 	if (!bothLenses(t)) return bright(by === "logit" ? "logit" : by === "jlens" ? "J-lens" : "lens");
 	const step = at ?? (by === "logit" ? 4 : 0);
-	const track = [..."○────○"].map((c, i) => (i === Math.round((step * 5) / 4) ? "◉" : c)).join("");
+	const rail = short ? "○─○" : "○────○", track = [...rail].map((c, i) => (i === Math.round((step * (rail.length - 1)) / 4) ? "◉" : c)).join("");
 	return (step < 2 ? bright("J-lens") : theme.fg("faint", "J-lens")) + " " + theme.fg("lens", track) + " " + (step > 2 ? bright("logit") : theme.fg("faint", "logit"));
 }
 
@@ -226,8 +232,8 @@ export function telescope(theme: any, t: LensTok, sel: number, w: number, room: 
 		const s = l !== null && l === settle;
 		const lab = (s ? "▸" : " ") + padTo(`L${l ?? b.ls[0]}` + (b.ls.length > 1 ? ` +${b.ls.length - 1}` : ""), 7);
 		let body: string;
-		if (l === null) body = b.ls.some((x) => read.has(x)) ? dim(lab + " ".repeat(mid + 6))   // read by the other lens alone
-			: theme.fg("faint", lab + " " + centre("·", mid) + " " + "    ");                     // wanted, not read yet
+		// Not read by this lens (the other's alone, or wanted, not read yet): the label, the row blank.
+		if (l === null) body = (b.ls.some((x) => read.has(x)) ? dim : (s: string) => theme.fg("faint", s))(lab + " ".repeat(mid + 6));
 		else {
 			const fogged = i >= sharp ? lvl : 0, at = byLayer.get(l)!, hit = at.id === t.id;
 			const tr = top ? top.l.indexOf(l) : -1;

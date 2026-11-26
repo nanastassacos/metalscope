@@ -24,44 +24,28 @@ if TYPE_CHECKING:
 log = logging.getLogger("metalscope")
 
 
-def jlens_read_layers(setup: "jlens.LensSetup") -> list[int]:
-    """The layers a trace reads the J-lens at: every 4th of the lens's layers, the workspace layers and the last."""
-    layers = setup.lens.layers
-    return sorted(set(layers[::4]) | set(setup.workspace) | {layers[-1]})
-
-
-def _spread(pool: list[int], k: int) -> set[int]:
-    """``k`` of the sorted ``pool``, evenly spread (all of it, or none, past its ends)."""
-    k = max(0, min(len(pool), k))
-    return {pool[int((j + 0.5) * len(pool) / k)] for j in range(k)}
+def spread_layers(layers: list[int], k: int) -> list[int]:
+    """``k`` of ``layers`` (ascending) spread evenly over them, the last always: the ((i + 1) n / k)th of the n, i
+    from 0; all of them where there are no more than ``k``."""
+    n = len(layers)
+    return list(layers) if n <= k else [layers[(i + 1) * n // k - 1] for i in range(k)]
 
 
 def lens_steps(setup: Optional["jlens.LensSetup"], n_layers: int) -> list[tuple[list[int], list[int]]]:
-    """The layers each of LENS's steps (- + in the dock, settings' lens_step) reads, fewest first: (the J-lens's, the
-    logit lens's). Each lens's set only grows step by step, so the layers read by either do too. The default step
-    reads the sets traces always read (jlens_read_layers, capture_config's logit lens).
-
-    The main lens (the J-lens; without one the logit lens, over the model's layers): the workspace layers (three
-    spread over the workspace band, jlens.workspace_band, where the dock's word edit acts on most models; Inkling 2's
-    acts over its last block, adapters.edit_band) and its last, the fewest that still show the band and the output;
-    then about a sixth of its layers taken from its default set, the default, about a half (the default and more),
-    all. The logit lens beside a J-lens: below the default, its default layers the J-lens reads and the model's last;
-    above it, its default set and the J-lens's."""
-    logit_now = capture_config().lens_layers(n_layers)
-    ws = [l for l in jlens.workspace_layers(n_layers) if 0 <= l < n_layers]
-    if setup is not None:
-        layers, now, must = setup.lens.layers, jlens_read_layers(setup), {*setup.workspace, setup.lens.layers[-1]}
-    else:
-        layers, now, must = list(range(n_layers)), logit_now, {n_layers - 1, *(l for l in ws if l in logit_now)}
-    n, d = len(layers), len(now)
-    one = must | _spread(sorted(set(now) - must), min(max(round(n / 6), len(must) + 1), d - 1) - len(must))
-    half = set(now) | _spread(sorted(set(layers) - set(now)), max(round(n / 2), d + 1) - d)
-    main = [sorted(must), sorted(one), list(now), sorted(half), sorted(set(layers) | set(now))]
-    if setup is None:
-        return [([], m) for m in main]
-    last, logit = n_layers - 1, set(logit_now)
-    return [(m, logit_now if i == config.LENS_STEP_DEFAULT else sorted((set(m) & logit) | {last}) if i < config.LENS_STEP_DEFAULT
-             else sorted(set(m) | logit)) for i, m in enumerate(main)]
+    """The layers each of LENS's steps (- + in the dock, settings' lens_step; config.LENS_SIZES: small, medium, large)
+    reads, fewest first: (the J-lens's, the logit lens's), as many as config.lens_reads gives for the model's depth,
+    spread over the depth (spread_layers), the last always. The main lens's: the J-lens's over the layers it has (all
+    of them where it has fewer: 16 of 47 at medium on Flash Next, 8 of 8 on a lens fitted on 8), else the logit lens's
+    over the model's. The logit lens beside a J-lens reads the same layers and the model's last (its output), so
+    either lens fills the same rows (s in the dock)."""
+    out = []
+    for k in config.lens_reads(n_layers):
+        if setup is None:
+            out.append(([], spread_layers(list(range(n_layers)), k)))
+        else:
+            jl = spread_layers(setup.lens.layers, k)
+            out.append((jl, sorted({*jl, n_layers - 1})))
+    return out
 
 
 class ModelTracer:
@@ -202,7 +186,7 @@ class ModelTracer:
 
     def _load_lens(self) -> Optional["jlens.LensSetup"]:
         try:
-            setup = jlens.setup_for(self.name, self.layer_count())
+            setup = jlens.setup_for(self.name)
         except Exception:
             log.exception("metalscope: could not load a Jacobian lens for %s", self.name)
             return None

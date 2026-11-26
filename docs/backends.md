@@ -63,12 +63,10 @@ What works on each, from `metalscope doctor --live` run on every one:
 | Jacobian lens | yes | no (none fitted) | yes | yes | yes | no | yes (fitted with `/jlens learn`; none ships) |
 | More or fewer layers read | yes | yes | yes | yes | yes | yes | yes |
 | The experts each token used | no experts | no experts | yes | yes | yes | yes | yes |
-| Residual stream views | spikes, layers | spikes, layers | spikes, layers | spikes, largest, layers | spikes, largest, layers | spikes, largest, layers | spikes, reads |
+| Residual stream views | spikes, largest | spikes, largest | spikes, largest | spikes and largest, each (hc) and (layers) | spikes and largest, each (hc) and (layers) | spikes and largest, each (hc) and (layers) | spikes (writes), spikes (reads) |
 | Engram inspection | no engram | no engram | no engram | yes | yes | yes (disk streaming only) | no engram |
-| Steering with a concept | yes | yes | yes | yes | yes | yes | yes (not yet run by `doctor --live`) |
+| Steering with a concept | yes | yes | yes | yes | yes | yes | yes |
 | One word of a reply changed (experimental) | yes | no (needs the Jacobian lens) | yes | yes | yes | no (needs the Jacobian lens) | yes (with a fitted Jacobian lens) |
-
-`doctor --live` has not yet run the residual stream on the one-stream models, nor `layers` on any.
 
 The dock's one-token edit is refused on oMLX for models oMLX reads through its own output parser (DeepSeek V4/V4.1
 among them); the dock then hides its key. Expert routing is recorded with each model family's own rule

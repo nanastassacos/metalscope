@@ -12,10 +12,10 @@ import { type DockTheme, EDIT_HINT, EXPERT_HELP, EXPLAIN, LABELS, UNSURE, ansiIn
 import { Grids, colourMode, gridCells, gridShape, palette, reshapeGrid } from "./lights.ts";
 import { IDLE_FRAMES, IDLE_LINES, IDLE_MS, idleLines } from "./idle.ts";
 import { DOCK_MIN_ROWS, DOCK_MIN_WIDTH, LEFT_MIN, MIDDLE_MIN, ONE_REPLY_ROWS, type Panel, PANEL_KEY, PANELS, REPLY_ROWS, RIGHT_W, STEER_KEY,
-	arrange, boardFits, boardKeys, bothSources, columns, DULL, dull, dullLines, dullPace, editKeys, expertKeys, explainOf, expertsStack, layerKeys, TOP_N,
+	arrange, BOARD_TOP, boardFits, boardKeys, bothSources, columns, DULL, dull, dullLines, dullPace, editKeys, expertKeys, explainOf, expertsStack, layerKeys, TOP_N,
 	type LayerLights, lensSplit, MAP_CELL_LINES, MAP_LINES, mapPanel, mapWindow, MINI_MAP, MINI_SETTLE_LEAST, type MiniRoom, miniAt, miniKeys, miniSplit,
-	miniStreamLines, miniToken, replyRows, sessionMap, rule as ruleLine, settleLayers, settlingPanel, side,
-	tabRow, title as panelTitle, layoutKeys, panelNums, tokensPanel, wrapKeys, keysEdge, STREAM_FIXED, STREAM_FRAME, STREAM_LINES, STREAM_MIN, type StreamView, nextView, streamPanel, streamFrames, streamLines, streamViews,
+	streamShare, miniToken, replyRows, sessionMap, rule as ruleLine, settleLayers, settlingPanel, side,
+	tabRow, title as panelTitle, layoutKeys, panelNums, tokensPanel, wrapKeys, STREAM_FIXED, STREAM_FRAME, STREAM_MIN, type StreamView, nextView, streamPanel, streamFrames, streamLines, streamViews,
 	viewOf, PLAY_TICK_MS, type Play, pace, playShown } from "./board.ts";
 import { Experts, GET_TIMEOUT_MS, type Source, TALLY_LAG_MS, expertPage, layerBoth, layerPage, routedLayers, shownLayer } from "./expert.ts";
 import { Engram, type Loop, type LookupAnswer, type Looked, SWEEP_TICK_MS, loop, lookupTokens } from "./lookup.ts";
@@ -24,7 +24,7 @@ import { type Edited, type Live, type Reply, TOOL_OPENERS, type TokenEvent, edit
 import { EDIT_SWAP_DOSE, type WordIds, steerLabel, tokenName } from "./steer.ts";
 import { type Examples, LENS_LINK, type LinkOffer, type SteerList } from "./steerpage.ts";
 import { SteerPage } from "./steerdock.ts";
-import { type Frame, MIN_LINES, bothLenses, eyepiece, focusLayer, lensOf, onTube, readLayers, scopeHeight, stepLayer, stretchFrames, swapFrames, telescope, tubeOf, turret } from "./telescope.ts";
+import { type Frame, MIN_LINES, MIN_WIDTH, bothLenses, eyepiece, fitCap, focusLayer, lensOf, onTube, readLayers, scopeHeight, stepLayer, stretchFrames, swapFrames, telescope, tubeOf, turret } from "./telescope.ts";
 
 /** What the dock needs from the extension; outlives any one dock. */
 export interface DockHost {
@@ -60,6 +60,7 @@ export interface DockHost {
 	panel?: Panel; // tab on the board: the panel in focus (undefined: LENS)
 	mini?: boolean; // m: the mini dock, lights (MAP, SETTLING and STREAM under them), MINI_WIDTH columns (remembered in pi.json; drawn too in a terminal too short for the full one: miniAt)
 	stream?: StreamView; // s on STREAM: the view chosen (undefined: the model's first, board.ts viewOf; remembered in pi.json)
+	split?: number; // { }: EXPERTS' layers' lines the board's RESIDUAL STREAM takes (negative: gives; remembered in pi.json)
 	layoutChanged?(): void; // after m or STREAM's s: remembered, the stream asked for what is shown, the dock's room refitted (widget.ts)
 	roomChanged?(): void; // Dock.streamRoom changed: the stream asks for the writes again (widget.ts)
 	// g, engram inspection (lookup.ts): the server's caps (status `caps`; g where they list `lookup`), POST
@@ -74,12 +75,13 @@ export interface DockHost {
 	lookupOn?: string;
 }
 
-/** GET /scope/api/lens/layers: the step the next traced reply reads the lenses at, and each step's layer count (`n`),
- * layers (both lenses') and the decode speed of the served model's last replies read at it (`tps`, over `replies`). */
+/** GET /scope/api/lens/layers: the step the next traced reply reads the lenses at, and each step's name (small,
+ * medium, large), layer count (`n`), layers (both lenses') and the decode speed of the served model's last replies read
+ * at it (`tps`, over `replies`). */
 export interface LensLayers {
 	model: string;
 	at: number;
-	steps: { n: number; layers: number[]; tps: number | null; replies: number }[];
+	steps: { name: string; n: number; layers: number[]; tps: number | null; replies: number }[];
 	edit_band?: [number, number]; // where the word edit acts (the removal's band; a swap pushes at pushLayer); none: no J-lens
 }
 /** What went wrong in the dock, as drawn: one line, cleaned (a message can quote what the server sent). */
@@ -90,26 +92,41 @@ const isNum = (x: unknown): x is number => typeof x === "number" && Number.isFin
 /** Whether `a` is a lens-steps answer the dock can draw: a step in use among its steps, each step whole. */
 export const isLensLayers = (a: any): a is LensLayers => !!a && typeof a.model === "string" && Array.isArray(a.steps) && a.steps.length > 0 &&
 	Number.isInteger(a.at) && a.at >= LENS_OFF && a.at < a.steps.length &&
-	a.steps.every((s: any) => !!s && isNum(s.n) && Array.isArray(s.layers) && s.layers.every(isNum) && (s.tps === null || isNum(s.tps)) && isNum(s.replies)) &&
+	a.steps.every((s: any) => !!s && typeof s.name === "string" && isNum(s.n) && Array.isArray(s.layers) && s.layers.every(isNum) && (s.tps === null || isNum(s.tps)) && isNum(s.replies)) &&
 	(a.edit_band === undefined || (Array.isArray(a.edit_band) && a.edit_band.length === 2 && a.edit_band.every(isNum)));
 
 /** The board's panels in the order they get what their content needs in a column (dock.heights), past their least, each
- * up to the lines given here: LENS the telescope whole and SETTLING its want (lensNeed), TOKENS its eleventh row,
+ * up to the lines given here: TOKENS its eleventh row, LENS the telescope whole and SETTLING its want (lensNeed),
  * EXPERTS EXPERTS_WANT layers, MAP its least. STREAM's lines are set before any of it (its least is its want: board.ts
- * streamLines), so EXPERTS gives up layers, down to one, before STREAM's history shrinks. What is left is the column's
- * slack: the reply strip takes what both columns spare (board.ts replyRows); then, in GROW_ORDER, EXPERTS a layer at a
- * time, MAP the rest of its column up to MAP_CELL_LINES (a window that slides, board.ts mapWindow), SETTLING up to its
- * most, and STREAM the rest of a right column without EXPERTS. Lines no panel needs stay blank under the column's last
- * panel (over STREAM, which sits on the key line's rule). Nothing here follows the reply's length, so no panel changes
- * height as a reply grows; nor the lens step (lensNeed), so - + move nothing. */
+ * streamLines, streamShare), so EXPERTS gives up layers, down to one, before STREAM's history shrinks. What is left is
+ * the column's slack: the reply strip takes what both columns spare (board.ts replyRows); then, in GROW_ORDER, EXPERTS
+ * a layer at a time, MAP the rest of its column up to MAP_CELL_LINES (a window that slides, board.ts mapWindow),
+ * SETTLING up to its most, the largest step's tube up to a layer a line, and STREAM the rest of its column (it sits on
+ * the key line's rule). Lines no panel needs stay blank under the column's last panel. Nothing here follows the reply's
+ * length, so no panel changes height as a reply grows. LENS's lines follow no step (lensNeed) but the largest's,
+ * which takes MAP's lines over its least (heights); a smaller step leaves the lines under it (lensFit): - + move the
+ * left column alone. */
 const EXPERTS_WANT = 4;
-const WANT_ORDER: [Panel, number?][] = [["LENS"], ["TOKENS"], ["EXPERTS"], ["MAP"]];
+const WANT_ORDER: [Panel, number?][] = [["TOKENS"], ["LENS"], ["EXPERTS"], ["MAP"]];
 const GROW_ORDER: Panel[] = ["EXPERTS", "MAP", "LENS", "STREAM"];
-/** A panel's lines in a column: its least, what its content needs, its most, and the step it grows by (EXPERTS: a layer). */
-interface Need { least: number; want: number; most: number; step?: number }
-/** Too few lines for every least, the panels that give lines up first: MAP (over LENS though it is drawn first), then
- * TOKENS, EXPERTS. */
-const GIVE_ORDER: Panel[] = ["MAP", "TOKENS", "EXPERTS", "LENS"];
+/** A panel's lines in a column: its least, what its content needs, its most, the step it grows by (EXPERTS: a layer),
+ * and the lines it gives up to first where the column is short (`floor`: LENS its telescope at SCOPE_EASY, SETTLING
+ * gone; TOKENS TOKENS_FLOOR choices). */
+interface Need { least: number; want: number; most: number; step?: number; floor?: number }
+type AnimFrame = Frame & { stream?: StreamView; clear?: number; large?: number };
+/** LENS's lines in its box (Dock.lensFit). */
+type LensFit = { gap: number; sn: number; room: number; cap?: number; rows: number };
+/** Whether step `at` (off as the fewest) is the largest of `d`'s: LENS then takes MAP's lines too. */
+const isLargest = (d: LensLayers, at: number) => Math.max(0, at) === d.steps.length - 1;
+/** Too few lines for every least, the panels that give lines up, each down to the lines given: SETTLING first, then
+ * TOKENS' last choices, then the telescope down to its least, MAP to its title, the rest. */
+const GIVE_ORDER: [Panel, (n: Need) => number][] = [["LENS", (n) => n.floor ?? 1], ["TOKENS", (n) => n.floor ?? 1],
+	["LENS", () => 1 + MIN_LINES], ["MAP", () => 1], ["TOKENS", () => 1], ["EXPERTS", () => 1], ["LENS", () => 1]];
+/** On the board, the telescope's least past which TOKENS gives its last choices first: its title, the eyepiece and 6
+ * rows of tube (MIN_LINES draws one). */
+const SCOPE_EASY = 1 + MIN_LINES + 5;
+/** TOKENS' choices kept while SETTLING and its last choices give way (GIVE_ORDER). */
+const TOKENS_FLOOR = 4;
 /** The token that went into the forward pass the lens read for reply token `k`, by the stream's index `i` (which counts
  * special tokens never published, and a reply adopted mid-stream starts part way): the token before when it is the
  * one just before in the stream; null for the reply's first (i 0: the prompt's last token went in); false when that
@@ -151,11 +168,14 @@ export function jumpTo(toks: { text: string }[], sel: number, dir: 1 | -1, kind:
  * one drew first (a stream's next frame usually does: no frame of Pi's added). */
 export const REDRAW_SHARE = 0.25, REDRAW_MAX_MS = 125, TRAIL_MS = 32;
 /** SETTLING's [least, most] lines over `n` layers, its sub-heading included: four lines of layers at least (fewer
- * where there are fewer), every layer two to a line at most. */
-function settleRoom(n: number): [number, number] {
+ * where there are fewer), every layer two to a line at most, and never over SETTLE_MOST lines of layers. */
+export function settleRoom(n: number): [number, number] {
 	const lines = Math.max(1, Math.ceil(n / 2));
-	return [1 + Math.min(4, lines), 1 + lines];
+	return [1 + Math.min(4, lines), 1 + Math.min(SETTLE_MOST, lines)];
 }
+/** SETTLING's most lines of layers (ten half lines: the medium step's 16 J-lens layers on Flash Next a half line or two
+ * each); the rest goes to the telescope's rows and MAP. */
+export const SETTLE_MOST = 5;
 /** LENS's `rows` lines in every view of it: `head` (its title, or the step's line), SETTLING (`settle`) on its `sn`
  * lines, `gap` blank lines (the first `note`, where there is one), then the telescope (`scope`), the lines a short
  * tube leaves blank at the foot: - + only lengthen or shorten the tube. */
@@ -240,8 +260,9 @@ export class Dock {
 	private miniFrom = 0;      // the first of them
 	// The lens swap (telescope.ts swapFrames), LENS's - + (stretchFrames) or STREAM's view switch (board.ts streamFrames:
 	// frames with `stream`): its frames, the one shown, its timer and token (the switch's: the token stepped to, -1
-	// following), and the tube's lines the frames' `sharp` counts out of (SETTLING clears the same share: `clear`).
-	private anim?: { frames: (Frame & { stream?: StreamView; clear?: number })[]; i: number; timer: ReturnType<typeof setInterval>; sel: number; nBands: number };
+	// following), and the tube's lines the frames' `sharp` counts out of (SETTLING clears the same share: `clear`). A
+	// stretch's frames carry `large`: how far LENS's box is from its panel toward the largest size's (heights).
+	private anim?: { frames: AnimFrame[]; i: number; timer: ReturnType<typeof setInterval>; sel: number; nBands: number };
 	// LENS's - +: the server's lens steps (host.lensLayers), asked for again as each reply starts and once it is
 	// saved, and for another server or served model (`key`), the newest request winning (`seq`); `for` the server and
 	// model the answer is from (depthAt: shown only while they are the ones now).
@@ -278,6 +299,13 @@ export class Dock {
 	}
 	// STREAM's history lines in the right column this frame (0: not there; streamLines): its lines there (needOf).
 	private streamHistory = 0;
+	// { }: the shifts of the divider between EXPERTS and STREAM that change this frame's drawing (none: not both drawn, or none would).
+	private splitRange?: [number, number];
+	/** host.split within splitRange (0 without one): the divider drawn. */
+	private splitNow(): number {
+		const [lo, hi] = this.splitRange ?? [0, 0];
+		return Math.max(lo, Math.min(hi, this.host.split ?? 0));
+	}
 	// STREAM's playhead (board.ts pace) while it follows a streaming reply, and its ticker: running while there is a
 	// backlog and STREAM is drawn (`playNow`, set by each paint that draws it; paint stops the ticker otherwise).
 	private play?: Play;
@@ -380,7 +408,7 @@ export class Dock {
 		this.animate(swapFrames(from, to, nBands), sel, nBands);
 	}
 	/** `frames` drawn about 70 ms apart on token `sel`; the last is where they end, the timer stopped there. */
-	private animate(frames: (Frame & { stream?: StreamView; clear?: number })[], sel: number, nBands = 0) {
+	private animate(frames: AnimFrame[], sel: number, nBands = 0) {
 		this.stopSwap();
 		const anim = { frames, i: 0, sel, nBands, timer: setInterval(() => {
 			if (this.anim !== anim) return clearInterval(anim.timer);
@@ -416,7 +444,7 @@ export class Dock {
 	 * read fewer), every layer read two to a line at most, by the lens that read more (settleLayers): s swapping the
 	 * lens moves nothing, and the lens that read fewer leaves the lines under its rows blank. */
 	private settleNeed(toks: TokenEvent[], k: number): [number, number] {
-		return settleRoom(Math.max(...(["jlens", "logit"] as const).map((v) => settleLayers(toks, k, v).layers.length)));
+		return settleRoom(Math.max(...(["jlens", "logit"] as const).map((v) => settleLayers(toks, k, v).length)));
 	}
 	/** A key: never throws (a throw out of handleInput would end Pi); what went wrong is a note where the user is: the
 	 * Steer page's, else the key line's (board and mini dock). */
@@ -730,10 +758,12 @@ export class Dock {
 		if (at === d.at) return;
 		if (at === LENS_OFF || was === LENS_OFF) return this.setDepth(at);
 		d.at = at;
-		if (from) this.animate(stretchFrames(from, d.steps[at].layers), sel);
+		// The box with the frames too, between the panel and the largest size's (to or from the largest: MAP's lines).
+		const a = +isLargest(d, was ?? 0), b = +isLargest(d, at);
+		if (from) this.animate(stretchFrames(from, d.steps[at].layers).map((f, i, fs) => ({ ...f, large: a + ((b - a) * (i + 1)) / fs.length })), sel);
 		this.setDepth(at);
 	}
-	/** The step's line for reply `r` (LENS full size): a pip a step (lit up to the one in use), the layers
+	/** The step's line for reply `r` (LENS full size): a pip a step (lit up to the one in use), its name and the layers
 	 * it reads, and on the right the decode speed of the model's last replies read at it on this server; until known, or
 	 * failed, one dim line; blank for a server without the route or a reply of another model. */
 	private depthLine(w: number, r: Reply): string {
@@ -742,7 +772,7 @@ export class Dock {
 		if (error || !d) return th.fg(error ? "warning" : "dim", cut(error ?? LABELS.asking, w));
 		if (!s) return "";
 		if (d.at === LENS_OFF) return this.offTag(d);
-		const left = this.pips(d) + th.fg("dim", `  ${LABELS.reads(s.n)}`);
+		const left = this.pips(d) + th.fg("dim", `  ${LABELS.reads(s.name, s.n)}`);
 		const room = w - visibleWidth(left) - 2;
 		if (room < 12) return left;
 		const right = cut(s.tps === null ? LABELS.noSpeed : LABELS.speed(Math.round(s.tps), s.replies), room);
@@ -754,18 +784,18 @@ export class Dock {
 	private pips(d: LensLayers): string {
 		return d.steps.map((_, i) => this.theme.fg(i <= d.at ? "lens" : "faint", i <= d.at ? "▮" : "▯")).join("");
 	}
-	/** The step for LENS's title line in `w` columns, for reply `r`: the pips and the layers read (shorter where narrow);
-	 * a failure, LABELS.layersFailed (its reason is LENS full size's step line); "" until known,
-	 * without the route, for a reply of another model or where it does not fit. */
-	private depthTag(w: number, r: Reply): string {
+	/** The step for LENS's title line in `w` columns, for reply `r`: the pips, its name and how many layers it reads,
+	 * shorter where narrow ("medium 16"); null where none of those fits (lensHead shortens the switch and asks again,
+	 * `short`: the name goes, then the count); a failure, LABELS.layersFailed (its reason is LENS full size's step
+	 * line); "" until known, without the route, for a reply of another model or where it does not fit. */
+	private depthTag(w: number, r: Reply, short = false): string | null {
 		const th = this.theme, { data: d, error, missing } = this.depthNow(), s = this.stepNow(r);
 		if (missing) return "";
 		if (error) return visibleWidth(LABELS.layersFailed) <= w ? th.fg("warning", LABELS.layersFailed) : "";
-		if (w < 5) return "";
 		if (!d || !s) return "";
-		if (d.at === LENS_OFF) return visibleWidth(this.offTag(d)) <= w ? this.offTag(d) : this.pips(d);
-		const n = s.n, long = this.pips(d) + th.fg("dim", `  ${LABELS.reads(n)}`), short = this.pips(d) + th.fg("dim", ` ${LABELS.layers(n)}`);
-		return visibleWidth(long) <= w ? long : visibleWidth(short) <= w ? short : this.pips(d);
+		if (d.at === LENS_OFF) return w < 5 ? "" : visibleWidth(this.offTag(d)) <= w ? this.offTag(d) : this.pips(d);
+		const forms = short ? [` ${s.name} ${s.n}`, ` ${s.n}`] : [`  ${LABELS.reads(s.name, s.n)}`, ` ${LABELS.layers(s.name, s.n)}`, ` ${s.name} ${s.n}`];
+		return forms.map((x) => this.pips(d) + th.fg("dim", x)).find((x) => visibleWidth(x) <= w) ?? (!short ? null : w < 5 ? "" : this.pips(d));
 	}
 	private served = () => this.host.steerModel?.() ?? "";
 	/** The header's dim "untested" for a model metalscope was not run on here (host.flags); "" otherwise. */
@@ -836,22 +866,24 @@ export class Dock {
 	}
 	// -- the board (board.ts): everything on one screen, or the panel in focus alone in a smaller dock ----------------
 
-	/** The board: header, the reply strip (taller where both columns spare lines), then MAP / LENS (SETTLING in it)
-	 * beside TOKENS / EXPERTS / STREAM (streamHistory), or the panel in focus full size (its number); the key line (or,
+	/** The board: header, the reply strip (taller where both columns spare lines), then TOKENS / MAP / LENS (SETTLING in
+	 * it) beside EXPERTS / STREAM (streamHistory; without experts MAP / LENS beside TOKENS / STREAM: board.ts arrange),
+	 * or the panel in focus full size (its number); the key line (or,
 	 * with ?, what the panel in focus shows). The one-panel board (`one`, a dock too small for the board): a short
 	 * reply strip, the panel in focus (onePanel), the keys on up to two lines. 6: the Steer page instead, under the
 	 * header (renderSteerPage). */
 	private renderBoard(width: number, w: number, height: number, r: Reply, sel: number, inspecting: boolean, status: string): string[] {
 		const th = this.theme, h = this.host, live = h.live, toks = r.tokens;
 		this.experts.stack = undefined;
-		// STREAM: a model's writes or reads known (streamData), not the one-panel board, and the panels over it left
-		// their least (rightLeast; ? takes no more than leaves it its least), or a panel full size. More layers than the
+		// STREAM: a model's writes or reads known (streamData), not the one-panel board, and EXPERTS over it left its
+		// least (rightLeast; ? takes no more than leaves it its least), or a panel full size. More layers than the
 		// width: spread over it (board.ts streamPanel).
 		const one = this.one, strip = 1 + (one ? ONE_REPLY_ROWS : REPLY_ROWS) + 1;   // the reply strip at its least: its title, its lines, the rule under it
 		const experts = !this.noExperts(r), over = this.rightLeast(r, experts), s = this.streamData(r);
 		// The middle's lines under a footer of `foot` lines: the dock less the header and its rule (2), the reply strip at
-		// its least, the footer's rule (1) and the footer; STREAM's history lines in it (streamLines, past `over`).
-		const middle = (foot: number) => height - 2 - strip - 1 - foot, history = (foot: number) => streamLines(middle(foot) - over);
+		// its least, the footer's rule (1) and the footer; STREAM's history lines in it (streamLines, past `over`: a
+		// quarter of the middle, streamShare; more where its column leaves lines over, heights).
+		const middle = (foot: number) => height - 2 - strip - 1 - foot, history = (foot: number) => streamLines(middle(foot) - over, STREAM_FRAME, streamShare(middle(foot)));
 		const colRoom = history(1);   // under the key line alone
 		this.streamOpens = !one && !!s?.L;
 		this.streamCol = this.streamOpens && colRoom > 0;   // its room kept only where the column draws it
@@ -866,6 +898,7 @@ export class Dock {
 		// A token stepped to: said, as the view no longer follows the newest (end does again).
 		const out = [this.head(w, status, [this._sel >= 0 ? th.fg("warning", `paused at #${sel}`) : "",
 			r.capped !== undefined ? th.fg("dim", `trace stops at #${r.capped}`) : ""].filter(Boolean).join("  "))];
+		this.splitRange = undefined;   // set again under the reply strip where the board draws EXPERTS and STREAM
 		if (this.steerPage) {
 			this.noteRoom(false);
 			out.push(ruleLine(th, w));
@@ -889,17 +922,47 @@ export class Dock {
 		this.experts.xpBoth = page ? layerBoth(w) : bothSources(fullNow ? w : columns(w).rw);
 		const src = this.experts.xpBoth ? "" : to;
 		const g = this.engram.gKey(r), gs = g === LABELS.engramKey ? LABELS.engramShort : g;   // the EXPERTS pages' lines are long: g short
+		const k = this.lensToken(toks, sel, this._sel >= 0);   // following: the newest token with a lens read
+		// The middle under a footer of `F` lines, all from its height: STREAM's history lines (`base`: last in the right
+		// column, under EXPERTS, its least; none where a panel is full size), from what the column has past EXPERTS' least
+		// (rightLeast, streamLines), before the reply strip takes any; the columns; the reply strip: REPLY_ROWS lines and
+		// the lines both columns spare (what their panels' content does not need), up to a third of the dock (board.ts
+		// replyRows), none of it following the reply's length (full size: its least); the middle's `rows`, under the
+		// reply's rule (the header, its rule, REPLY, the strip, the rule) over the footer's rule. And { }'s `range`
+		// (host.split of EXPERTS' layers, STREAM's history longer; EXPERTS keeps a layer, STREAM STREAM_MIN lines): STREAM
+		// takes the column's rest, so only EXPERTS' lines change the drawing, and the range ends where they stop changing
+		// (EXPERTS at its most, or at one layer); none where they never do.
+		const layout = (F: number) => {
+			const base = this.streamCol && !fullNow ? history(F) : 0, cols = arrange(experts, base > 0);
+			this.streamHistory = base;
+			const replyN = one ? ONE_REPLY_ROWS : fullNow ? REPLY_ROWS : replyRows(height, ...this.spare(cols, w, middle(F), r, k));
+			const rows = height - 4 - replyN - 1 - F, ei = cols.right.indexOf("EXPERTS");
+			let range: [number, number] | undefined;
+			if (experts && base > 0 && !fullNow && ei >= 0) {
+				const block = over - 1, rw = columns(w).rw;
+				const lo = Math.min(0, Math.ceil((STREAM_MIN - base) / block)), hi = Math.max(0, Math.floor((rows - over - STREAM_FRAME - base) / block));
+				const lines = (s: number) => ((this.streamHistory = base + s * block), this.heights(cols.right, rw, rows, r, k).h[ei]);
+				let a = lo, b = hi;
+				while (a < b && lines(a + 1) === lines(lo)) a++;
+				while (b > a && lines(b - 1) === lines(hi)) b--;
+				if (a < b) range = [a, b];
+				this.streamHistory = base;
+			}
+			return { base, cols, replyN, rows, range };
+		};
 		// The key line; the one-panel board's always two lines (wrapKeys; the EXPERTS pages' up to three, they cut none),
-		// so nothing moves as keys come and go. A word edited, or a note, in the keys' place on as many lines.
+		// so nothing moves as keys come and go. A word edited, or a note, in the keys' place on as many lines. { } where a
+		// press changes this frame's drawing: the range under a footer of the key line's height.
 		const keyRows = one ? 2 : 1, open = this.openable(r), nums = panelNums(open);
+		let at = layout(keyRows), split = !!at.range;
 		const keyLines = (text: string, sep?: string, most = keyRows) => (one ? wrapKeys(text, w, sep).slice(0, most) : [text]).map((l) => th.fg("dim", fit(l, w)));
 		const keys = padAbove(keyRows, this.edit ? keyLines(editKeys(w, keyRows))
 			: page ? keyLines(page === "layer" ? layerKeys(src, this.experts.xpLists(r, sel).e, gs) : expertKeys(to, gs), "  ", 3)
 			: keyLines(boardKeys(focus, inspecting, windowed, shownP, this._sel >= 0, !!live.steer, this.stepsShown(r), this.canEdit(),
 				windowed && !this.experts.expertsView(r).reason ? src : "", w, this.engram.gKey(r), one, this.shutWhy(r), bothLenses(toks[this.lensToken(toks, sel, this._sel >= 0)] ?? {}),
-				this.streamViews(r).length > 1, open)));
+				this.streamViews(r).length > 1, open, split)));
 		let footer = this.boardNote ? padAbove(keys.length, noteLines(th, this.boardNote, w, keys.length)) : keys;
-		if (h.captions && inspecting) {
+		const captions = (split: boolean) => {
 			// The panel's explanation, then (room to spare) the layout's keys under it; a word edited, its keys there
 			// instead (the explanation's lines kept: nothing above moves). The board's at most 6 lines, never the middle's
 			// least; the one-panel board's from the panel's room (its tab row and three lines kept).
@@ -915,21 +978,23 @@ export class Dock {
 			// The full-size EXPERTS' pages: the counting rule, the expert page what its rank means (the grids: their explanation).
 			const help = page === "layer" ? [EXPERT_HELP.rule] : page === "expert" ? [EXPERT_HELP.rule, EXPERT_HELP.rank[h.expertSource ?? "all"]] : undefined;
 			const cap = help ? help.map((l) => cut(l, w)) : wrapTextWithAnsi((focus === "MAP" || focus === "TOKENS") && this.engram.look(r) ? EXPLAIN.ENGRAM
-				: focus === "LENS" && this.lensShut(r) ? EXPLAIN.LENS_SHUT : this.editHint(explainOf(focus, windowed, s)), w);
+				: focus === "LENS" && this.lensShut(r) ? EXPLAIN.LENS_SHUT : this.editHint(explainOf(focus, windowed, s, split, viewOf(h.stream, this.streamViews(r)))), w);
 			if (!this.edit || keysToo) footer = [...(cap.length > n ? [...cap.slice(0, n - 1), cut(cap[n - 1] + " …", w)] : cap).map((l) => th.fg("dim", l)),
 				...(keysToo ? tail : [])];
+		};
+		if (h.captions && inspecting) {
+			// The explanation's height can differ from the key line's: the range under it; where that changes whether { }
+			// works, the explanation says so instead (and the range is the one under that).
+			captions(split);
+			if (footer.length !== keyRows) at = layout(footer.length);
+			if (!!at.range !== split) {
+				captions((split = !!at.range));
+				at = layout(footer.length);
+			}
 		}
-		const k = this.lensToken(toks, sel, this._sel >= 0);   // following: the newest token with a lens read
-		// STREAM's place: last in the right column, under EXPERTS (`streamHistory` its history lines; none where a panel is
-		// full size), its lines from what the column has past the least of the panels over it (rightLeast, streamLines),
-		// before the reply strip takes any.
-		const mid = middle(footer.length);
-		this.streamHistory = this.streamCol && !fullNow ? history(footer.length) : 0;
-		const cols = arrange(experts, this.streamHistory > 0);
-		// The reply strip: REPLY_ROWS lines, and the lines both columns spare (what their panels' content does not need),
-		// up to a third of the dock (board.ts replyRows). None of it follows the reply's length: the strip keeps its height
-		// through a reply. Full size: its least.
-		const replyN = one ? ONE_REPLY_ROWS : fullNow ? REPLY_ROWS : replyRows(height, ...this.spare(cols, w, mid, r, k));
+		const { cols, replyN, rows } = at;
+		this.splitRange = at.range;
+		this.streamHistory = at.base + this.splitNow() * (over - 1);
 		// g: engram inspection's title and readout instead of REPLY. Else after REPLY the steer it ran under (Reply.steer);
 		// unsteered, said only while a steer is on now.
 		const name = LABELS.engramTitle, note = this.engram.lookupNote(r, inspecting ? sel : -1, w - name.length - 2);
@@ -950,7 +1015,6 @@ export class Dock {
 		this.stripAt = { rid: r.rid, sel, w, from, start, last: from + (ends[Math.min(lines.length, start + replyN) - 1] ?? -1) };
 		for (let i = 0; i < replyN; i++) out.push(lines[start + i] ?? "");
 		out.push(ruleLine(th, w));
-		const rows = height - out.length - 1 - footer.length;   // under the reply's rule, over the footer's rule
 		if (this.anim && !this.animOn(inspecting, k, (this.full || one) && focus !== "LENS")) this.stopSwap();
 		let body: string[];
 		if (fullNow) {
@@ -1046,34 +1110,47 @@ export class Dock {
 		while (k > 0 && !(toks[k].lens?.length || toks[k].lens_logit?.length)) k--;
 		return k;
 	}
-	/** LENS on the board, `w` by `rows`: the title, the turret and the step, then SETTLING and token `k` through the lens
-	 * (telescope.ts), on the lines lensSplit gives them (stackLens). The tube over the step's layers, in the box the
-	 * largest step's take (lensNeed): a reply that read more shares lines at the shallow end. Off, dulled (lensLines). */
-	private lensPanel(r: Reply, k: number, w: number, rows: number, focused: boolean, inspecting: boolean, titled = true): string[] {
-		const th = this.theme, toks = r.tokens, t = toks[k], need = this.lensNeed(r, k, w), opts = this.lensOpts(r, k);
-		const [tn, gap, sn] = lensSplit(rows, need.scope, need.settle);
-		return this.lensLines(r, () => stackLens([this.lensHead(r, t, focused, opts, w, titled)], this.settling(toks, k, w, sn, inspecting, opts), sn, gap,
-			telescope(th, t, k, w, tn - 1, opts).lines, rows, this.lensPointer(r, t, w)));
+	/** LENS on the board, `w` wide in a box of `rows`: the title, the turret and the step, then SETTLING and token `k`
+	 * through the lens (telescope.ts), on the lines lensFit gives them (stackLens; `given`: heights' already). Off, dulled
+	 * (lensLines). */
+	private lensPanel(r: Reply, k: number, w: number, rows: number, focused: boolean, inspecting: boolean, titled = true, board = true, given?: LensFit): string[] {
+		const th = this.theme, toks = r.tokens, t = toks[k], opts = this.lensOpts(r, k), fit = given ?? this.lensFit(r, k, w, rows, board);
+		return this.lensLines(r, () => stackLens([this.lensHead(r, t, focused, opts, w, titled)], this.settling(toks, k, w, fit.sn, inspecting, opts), fit.sn, fit.gap,
+			telescope(th, t, k, w, fit.room, { ...opts, cap: fit.cap }).lines, fit.rows, this.lensPointer(r, t, w)));
+	}
+	/** LENS in a box of `box` lines sized on the largest step (lensNeed): lensSplit's blank and SETTLING lines over its
+	 * `panel` (heights: the same at every step), then the telescope's `room` and its tube's `cap`, and the lines it draws
+	 * (`rows`). On the board's column (`board`) with the server's steps, the step's tube a layer a line where the box
+	 * holds it, else sharing lines to fit it (fitCap): the largest fills the box, a smaller one leaves the lines under it
+	 * to the column (heights). Else the box, a short tube's lines blank at its foot. */
+	private lensFit(r: Reply, k: number, w: number, box: number, board = true, panel = box): LensFit {
+		const need = this.lensNeed(r, k, w, false, board), [tn, gap, sn] = lensSplit(panel, need.scope, need.settle), t = r.tokens[k];
+		const want = this.lensOpts(r, k).want;
+		if (!board || !this.sizing(r) || !t || !want || w < MIN_WIDTH || tn - 1 < MIN_LINES) return { gap, sn, room: tn - 1, rows: box };
+		const room = box - 1 - sn - gap, cap = fitCap(want, room);
+		return { gap, sn, room, cap, rows: 1 + sn + gap + Math.min(room, scopeHeight(tubeOf(t, want, cap))) };
 	}
 	/** LENS's parts' [least, most] lines in `w` columns, and SETTLING's want: from the server's steps, not the one in use
-	 * (sizing), so - + move nothing: the telescope (its title included) over the largest step's layers (`full`, LENS
-	 * full size: its tube a layer a line), and SETTLING its least and want over as many as the middle step says it reads
-	 * (`n`: the J-lens's where there is one; the logit lens's more share lines), its most the largest's. The same for
-	 * every reply (scopeHeight, whatever the reply read: one with no lens read, LENS shut, as one that has). Without the
-	 * server's steps, over those reply `r` read. */
-	private lensNeed(r: Reply, k: number, w: number, full = false): { scope: [number, number]; settle: [number, number]; want: number } {
+	 * (sizing), so LENS's box stays through - + (lensFit draws the step in it): the telescope (its title included) over
+	 * the largest step's layers (`full`, LENS full size: its tube a layer a line), and SETTLING its least and want over
+	 * as many as the middle step says it reads (`n`: the J-lens's where there is one; the logit lens's more share
+	 * lines), its most the largest's. The same for every reply (scopeHeight, whatever the reply read: one with no lens
+	 * read, LENS shut, as one that has). Without the server's steps, over those reply `r` read. `board`: the board's column, the telescope's least SCOPE_EASY (where
+	 * whole), so SETTLING gives its lines before its tube goes under 6 rows. */
+	private lensNeed(r: Reply, k: number, w: number, full = false, board = false): { scope: [number, number]; settle: [number, number]; want: number } {
 		const toks = r.tokens, t = toks[k], sz = this.sizing(r), cap = full ? 999 : undefined;
 		const whole = 1 + (sz ? scopeHeight(tubeOf(t, sz.max.layers, cap)) : telescope(this.theme, t, k, w, 999, { ...this.lensOpts(r, k), cap }).lines.length);
 		const [least, want] = sz ? settleRoom(sz.mid.n) : this.settleNeed(toks, k);
-		return { scope: [1 + MIN_LINES, whole], settle: [least, sz ? settleRoom(sz.max.n)[1] : want], want };
+		return { scope: [board ? Math.max(1 + MIN_LINES, Math.min(whole, SCOPE_EASY)) : 1 + MIN_LINES, whole], settle: [least, sz ? settleRoom(sz.max.n)[1] : want], want };
 	}
-	/** LENS's title line: the title (`titled`) and the turret, then (`w` wide) on the right the step (depthTag), else
-	 * "s swaps". */
+	/** LENS's title line: the title (`titled`) and the turret, then (`w` wide) on the right the step (depthTag; its count
+	 * kept before the turret's full switch), else "s swaps". */
 	private lensHead(r: Reply, t: TokenEvent, focused: boolean, f: Frame, w?: number, titled = true): string {
 		// Shut (lensShut, dulled): the title dim, no turret; why where none was read.
 		const th = this.theme, shut = this.lensShut(r), name = shut && !focused ? th.fg("dim", th.bold("LENS")) : panelTitle(th, "LENS", focused);
-		const head = (titled ? name + "  " : "") + (!shut ? turret(th, t, f.view, f.turret) : this.lensOff(r) ? "" : th.fg("dim", LABELS.notRead));
-		const step = this.host.lensLayers && w ? this.depthTag(w - visibleWidth(head) - 2, r) : "";
+		const headOf = (short: boolean) => (titled ? name + "  " : "") + (!shut ? turret(th, t, f.view, f.turret, short) : this.lensOff(r) ? "" : th.fg("dim", LABELS.notRead));
+		let head = headOf(false), step = this.host.lensLayers && w ? this.depthTag(w - visibleWidth(head) - 2, r) : "";
+		if (step === null) step = this.depthTag(w! - visibleWidth((head = headOf(true))) - 2, r, true);
 		if (step && w) return head + " ".repeat(Math.max(2, w - visibleWidth(head) - visibleWidth(step))) + step;
 		return head + (!shut && bothLenses(t) ? th.fg("faint", "   s swaps") : "");
 	}
@@ -1105,10 +1182,10 @@ export class Dock {
 	/** A column of panels `cw` wide in `rows` lines, a rule between them, each its share of the lines (heights). */
 	private column(ps: Panel[], cw: number, rows: number, r: Reply, sel: number, inspecting: boolean, k: number, focus: Panel, titled = true): string[] {
 		if (ps.length === 1) return this.panel(ps[0], cw, rows, r, sel, inspecting, k, focus, titled);
-		const hs = this.heights(ps, cw, rows, r, k).h, out: string[] = [];
+		const { h: hs, box, fit } = this.heights(ps, cw, rows, r, k), out: string[] = [];
 		ps.forEach((p, i) => {
 			if (i) out.push(ruleLine(this.theme, cw));
-			const ls = this.panel(p, cw, hs[i], r, sel, inspecting, k, focus, titled || p !== focus).slice(0, hs[i]);
+			const ls = this.panel(p, cw, p === "LENS" ? box : hs[i], r, sel, inspecting, k, focus, titled || p !== focus, fit).slice(0, hs[i]);
 			while (ls.length < hs[i]) ls.push("");
 			out.push(...ls);
 		});
@@ -1116,16 +1193,20 @@ export class Dock {
 	}
 	/** Each panel's lines in a column of `rows` (the rules between taken off): first its least, then, by WANT_ORDER,
 	 * what its content needs up to the lines given there; what is left then is the column's `slack`; then, by
-	 * GROW_ORDER, up to its most (EXPERTS a whole layer at a time); anything left stays blank under them (over STREAM).
-	 * Too few for every least: they give up lines by GIVE_ORDER. None of it follows the reply's length. */
-	private heights(ps: Panel[], cw: number, rows: number, r: Reply, k: number): { h: number[]; slack: number } {
+	 * GROW_ORDER, up to its most (EXPERTS a whole layer at a time, STREAM the rest); anything left stays blank under
+	 * them. Too few for every least: they give up lines by GIVE_ORDER. None of it follows the reply's length. Last, LENS
+	 * draws the step in use (lensFit) in its `box`: with the server's steps its `panel`, the lines it has with MAP at
+	 * its most, the largest step MAP's lines over its least too (while - + stretch to or from it, the frame's `large`
+	 * share of them, so MAP moves with the tube). The lines a step leaves go to MAP, then TOKENS, up to
+	 * their mosts, the rest blank at the column's foot. */
+	private heights(ps: Panel[], cw: number, rows: number, r: Reply, k: number): { h: number[]; slack: number; box: number; fit?: LensFit } {
 		const need = ps.map((p) => this.need(p, cw, r, k));
 		const h = need.map((n) => n.least);
 		let extra = rows - (ps.length - 1) - h.reduce((a, b) => a + b, 0);
-		for (const p of GIVE_ORDER) {
+		for (const [p, floor] of GIVE_ORDER) {
 			const i = ps.indexOf(p);
 			if (i < 0 || extra >= 0) continue;
-			const give = Math.min(h[i] - 1, -extra);
+			const give = Math.max(0, Math.min(h[i] - floor(need[i]), -extra));
 			h[i] -= give;
 			extra += give;
 		}
@@ -1143,9 +1224,30 @@ export class Dock {
 			const i = ps.indexOf(p);
 			if (i >= 0 && extra > 0) grow(i, need[i].most);
 		}
-		const s = ps.indexOf("STREAM");
-		if (s > 0 && extra > 0) h[s - 1] += extra;   // blank over STREAM, not under it: it sits on the key line's rule
-		return { h, slack };
+		// LENS with the server's steps: its panel the box it has with MAP at its most; the largest step takes MAP's lines
+		// too, MAP down to its least.
+		const li = ps.indexOf("LENS"), mi = ps.indexOf("MAP"), d = li >= 0 && this.sizing(r) ? this.depthNow().data : undefined;
+		let fit: LensFit | undefined;
+		const toMost = d && mi >= 0 ? Math.max(0, Math.min(need[mi].most - h[mi], h[li] - need[li].least)) : 0;
+		const large = this.lensAnim()?.frames[this.lensAnim()!.i].large ?? +(!!d && isLargest(d, d.at));
+		const panel = (h[li] ?? 0) - toMost, box = d && mi >= 0 ? panel + Math.round(large * (h[li] + Math.max(0, h[mi] - need[mi].least) - panel)) : panel;
+		if (li >= 0) {
+			if (mi >= 0) h[mi] += h[li] - box;
+			h[li] = box;
+			let free = 0;
+			try {
+				fit = this.lensFit(r, k, cw, box, true, panel);
+				free = Math.max(0, box - fit.rows);
+			} catch {}   // LENS says why in its place (guard)
+			h[li] -= free;
+			for (const i of [ps.indexOf("MAP"), ps.indexOf("TOKENS")]) {
+				if (i < 0) continue;
+				const add = Math.max(0, Math.min(free, need[i].most - h[i]));
+				h[i] += add;
+				free -= add;
+			}
+		}
+		return { h, slack, box, fit };
 	}
 	/** The lines the board's middle, `mid` lines, spares in each of its columns (`cols`): what is left once each panel
 	 * has what its content needs (heights' slack). */
@@ -1155,41 +1257,41 @@ export class Dock {
 	}
 	/** A panel's lines in a column `cw` wide, its title included (Need). TOKENS its most for any token; MAP its title
 	 * and MAP_LINES, then the column's rest up to MAP_CELL_LINES; EXPERTS four layers, then up to every layer; STREAM
-	 * its frame and the frame's history lines (streamHistory), on a model without experts the column's rest. `under`: STREAM
-	 * drawn under EXPERTS (gridsEdge). */
-	private need(p: Panel, cw: number, r: Reply, k: number, under = this.streamHistory > 0): Need {
+	 * its frame and the frame's history lines (streamHistory), then the column's rest. */
+	private need(p: Panel, cw: number, r: Reply, k: number): Need {
 		try {
-			return this.needOf(p, cw, r, k, under);
+			return this.needOf(p, cw, r, k);
 		} catch (e) {
 			this.sizeFailed.set(p, e);
 			return { least: 2, want: 2, most: 2 };   // its title and the error (guard)
 		}
 	}
-	private needOf(p: Panel, cw: number, r: Reply, k: number, under: boolean): Need {
-		if (p === "LENS") {   // SETTLING and the telescope: their leasts; the telescope whole, SETTLING its want and the blank between; then SETTLING its most (lensSplit)
-			const { scope, settle, want } = this.lensNeed(r, k, cw);
-			return { least: scope[0] + settle[0], want: scope[1] + want + 1, most: scope[1] + settle[1] + 1 };
+	private needOf(p: Panel, cw: number, r: Reply, k: number): Need {
+		if (p === "LENS") {   // SETTLING and the telescope: their leasts; the telescope whole, SETTLING its want and the blank between; then SETTLING its most (lensSplit), the largest step a layer a line
+			const { scope, settle, want } = this.lensNeed(r, k, cw, false, true), sz = this.sizing(r), t = r.tokens[k];
+			const tall = sz && t ? Math.max(scope[1], 1 + scopeHeight(tubeOf(t, sz.max.layers, 999))) : scope[1];
+			return { least: scope[0] + settle[0], want: scope[1] + want + 1, most: tall + settle[1] + 1, floor: scope[0] };
 		}
 		if (p === "MAP") return { least: 1 + MAP_LINES, want: 1 + MAP_LINES, most: 1 + MAP_CELL_LINES };
-		if (p === "TOKENS") return { least: 1 + TOP_N, want: 1 + TOP_N + 1, most: 1 + TOP_N + 1 };   // the top 10; a row for a written token outside them where there is room
+		if (p === "TOKENS") {   // its first choices; a row for a written token outside them where there is room
+			const top = this.top();
+			return { least: 1 + top, want: 1 + top + 1, most: 1 + top + 1, floor: 1 + Math.min(top, TOKENS_FLOOR) };
+		}
 		if (p === "STREAM") {   // the rule over it is the column's
 			const n = STREAM_FIXED + this.streamHistory;
-			return { least: n, want: n, most: this.noExperts(r) ? Infinity : n };
+			return { least: n, want: n, most: Infinity };
 		}
 		const v = this.experts.expertsView(r);
 		if (v.reason) return { least: 2, want: 4, most: 4 };
-		const block = this.experts.expertsBlock(r, v, this.gridsEdge(r, cw, under) || cw);
+		const block = this.experts.expertsBlock(r, v, cw);
 		return { least: 1 + block, want: 1 + Math.min(v.L, EXPERTS_WANT) * block, most: 1 + v.L * block, step: block };   // the title, then each layer
 	}
-	/** The right column's least over STREAM: TOKENS', and where EXPERTS is drawn (`experts`) a rule and EXPERTS' (one
-	 * layer of this model's grids as they are over STREAM). EXPERTS gives up layers down to that before STREAM's
-	 * history loses a line. */
+	/** The right column's least over STREAM: where EXPERTS is drawn (`experts`) EXPERTS' (one layer of this model's
+	 * grids as they are over STREAM), else TOKENS' (its ten choices). EXPERTS gives up layers down to that before
+	 * STREAM's history loses a line. */
 	private rightLeast(r: Reply, experts: boolean): number {
-		return this.need("TOKENS", RIGHT_W, r, 0).least + (experts ? 1 + this.need("EXPERTS", RIGHT_W, r, 0, true).least : 0);
+		return this.need(experts ? "EXPERTS" : "TOKENS", RIGHT_W, r, 0).least;
 	}
-	/** Where EXPERTS' grids end in a column `cw` wide: with STREAM drawn under them (`under`: this frame's), at its
-	 * keys' edge (board.ts keysEdge), full rectangles; else 0, the column's width. */
-	private gridsEdge = (r: Reply, cw: number, under = this.streamHistory > 0) => (under ? keysEdge(cw, this.streamData(r)?.L ?? 0) : 0);
 	/** Panel `p`'s lines from `draw`; a throw (a bug, an answer of an unexpected shape), there or working out its
 	 * lines (need), is its title and the error in its place, the rest of the dock drawn as ever. */
 	private guard(p: Panel, w: number, draw: () => string[]): string[] {
@@ -1200,31 +1302,33 @@ export class Dock {
 			return [panelTitle(this.theme, p, false), this.theme.fg("error", cut(failed(e), Math.max(1, w)))];
 		}
 	}
-	/** One panel in a column, `w` by `rows`. */
-	private panel(p: Panel, w: number, rows: number, r: Reply, sel: number, inspecting: boolean, k: number, focus: Panel, titled = true): string[] {
-		return this.guard(p, w, () => this.panelLines(p, w, rows, r, sel, inspecting, k, focus, titled));
+	/** One panel in a column, `w` by `rows` (LENS: its box, `panel` its lines with MAP at its most: heights). */
+	private panel(p: Panel, w: number, rows: number, r: Reply, sel: number, inspecting: boolean, k: number, focus: Panel, titled = true, fit?: LensFit): string[] {
+		return this.guard(p, w, () => this.panelLines(p, w, rows, r, sel, inspecting, k, focus, titled, fit));
 	}
-	private panelLines(p: Panel, w: number, rows: number, r: Reply, sel: number, inspecting: boolean, k: number, focus: Panel, titled: boolean): string[] {
+	private panelLines(p: Panel, w: number, rows: number, r: Reply, sel: number, inspecting: boolean, k: number, focus: Panel, titled: boolean, fit?: LensFit): string[] {
 		const th = this.theme, toks = r.tokens, f = focus === p;
-		if (p === "LENS") return this.lensPanel(r, k, w, rows, f, inspecting, titled);
+		if (p === "LENS") return this.lensPanel(r, k, w, rows, f, inspecting, titled, true, fit);
 		if (p === "MAP") {
 			const per = 2 * Math.max(1, w), line = Math.floor(sel / per), held = this.kept && line >= this.mapFirst && line < this.mapFirst + rows - 1;
 			if (!held) this.mapFirst = mapWindow(toks.length, w, rows - 1, inspecting ? sel : -1, this.mapFirst);
 			this.mapShown = [r.rid, this.mapFirst * per, Math.min(toks.length, (this.mapFirst + rows - 1) * per)];
 			return mapPanel(th, toks, inspecting ? sel : -1, w, rows, f, true, this.mapFirst, this.engram.mapPaint(r, inspecting ? sel : -1));
 		}
-		if (p === "TOKENS") return this.tokens(r, sel, w, f, rows, titled);
+		if (p === "TOKENS") return this.tokens(r, sel, w, f, rows, titled, this.top());
 		if (p === "STREAM") return this.stream(r, sel, w, rows - STREAM_FIXED, f);
-		const v = this.experts.expertsView(r), edge = this.gridsEdge(r, w), gw = edge || w;
-		const n = v.reason ? 0 : Math.max(1, Math.floor((rows - 1) / this.experts.expertsBlock(r, v, gw)));
-		const { layers } = this.experts.expertsData(r, sel, n, gw);
-		return expertsStack(th, v, layers, palette(th), w, rows, f, !v.reason && this.experts.noMap(r, v.layer), edge);
+		const v = this.experts.expertsView(r);
+		const n = v.reason ? 0 : Math.max(1, Math.floor((rows - 1) / this.experts.expertsBlock(r, v, w)));
+		const { layers } = this.experts.expertsData(r, sel, n, w);
+		return expertsStack(th, v, layers, palette(th), w, rows, f, !v.reason && this.experts.noMap(r, v.layer));
 	}
-	/** TOKENS for token `sel`, `w` by at most `rows` (`titled`: its title); in engram inspection on a token stepped to,
-	 * its choices without and with the engram (lookupTokens). */
-	private tokens(r: Reply, sel: number, w: number, focused: boolean, rows: number, titled = true): string[] {
+	/** TOKENS for token `sel`, `w` by at most `rows` (`titled`: its title), its first `top` choices; in engram
+	 * inspection on a token stepped to, its choices without and with the engram (lookupTokens). */
+	/** TOKENS' first choices: the one-panel board's TOP_N, the board's BOARD_TOP. */
+	private top = () => (this.one ? TOP_N : BOARD_TOP);
+	private tokens(r: Reply, sel: number, w: number, focused: boolean, rows: number, titled = true, top = TOP_N): string[] {
 		const v = this.engram.lookView(r), at = this.engram.lookAt(sel);
-		return (v && at >= 0 && lookupTokens(this.theme, v, r.tokens, at, w, focused, rows, titled)) || tokensPanel(this.theme, r.tokens[sel], sel, w, focused, titled, rows);
+		return (v && at >= 0 && lookupTokens(this.theme, v, r.tokens, at, w, focused, rows, titled)) || tokensPanel(this.theme, r.tokens[sel], sel, w, focused, titled, rows, top);
 	}
 	// -- the mini dock (m): lights, MAP, SETTLING and STREAM --------------------------------------------------------
 
@@ -1236,8 +1340,8 @@ export class Dock {
 	 * records writes or reads, its lines taken first: the lights give up layers before its history shrinks. Where its
 	 * keys fall short of the width by 4 columns at most, the grids, MAP and SETTLING end where they do. The lights are
 	 * always the glow (miniGlow), stepped in or not: as it stood at the token stepped to. Lines that nothing takes go
-	 * first to a blank line between each two parts, from the top, then to STREAM's history (up to twice STREAM_LINES),
-	 * then under the key line (under a grid's worth).
+	 * first to a blank line between each two parts, from the top, then to STREAM's history, else under the key line
+	 * (under a grid's worth).
 	 * Never the reply or the text panels. */
 	private renderMini(width: number, height: number): string[] {
 		const th = this.theme, w = Math.max(8, width - 3), inspecting = this.inspecting;
@@ -1254,7 +1358,7 @@ export class Dock {
 		if (this.host.lensLayers) this.loadDepth(r);   // the lenses off: SETTLING dulled
 		// SETTLING's room from the reply (its newest reading, the lens shown: no s here), not the token stepped to: one
 		// before the first reading keeps it, drawn as the board draws it there.
-		const read = settleLayers(toks, toks.length - 1, this.host.lensView).layers.length, [sl, sm] = settleRoom(read);
+		const read = settleLayers(toks, toks.length - 1, this.host.lensView).length, [sl, sm] = settleRoom(read);
 		const settle: MiniRoom | undefined = !read ? undefined : [Math.min(MINI_SETTLE_LEAST, sl), sl, sm];
 		// EXPERTS: its view (the layer in focus, or why there is nothing); none on a model without experts.
 		const v = this.noExperts(r) ? undefined : this.experts.expertsView(r), L = v?.reason ? 0 : (v?.L ?? 0);
@@ -1263,35 +1367,32 @@ export class Dock {
 		// g: engram inspection's readout instead.
 		const note = this.engram.lookupNote(r, inspecting ? sel : -1, w), head = [note ? fit(note, w) : miniToken(th, toks[sel], sel, w)];
 		const body = height - 1 - head.length;
-		// The lights: EXPERTS' title, then a layer of `block` lines each (expertsBlock) at the blocks' width `bw`: STREAM's
-		// keys' edge where it is drawn (board.ts keysEdge), else `w`; no routing, its title and why, whole.
+		// The lights: EXPERTS' title, then a layer of `block` lines each (expertsBlock) `w` wide; no routing, its title and
+		// why, whole.
 		const why = v && !L ? expertsStack(th, v, [], palette(th), w, body, false) : [];
-		const sd = this.streamData(r), sL = sd?.L && this.streamViews(r).length ? sd.L : 0, edge = keysEdge(w, sL);
-		let bw = edge || w;
-		const blockAt = (cw: number) => (L ? this.experts.expertsBlock(r, v!, cw) : why.length);
-		let block = blockAt(bw);
+		const sd = this.streamData(r), sL = sd?.L && this.streamViews(r).length ? sd.L : 0;
+		const block = L ? this.experts.expertsBlock(r, v!, w) : why.length;
 		const title = L ? 1 : 0;
 		// STREAM's lines first, a layer of lights (or why), MAP and SETTLING left their least (board.ts streamLines; no rule
 		// over it); for a model not known yet, asked for (streamRoom) where the room is there. Its lines over STREAM_LINES
-		// (miniStreamLines) only while two layers of lights stay, where STREAM_LINES leaves two.
+		// (streamShare) only while two layers of lights stay, where STREAM_LINES leaves two.
 		const free = body - title - block - map[0] - (settle?.[0] ?? 0), least = streamLines(free, STREAM_FIXED);
 		const lit = (n: number) => (L ? miniSplit(body - (n ? n + STREAM_FIXED : 0) - title, block, L, map, settle).n : 0);
-		let sn = streamLines(free, STREAM_FIXED, miniStreamLines(height));
+		let sn = streamLines(free, STREAM_FIXED, streamShare(height));
 		while (sn > least && lit(sn) < Math.min(2, lit(least))) sn--;
 		this.noteRoom(sn > 0);
 		const hist = sL ? sn : 0, streamN = hist && hist + STREAM_FIXED;   // STREAM drawn: its history lines, all its lines
 		this.miniStream = hist > 0;   // s switches its view
-		if (!hist && edge) (bw = w), (block = blockAt(w));
 		const keys = keyLine(), rest = body - streamN;
 		// The lights (`share` lines), the maps right under them, STREAM, the key line, a blank line between each two from
-		// the lines left, then STREAM's history the rest up to twice STREAM_LINES; under the key line what is still left
-		// when fewer than a layer's `block` (the maps at their most, or no lights), else over it (every layer drawn).
+		// the lines left, then STREAM's history the rest; under the key line what is still left (no STREAM) when fewer
+		// than a layer's `block` (the maps at their most, or no lights), else over it (every layer drawn).
 		const draw = (lights: string[], split: { map: number; settle: number }, share: number) => {
 			const parts = [[...lights.slice(0, share), ...Array<string>(Math.max(0, share - lights.length)).fill("")],
-				split.map ? this.panel("MAP", bw, split.map, r, sel, inspecting, k, "EXPERTS").slice(0, split.map) : [],
-				split.settle ? this.settling(toks, k, bw, split.settle, inspecting).map((l) => (this.lensOff(r) ? dull(th, l, DULL) : l)) : []].filter((p) => p.length);
+				split.map ? this.panel("MAP", w, split.map, r, sel, inspecting, k, "EXPERTS").slice(0, split.map) : [],
+				split.settle ? this.settling(toks, k, w, split.settle, inspecting).map((l) => (this.lensOff(r) ? dull(th, l, DULL) : l)) : []].filter((p) => p.length);
 			let left = Math.max(0, body - streamN - parts.reduce((t, p) => t + p.length, 0));
-			const more = hist && Math.max(0, Math.min(left - parts.length, 2 * STREAM_LINES - hist));   // past a blank line over each part
+			const more = hist && Math.max(0, left - parts.length);   // past a blank line over each part
 			if (hist) parts.push(this.stream(r, sel, w, hist + more, false, inspecting)), (left -= more);
 			const out = [...head];
 			for (const [i, p] of parts.entries()) {
@@ -1301,18 +1402,18 @@ export class Dock {
 			const spare = left < block ? left : 0;
 			return [...this.frame(out, width, height - spare, keys), ...this.frame([], width, spare, [])];
 		};
-		if (!L) return draw(why, miniSplit(rest, why.length, v ? 1 : 0, map, settle), why.length);   // a model without experts: MAP and SETTLING have it all
+		if (!L) return draw(why, miniSplit(rest, why.length, v ? 1 : 0, map, settle, hist > 0), why.length);   // a model without experts: MAP and SETTLING have it all, or leave it to STREAM
 		// From the EXPERTS layer, a full page where the layers allow (the last page ends at the deepest), the layers in
 		// the right column's grids (reshapeGrid at the blocks' width), lit as the glow.
 		const split = miniSplit(rest - title, block, L, map, settle), n = split.n, E = v!.E, base = this.host.live.base;
 		const a = (this.miniFrom = Math.max(0, Math.min(v!.layer, L - n))), layers: LayerLights[] = [];
 		for (let l = a; l < Math.min(L, a + n); l++) {
-			const shape = reshapeGrid(E, gridShape(E, this.grids.at(base, r.model, l)), bw);
+			const shape = reshapeGrid(E, gridShape(E, this.grids.at(base, r.model, l)), w);
 			layers.push({ layer: l, cells: gridCells(this.experts.miniGlow(r, l, E, sel), shape), cols: shape.cols, rows: shape.rows });
 		}
 		this.miniN = n;   // [ ] step by the layers drawn
 		const room = title + n * block;
-		return draw(expertsStack(th, v!, layers, palette(th), w, room, false, this.experts.noMap(r, v!.layer), bw), split, room);
+		return draw(expertsStack(th, v!, layers, palette(th), w, room, false, this.experts.noMap(r, v!.layer)), split, room);
 	}
 	/** The mini dock's keys: m the full dock, [ ] the next or previous layers, s STREAM's next view (where it is
 	 * drawn; remembered, as the board's), ←/→ and the other token keys a token (the glow as it stood there), esc back,
@@ -1390,9 +1491,9 @@ export class Dock {
 	}
 	/** The one-panel board's panel `p`, `w` by `rows` under the tab row: its full-size view (fullPanel); LENS, where the
 	 * two lenses do not fit side by side, its board column; TOKENS, where EXPERTS fits
-	 * under it, their board column. */
+	 * under it, the two as one column. */
 	private onePanel(p: Panel, w: number, rows: number, r: Reply, sel: number, inspecting: boolean, k: number): string[] {
-		if (p === "LENS" && columns(w).lw < LEFT_MIN) return this.lensPanel(r, k, w, rows, true, inspecting, false);
+		if (p === "LENS" && columns(w).lw < LEFT_MIN) return this.lensPanel(r, k, w, rows, true, inspecting, false, false);
 		const col: Panel[] = ["TOKENS", "EXPERTS"];
 		if (p === "TOKENS" && !this.noExperts(r) && rows >= this.need("TOKENS", w, r, k).want + 1 + this.need("EXPERTS", w, r, k).least)
 			return this.column(col, w, rows, r, sel, inspecting, k, p, false);
@@ -1461,6 +1562,16 @@ export class Dock {
 			h.lensView = h.lensView === "logit" ? "jlens" : "logit";
 			const to = lensOf(lt, h.lensView).by;
 			if ((!(this.full || this.one) || focus === "LENS") && bothLenses(lt) && from && to && from !== to) this.startSwap(lt, from, to, lk);
+			return render();
+		}
+		// { }: the divider between EXPERTS and STREAM a layer of EXPERTS up ({, STREAM more) or down (}); remembered.
+		// At an end, or the board not drawn as the last frame's range was (full size, the one-panel board, the Steer
+		// page): nothing moves, nothing stored.
+		if ((data === "{" || data === "}") && this.splitRange && !this.full && !this.one && !this.steerPage) {
+			const [lo, hi] = this.splitRange, at = this.splitNow(), to = Math.max(lo, Math.min(hi, at + (data === "{" ? 1 : -1)));
+			if (to === at) return;
+			h.split = to;
+			h.layoutChanged?.();
 			return render();
 		}
 		// EXPERTS on the board: [ ] a layer (its window: expertKey).

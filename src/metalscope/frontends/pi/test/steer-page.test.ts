@@ -910,7 +910,7 @@ test("widget, end to end: a LENS edit of a lens word that is no name (初步) go
 			return { name: b.name, model: "Flash-ds4", band: [15, 36], cut: [] };
 		}
 		// The lens steps, asked for the reply: where the edit acts (the band the words route gives too).
-		if (path.startsWith("/api/lens/layers")) return { model: "Flash-ds4", at: 0, steps: [{ n: 1, layers: [31], tps: null, replies: 0 }], edit_band: [15, 36] };
+		if (path.startsWith("/api/lens/layers")) return { model: "Flash-ds4", at: 0, steps: [{ name: "small", n: 1, layers: [31], tps: null, replies: 0 }], edit_band: [15, 36] };
 		return CONCEPTS;
 	});
 	await tick();

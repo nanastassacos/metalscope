@@ -8,7 +8,7 @@
  * the server reads it, the title line shows how far (lookupBar), and g again calls it off.
  */
 
-import { type MapPaint, ruleText, title } from "./board.ts";
+import { type MapPaint, keepRow, ruleText, title } from "./board.ts";
 import type { DockHost } from "./dock.ts";
 import { COLOURS, type DockTheme, LABELS, type Rgb, ansiBold, bar, colourCode, cut, label, lpad, padTo, pct, qt, textWidth } from "./draw.ts";
 import { STOPS, colourMode, mix } from "./lights.ts";
@@ -287,7 +287,7 @@ export function lookupTokens(th: any, v: LookupView, toks: { text: string; id: n
 	const head = (titled ? title(th, "TOKENS", focused) + "  " : "") + th.fg("dim", `#${k}`), at = 2 + ww;
 	const heads = padTo(offW >= 8 ? "without" : "w/o", offW) + "with";
 	const out = [textWidth(head) + 1 <= at ? padTo(head, at) + th.fg("dim", heads) : head];
-	for (const r of rows.slice(0, Math.max(0, lines - 1))) {
+	for (const r of keepRow(rows, lines - 1, rows.indexOf(mine))) {
 		const mine = r.id === t.id, name = (mine ? "▸ " : "  ") + padTo(label(text(r.id)), ww);
 		out.push((mine ? th.fg("text", ansiBold(name)) : th.fg("dim", name)) + th.fg("dim", col(r.off, bars === 2, bw)) + blue(col(r.on, bars > 0, bw)));
 	}

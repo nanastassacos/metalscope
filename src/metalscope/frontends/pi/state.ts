@@ -37,11 +37,13 @@ export interface TokenEvent {
 	top_logit?: LensTop;
 	// What each layer changed in each residual stream while this token was chosen (the stream's `writes`), and where each
 	// layer read from (`reads`), sent only while the dock shows STREAM (Live.writes); decided as they came against the
-	// reply's usual (packWrites) and kept in brief: `strikes` the spikes view's, [layer, stream, beam length] a layer
-	// struck; `largest` the largest view's, a layer its stream and brightness (packLargest); `layers` the layers view's,
-	// as `largest` from the writes' `shares` (topLayers); `readStrikes` the reads view's, as `strikes` with a source for
+	// reply's usual (packWrites) and kept in brief: `strikes` spikes (hc)'s, [layer, stream, beam length] a layer
+	// struck; `wholeStrikes` spikes (layers)'s, as `strikes` from each layer's whole write (stream 0; one stream: the
+	// same); `largest` largest (hc)'s, a layer its stream and brightness (packLargest); `layers` largest (layers)'s, as
+	// `largest`, each layer by the writes' `shares` (shareLayers); `readStrikes` spikes (reads)'s, as `strikes` with a source for
 	// the stream.
 	strikes?: Uint16Array;
+	wholeStrikes?: Uint16Array;
 	largest?: Uint16Array;
 	layers?: Uint16Array;
 	readStrikes?: Uint16Array;
@@ -84,6 +86,7 @@ export interface Reply {
 	askedExperts?: boolean; // its start and every token came through a stream that asked for routing (onEvent `from`)
 	askedWrites?: boolean;  // the same for the writes (Live.writes)
 	usual?: Usual;          // its writes so far, the usual each token's are weighed against (packWrites)
+	wholeUsual?: Usual;     // the same of each layer's whole write, on a model writing several streams
 	readUsual?: Usual;      // and its reads
 	// Its routing from its saved trace (the dock's loadRouting, for a reply traced before the stream was asked for
 	// routing): "loading", "loaded", or why there is none.
@@ -232,7 +235,7 @@ export interface Usual {
 	mean: Float64Array;
 	m2: Float64Array;
 }
-/** The spikes view (and reads): a layer is struck where it changed a stream (read a source) more than WRITE_Z
+/** The spikes views (and reads): a layer is struck where it changed a stream (read a source) more than WRITE_Z
  * standard deviations over its usual in the reply before this token (writeSd), from the reply's WRITE_WARM + 1th token
  * with them on; its beam a cell longer for every WRITE_PER past that, up to WRITE_BEAM cells. */
 export const WRITE_Z = 2, WRITE_WARM = 12, WRITE_PER = 0.6, WRITE_BEAM = 6;
@@ -249,31 +252,32 @@ export const beamOf = (z: number) => 1 + Math.min(WRITE_BEAM - 1, Math.floor((z 
 export const packLargest = (stream: number, v: number) => (stream << 5) | Math.round(v * 31);
 export const unpackLargest = (x: number): [stream: number, v: number] => [x >> 5, (x & 31) / 31];
 
-/** The layers view's brightness for the layers lit, by rank. */
-export const LAYERS_LIT = [1, 0.85, 0.7, 0.55, 0.4];
-/** A token's `shares` (livestream._writes: each layer's write over the residual it read, layer 0 0) as its `layers`: the
- * LAYERS_LIT.length largest over 0 lit by rank (packLargest, stream 0; the shallower first on a tie), the rest 0.
- * Undefined when malformed. */
-export function topLayers(x: unknown): Uint16Array | undefined {
+/** The faintest a layer with a share is drawn (largest (layers)), so it stays apart from an unlit one. */
+export const SHARE_FLOOR = 0.1;
+/** A token's `shares` (livestream._writes: each layer's write over the residual it read, layer 0 0) as its `layers`
+ * (packLargest, stream 0): every layer as bright as its share over the token's largest (half the share, half as
+ * bright), SHARE_FLOOR at least; a share of 0 dark. Undefined when malformed. */
+export function shareLayers(x: unknown): Uint16Array | undefined {
 	if (!Array.isArray(x) || !x.length || x.length > 2047 || !x.every((v) => typeof v === "number" && Number.isFinite(v) && v >= 0)) return undefined;
-	const out = new Uint16Array(x.length);
-	x.map((v, l) => [v, l]).filter(([v]) => v > 0).sort((a, b) => b[0] - a[0] || a[1] - b[1]).slice(0, LAYERS_LIT.length)
-		.forEach(([, l], r) => (out[l] = packLargest(0, LAYERS_LIT[r])));
-	return out;
+	const top = Math.max(...x);
+	return Uint16Array.from(x, (v) => (v > 0 ? packLargest(0, Math.max(SHARE_FLOOR, v / top)) : 0));
 }
 
 /** One flow of token event `t` (`list` [L * k] layer-major, shallow to deep, `k` its streams or sources), dropped from
  * the event, decided against usual `u` before it and then added to it (a new usual where `u` is of another shape):
  * `strikes` (a layer whose stream z is over WRITE_Z and whose share of the layer is WRITE_FLOOR or more, the highest
  * z's stream where several are) and `largest` (each layer's largest stream, as bright as the layer's whole change
- * against its usual: 0.1 + 0.9 * total / usual / 2, at most 1; no usual yet 0.55; the writes' only, `big`). Undefined
- * when malformed. */
+ * against its usual: 0.1 + 0.9 * total / usual / 2, at most 1; no usual yet 0.55; the writes' only, `big`), by decide.
+ * Undefined when malformed. */
 function decideFlow(u: Usual | undefined, t: any, list: "writes" | "reads", kOf: "write_k" | "read_k", big: boolean) {
 	const x = t[list], k = t[kOf];
 	delete t[list];
 	delete t[kOf];
 	if (!Array.isArray(x) || !Number.isInteger(k) || k < 1 || k > 2047 || !x.length || x.length % k
 		|| !x.every((v: any) => typeof v === "number" && Number.isFinite(v) && v >= 0)) return undefined;
+	return { ...decide(u, x, k, big), x, k };
+}
+function decide(u: Usual | undefined, x: number[], k: number, big: boolean) {
 	const L = x.length / k;
 	if (!u || u.L !== L || u.k !== k) u = { n: 0, L, k, mean: new Float64Array(L * k), m2: new Float64Array(L * k) };
 	const strikes: number[] = [], largest = big ? new Uint16Array(L) : undefined;
@@ -299,14 +303,19 @@ function decideFlow(u: Usual | undefined, t: any, list: "writes" | "reads", kOf:
 }
 
 /** Token event `t`'s writes (`writes`, `write_k`, `shares`) and reads (`reads`, `read_k`: each layer's shares of its
- * sources) decided in place against reply `r`'s usuals (decideFlow): `strikes` and `largest` from the writes, `layers`
- * from their shares (topLayers, its layers the writes'), `readStrikes` from the reads; the raw lists dropped, each whole
+ * sources) decided in place against reply `r`'s usuals (decideFlow): `strikes` and `largest` from the writes,
+ * `wholeStrikes` the same way from each layer's streams as one (one stream: `strikes`), `layers`
+ * from their shares (shareLayers, its layers the writes'), `readStrikes` from the reads; the raw lists dropped, each whole
  * when malformed. Whether it had either. */
 export function packWrites(r: Reply, t: any): boolean {
-	const lit = topLayers(t.shares);
+	const lit = shareLayers(t.shares);
 	delete t.shares;
 	const w = decideFlow(r.usual, t, "writes", "write_k", true), rd = decideFlow(r.readUsual, t, "reads", "read_k", false);
-	if (w) [r.usual, t.strikes, t.largest] = [w.u, w.strikes, w.largest];
+	if (w) [r.usual, t.strikes, t.largest, t.wholeStrikes] = [w.u, w.strikes, w.largest, w.strikes];
+	if (w && w.k > 1) {   // the streams' writes as one: the root of their squares' sum, a layer's whole write
+		const whole = decide(r.wholeUsual, Array.from({ length: w.u.L }, (_, l) => Math.hypot(...w.x.slice(l * w.k, (l + 1) * w.k))), 1, false);
+		[r.wholeUsual, t.wholeStrikes] = [whole.u, whole.strikes];
+	}
 	if (w && lit?.length === w.u.L) t.layers = lit;
 	if (rd) [r.readUsual, t.readStrikes] = [rd.u, rd.strikes];
 	return !!(w || rd);
@@ -438,6 +447,7 @@ function continues(live: Live, r: Reply, base: Reply, at: unknown) {
 	// stood at `at`), so the tokens after the edit strike and light as they would have, no warm-up again.
 	const copy = (u?: Usual) => u && { ...u, mean: u.mean.slice(), m2: u.m2.slice() };
 	r.usual = copy(base.usual);
+	r.wholeUsual = copy(base.wholeUsual);
 	r.readUsual = copy(base.readUsual);
 	const own = base.from ?? 0;
 	r.parts = [...(base.parts ?? []).filter((p) => p.from < at), ...(own < at ? [{ from: own, rid: base.rid }] : [])];

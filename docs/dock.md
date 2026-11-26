@@ -69,25 +69,37 @@ again closes it. What it shows depends on its size:
 - **The board** (a dock 100 columns by 36 lines, so a terminal 181 columns wide): a header with the steer on as a
   solid `STEER` chip (or `no steering`), a dim `untested` for a model outside the [Backends](../README.md#backends) table and a
   status only when something is wrong; then the reply strip (its title names the steer the reply ran under), then
-  MAP and LENS (SETTLING over the telescope) on the left, TOKENS, EXPERTS and RESIDUAL STREAM on the right.
+  TOKENS, MAP and LENS (SETTLING over the telescope) on the left, EXPERTS over RESIDUAL STREAM on the right (EXPERTS
+  alone where the model records no writes; `{` `}` give RESIDUAL STREAM a layer of EXPERTS' lines or take it back,
+  remembered). A model without experts: MAP and LENS on the left, TOKENS over RESIDUAL STREAM on the right.
 - **The one-panel board** (a smaller dock, down to 44 by 23): the reply's last lines and one panel at a time; `tab`
   cycles them.
-- **The mini dock** (`m`, `/scope dock mini`, or under 23 rows; 50 columns, the board's right column, in a terminal
+- **The mini dock** (`m`, `/scope dock mini`, or under 23 rows; 50 columns, in a terminal
   from 100 columns, as the full dock): EXPERTS' layers, with MAP (its newest 3 lines; on a model without experts,
   the lines left), SETTLING and RESIDUAL STREAM under them, each as the board draws it; RESIDUAL STREAM's history
-  takes a quarter of the dock's rows and the lines left over, 8 to 16 lines. Under 100 columns the dock is hidden.
+  takes a quarter of the dock's rows (8 to 16 lines) and every line left over. Under 100 columns the dock is hidden.
 
 The panels: **MAP** is the reply a token a cell, coloured by confidence. **LENS** is the token in focus through the
 logit lens or the J-lens, layer by layer (`s` switches lens where both were read; `-` `+` change how many layers the
-next traced reply reads). **SETTLING**, at the top of LENS, shows, for recent tokens, the layer where the lens
-settles on the written word. **TOKENS** is the token in focus: its probability and the model's top 10.
-**RESIDUAL STREAM** (a board at least 40 lines tall, a mini dock about 20; `5` opens it full size) is a key a layer
-under the last tokens, its title naming the model's streams and the view, which `s` switches: `spikes` strikes a key
-where its layer changed the residual over 2 standard deviations past what it had so far in the reply (from its 13th
-token), in the colour of the stream it changed; `largest` (Flash Next and V4.1, four streams) lights each key in the colour of the stream its layer changed
-most; `layers` (where the writes come with the layers' shares: every model in backends.md's table but Inkling 2) lights only the five layers that changed the residual most for the size of
-the residual they read, brightest first, in one colour (layer 0, which reads the embedding, never); `reads` (Inkling 2, one stream) strikes a key where its layer visit leaned on one of its five sources far more
-than usual. A steered layer's change includes the steer's push. **EXPERTS** lights the experts each layer used; `4`,
+next traced reply reads: small 4, medium a third of the depth (at most 16), large half (at most 24), the count on LENS's
+title; on the board small is compact, medium fills LENS, large takes MAP's lines too, as many as its layers need).
+**SETTLING**, at the top of LENS, shows, for recent tokens, the
+layer where the lens settles on the written word (5 lines at most). **TOKENS** is the token in focus: its probability and the model's top 5 (top 10 full size).
+**RESIDUAL STREAM** (where its column has room, a mini dock about 20 lines; `5` opens it full size) is a key a layer
+under the last tokens, the layers spread evenly over its whole width (a layer a column or more, or a column a layer
+or more; full size, a column a layer from the left where they fit), its title naming the model's streams and the view, which `s` switches. Views go by measure and
+unit; on four streams (Flash Next and V4.1, hyper-connections) `s` goes `spikes (hc)`, `largest (hc)`,
+`spikes (layers)`, `largest (layers)`; on one stream only the last two, without the tag. `spikes (hc)` strikes a key
+where its layer changed a stream over 2 standard deviations past what it had so far in the reply (from its 13th
+token), in the colour of the stream it changed; `largest (hc)` lights each key in the colour of the stream its layer
+changed most; `spikes (layers)` strikes the same way on a layer's whole write (the four streams' combined, the root of
+their squares' sum), in one colour; `largest (layers)` (where the writes come with the layers' shares: every model in
+backends.md's table but Inkling 2) lights every layer by how much it changed the residual for the size of the
+residual it read, in one colour, its brightness that share over the token's largest (half the share, half as bright;
+a tenth at least; layer 0, which reads the embedding, never). Inkling 2 (one stream) has
+`spikes (writes)`, as spikes on one stream, and `spikes (reads)`, a key struck where its layer visit leaned on one of
+its five sources far more than usual. The dock opens on the first view. `?` on it says the model's line and the
+view's. A steered layer's change includes the steer's push. **EXPERTS** lights the experts each layer used; `4`,
 then enter, opens a layer's page and from it an expert's page, with the tokens each expert is most distinctive for,
 counted from your traced chats (`metalscope experts tally`; kept in
 `~/.metalscope/models/<checkpoint>/experts-tally.npz`, never shared). `6` opens the Steer page: the concepts ranked

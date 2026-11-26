@@ -2,7 +2,8 @@
 METALSCOPE_HOME).
 
     settings.json   {"mode": "off" | "on", "steer": true | false, "trace_budget": bytes, "trace_auto": true | false
-                     (retention.py), "lens_step": 0-4 (the layers the lenses read, tracer.lens_steps), -1 off}
+                     (retention.py), "lens_step": "small" | "medium" | "large" (how many layers the lenses read,
+                     lens_reads, tracer.lens_steps) | "off"}
                     (settings.lock orders its writers)
     traces/         one directory per traced response
     index.jsonl     one line per saved trace (index.lock orders its writers)
@@ -13,8 +14,8 @@ Modes:
            with the X-Scope-Trace header, which installs hooks on demand.
     on     every request traced: residual norms, MoE routing, final-token
            predictions, and both lenses (the logit
-           lens at every 4th layer + the last 12, the J-lens beside it while
-           one is on; capture.capture_config). Replies decode slower than
+           lens, the J-lens beside it while one is on) at the lens size's
+           layers (tracer.lens_steps). Replies decode slower than
            untraced and a long prompt's first token comes later;
            `metalscope bench` measures the decode speed on the served model.
 """
@@ -42,14 +43,54 @@ STEER_RESPONSE_HEADER = "x-scope-steer-accepted"
 NO_STEERING = "metalscope could not set up steering"
 # An earlier reply answered again from one token, with a steer at that token only (steer.parse_edit; the ds4 proxy).
 EDIT_HEADER = "x-scope-edit"
-# How many layers a trace reads the lenses at: one of LENS_STEPS steps, fewest first (tracer.lens_steps); the default
-# reads the layers it always has. LENS_OFF: none (a trace without the lenses: probabilities, routing and steering only).
-LENS_STEPS, LENS_STEP_DEFAULT, LENS_OFF = 5, 2, -1
+# How many layers a trace reads the lenses at: one of LENS_SIZES, fewest first (tracer.lens_steps), by its index (a
+# step: the dock's - +), each lens lens_reads layers spread over the depth; the default medium. LENS_OFF: none (a
+# trace without the lenses: probabilities, routing and steering only). Settings and traces keep the step's name
+# (lens_name).
+LENS_SIZES = ("small", "medium", "large")
+LENS_STEPS, LENS_STEP_DEFAULT, LENS_OFF = len(LENS_SIZES), 1, -1
+# The layers each size reads (lens_reads): small a count; medium a fraction of the depth (to the nearest) and large one
+# (rounded down), each at most its cap.
+LENS_SMALL = 4
+LENS_MEDIUM, LENS_MEDIUM_MAX = 1 / 3, 16
+LENS_LARGE, LENS_LARGE_MAX = 1 / 2, 24
+# The indexes of the five steps settings kept before 2026-11-25, each as the size nearest it in layers (save_settings).
+_FIVE_STEPS = {0: "small", 1: "small", 2: "medium", 3: "medium", 4: "large", -1: "off"}
+
+
+def lens_reads(n_layers: int) -> list[int]:
+    """How many layers each size reads on a model of ``n_layers`` (LENS_SMALL, LENS_MEDIUM, LENS_LARGE), fewest first:
+    none fewer than the size before, none more than the model has (two sizes can then read the same)."""
+    want = [LENS_SMALL, min(LENS_MEDIUM_MAX, int(n_layers * LENS_MEDIUM + 0.5)), min(LENS_LARGE_MAX, int(n_layers * LENS_LARGE))]
+    return [min(n_layers, max(want[:i + 1])) for i in range(len(want))]
 
 
 def lens_step_ok(k) -> bool:
     """Whether ``k`` is a lens step (an int, 0 to LENS_STEPS - 1) or LENS_OFF."""
     return type(k) is int and LENS_OFF <= k < LENS_STEPS
+
+
+def lens_name(k) -> str:
+    """Lens step ``k``'s name: its size, or "off". Past the sizes (a server from before them, at one of its five steps)
+    the size nearest that step; anything else "step k"."""
+    if k == LENS_OFF:
+        return "off"
+    if type(k) is int and 0 <= k < LENS_STEPS:
+        return LENS_SIZES[k]
+    return (type(k) is int and _FIVE_STEPS.get(k)) or f"step {k}"
+
+
+def lens_index(name) -> int | None:
+    """The lens step named ``name`` (lens_name); None for anything else."""
+    return LENS_OFF if name == "off" else LENS_SIZES.index(name) if name in LENS_SIZES else None
+
+
+def stored_lens(step) -> str:
+    """Settings' ``lens_step`` as a size's name (or "off"): an index of the five steps before as its nearest size;
+    anything else no size is (edited by hand, a later version's) the default."""
+    if lens_index(step) is not None:
+        return step
+    return (type(step) is int and _FIVE_STEPS.get(step)) or lens_name(LENS_STEP_DEFAULT)
 
 
 def env(name: str, default: str | None = None) -> str | None:
@@ -197,9 +238,10 @@ def save_settings(**changes) -> dict:
             raise ValueError("trace_budget must be a number of bytes above 0")
         if not isinstance(data.get("trace_auto", True), bool):
             raise ValueError("trace_auto must be true or false")
-        if not lens_step_ok(data.get("lens_step", LENS_STEP_DEFAULT)):
+        step = data.get("lens_step", lens_name(LENS_STEP_DEFAULT))
+        if lens_index(step) is None:
             if "lens_step" in changes:
-                raise ValueError(f"lens_step must be 0 to {LENS_STEPS - 1}, or {LENS_OFF} (off)")
-            data["lens_step"] = LENS_STEP_DEFAULT       # a stored one no step is (edited by hand, a later version's): the default
+                raise ValueError(f"lens_step must be one of {', '.join(LENS_SIZES)} or off")
+            data["lens_step"] = stored_lens(step)
         atomic_write(settings_path(), json.dumps(data, indent=1))
         return data

@@ -270,9 +270,9 @@ test("widget: LENS's lens steps: GET for the served model, POST its step; a 404 
 	fail = Object.assign(new Error("model 'Flash Next' is not loaded"), { status: 409 });
 	const idle = await host.lensLayers();
 	assert.ok(!idle.missing && /is not loaded/.test(idle.error), "409: the reason, said");
-	fail = Object.assign(new Error("step must be 0 to 4"), { status: 400 });
+	fail = Object.assign(new Error("step must be 0 to 2, or -1 (off)"), { status: 400 });
 	const bad = await host.lensLayers(9);
-	assert.ok(!bad.missing && /step must be 0 to 4/.test(bad.error));
+	assert.ok(!bad.missing && /step must be 0 to 2, or -1 \(off\)/.test(bad.error));
 });
 
 test("the steer line above the editor: ◆ steering LABEL, one concept's chat figure at its dose, /steer off; cut, never wrapped", () => {

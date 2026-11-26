@@ -365,7 +365,7 @@ function lensBoard(o: { offer?: any; jlens?: boolean; rows?: number; list?: any 
 	const live = lensLive(o.jlens);
 	const host: any = { live, captions: false, close() {}, unfocus() {}, panel: "LENS", steerModel: () => BUILD,
 		steering: async () => parseSteering(o.list ?? { concepts: [] }, BUILD), linkOffer: async () => ("offer" in o ? o.offer : OFFER),
-		lensLayers: async () => ({ model: BUILD, at: 1, steps: [{ n: 4, layers: [24, 36, 44, 47], tps: null, replies: 0 }, { n: 13, layers: LAYERS, tps: null, replies: 0 }] }) };
+		lensLayers: async () => ({ model: BUILD, at: 1, steps: [{ name: "small", n: 4, layers: [24, 36, 44, 47], tps: null, replies: 0 }, { name: "medium", n: 13, layers: LAYERS, tps: null, replies: 0 }] }) };
 	const d = new Dock({ terminal: { rows: o.rows ?? 52, columns: 200 }, requestRender() {} }, theme, host);
 	return { d, host };
 }

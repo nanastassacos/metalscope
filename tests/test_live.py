@@ -1554,46 +1554,57 @@ def test_conversation_meta_reads_anthropic_and_responses_bodies():
     assert s["turn"] == 0 and s["last_user"] == "just text"
 
 
-def test_lens_steps_read_the_workspace_and_the_last_layer_and_the_default_reads_today_s_sets():
-    """Flash Next's shape (48 layers, a J-lens over 0-46, workspace 24 31 38): 4, 8, 15, 24 and 47 layers; every step
-    reads the workspace and the last; the default step is the sets traces always read, the others one set for both."""
+def test_lens_sizes_are_4_a_third_and_a_half_of_the_depth_capped_at_16_and_24():
+    """small 4, medium a third of the depth (nearest) at most 16, large half (down) at most 24; never fewer than the
+    size before, never more than the model has."""
+    assert config.LENS_SIZES == ("small", "medium", "large") and config.LENS_STEP_DEFAULT == 1
+    assert {n: config.lens_reads(n) for n in (24, 40, 48, 64)} == {24: [4, 8, 12], 40: [4, 13, 20], 48: [4, 16, 24], 64: [4, 16, 24]}
+    assert config.lens_reads(1) == [1, 1, 1] and config.lens_reads(6) == [4, 4, 4] and config.lens_reads(12) == [4, 4, 6]
+    assert all(a <= b <= n for n in range(1, 200) for a, b in zip(config.lens_reads(n), config.lens_reads(n)[1:]))
+
+
+def test_lens_steps_spread_over_the_depth_the_last_always_the_j_lens_within_its_layers():
+    """Flash Next's shape (48 layers, a J-lens fitted on 0-46): the J-lens reads 4, 16 and 24 of its 47, spread evenly,
+    its last always; the logit lens beside it the same and the model's last; alone, the logit lens spreads over the
+    model's 48. Large no longer every layer."""
     from types import SimpleNamespace
-    from metalscope.capture import capture_config
-    from metalscope.tracer import jlens_read_layers, lens_steps
-    setup = SimpleNamespace(lens=SimpleNamespace(layers=list(range(47))), workspace=[24, 31, 38])
+    from metalscope.tracer import lens_steps, spread_layers
+    setup = SimpleNamespace(lens=SimpleNamespace(layers=list(range(47))))
     steps = lens_steps(setup, 48)
-    assert [len(j) for j, _ in steps] == [4, 8, 15, 24, 47]
-    assert steps[0] == ([24, 31, 38, 46], [24, 38, 46, 47])        # the logit lens: its default layers among those, and the last
-    assert steps[4] == (list(range(47)), list(range(48)))
-    assert steps[config.LENS_STEP_DEFAULT] == (jlens_read_layers(setup), capture_config().lens_layers(48))
-    assert all({24, 31, 38, 46} <= set(j) and 47 in l for j, l in steps)
-    # The logit lens alone: over the model's layers, its default capture_config's.
-    plain = lens_steps(None, 48)
-    assert [len(l) for _, l in plain] == [3, 8, 21, 24, 48] and all(j == [] for j, _ in plain)
-    assert plain[config.LENS_STEP_DEFAULT][1] == capture_config().lens_layers(48) and plain[0][1] == [24, 38, 47]
-    assert lens_steps(None, 1) == [([], [0])] * 5
+    assert [(len(j), len(l)) for j, l in steps] == [(4, 5), (16, 17), (24, 25)]
+    assert steps[0] == ([10, 22, 34, 46], [10, 22, 34, 46, 47])
+    assert steps[2] == (list(range(0, 47, 2)), [*range(0, 47, 2), 47]) and all(l == sorted({*j, 47}) for j, l in steps)
+    assert lens_steps(None, 48)[1][1] == list(range(2, 48, 3))
+    assert lens_steps(None, 64)[0] == ([], [15, 31, 47, 63]) and lens_steps(None, 64)[1][1] == list(range(3, 64, 4))
+    assert lens_steps(None, 24) == [([], [5, 11, 17, 23]), ([], list(range(2, 24, 3))), ([], list(range(1, 24, 2)))]
+    # A J-lens with fewer layers than a size reads them all there.
+    few = lens_steps(SimpleNamespace(lens=SimpleNamespace(layers=list(range(40, 48)))), 48)
+    assert [j for j, _ in few] == [[41, 43, 45, 47], list(range(40, 48)), list(range(40, 48))] and all(j == l for j, l in few)
+    assert lens_steps(None, 1) == [([], [0])] * 3
+    assert spread_layers([3, 9], 4) == [3, 9] and spread_layers(list(range(10)), 5) == [1, 3, 5, 7, 9]
 
 
-def test_lens_steps_only_grow_and_the_default_is_today_s_sets_at_any_shape():
+def test_lens_steps_at_any_shape_read_their_size_evenly_and_the_last():
     """Every depth 1-100 with a J-lens over every layer but the last, every layer, every second, the last 8, three, or
-    none: each lens's set, and the layers either reads, only grow step by step (nested); the default step is the sets
-    traces always read; every layer is the model's; the logit lens always reads the model's last."""
+    none: the main lens (the J-lens, else the logit lens) reads lens_reads's count of its layers (all where it has
+    fewer), the last of them always, the gaps between them within one of each other; the logit lens beside a J-lens
+    the same and the model's last; every layer the model's."""
     from types import SimpleNamespace
-    from metalscope import jlens
-    from metalscope.capture import capture_config
-    from metalscope.tracer import jlens_read_layers, lens_steps
+    from metalscope.tracer import lens_steps
     for n in range(1, 101):
         shapes = [None, list(range(n)), list(range(max(1, n - 1))), list(range(0, n, 2)), list(range(max(0, n - 8), n)),
                   sorted({0, n // 2, n - 1})]
         for layers in shapes:
-            setup = None if layers is None else SimpleNamespace(lens=SimpleNamespace(layers=layers), workspace=[
-                l for l in jlens.workspace_layers(n) if l in layers] or layers[-3:])
+            setup = None if layers is None else SimpleNamespace(lens=SimpleNamespace(layers=layers))
             steps = lens_steps(setup, n)
             assert len(steps) == config.LENS_STEPS
-            assert steps[config.LENS_STEP_DEFAULT] == (jlens_read_layers(setup) if setup else [], capture_config().lens_layers(n))
-            for (j0, l0), (j1, l1) in zip(steps, steps[1:]):
-                assert set(j0) <= set(j1) and set(l0) <= set(l1), (n, layers)
-            assert all(0 <= x < n for j, l in steps for x in (*j, *l)) and all(n - 1 in l for _, l in steps)
+            for k, (j, l) in zip(config.lens_reads(n), steps):
+                got, of = (l, list(range(n))) if layers is None else (j, layers)
+                assert j == [] if layers is None else l == sorted({*j, n - 1})
+                assert len(got) == min(k, len(of)) and got[-1] == of[-1] and set(got) <= set(of) and got == sorted(got), (n, layers, k)
+                idx = [of.index(x) for x in got]
+                gaps = [b - a for a, b in zip([-1, *idx], idx)]
+                assert max(gaps) - min(gaps) <= 1, (n, layers, k, gaps)
 
 
 def test_two_replies_at_two_lens_steps_read_two_layer_sets_and_one_in_flight_keeps_its_own(home, monkeypatch):
@@ -1634,49 +1645,83 @@ def test_two_replies_at_two_lens_steps_read_two_layer_sets_and_one_in_flight_kee
             mgr.rows_for(tracer, [rid], "decode"); model(mx.array([[10 + fed]])); mgr.clear_rows(tracer)
         mgr.finish(rid, [1, 5], list(range(10, 11 + n)), tracer)
 
-    config.save_settings(lens_step=0)
+    config.save_settings(lens_step="small")
     start("r1"); end("r1")
-    config.save_settings(lens_step=4)
+    config.save_settings(lens_step="large")
     start("r2")
-    config.save_settings(lens_step=1)
+    config.save_settings(lens_step="medium")
     start("r3")                                        # r2 in flight: r3 reads r2's layers too
     end("r3"); end("r2", n=12)
     wait_saved(mgr, 3)
     lines = lambda: [json.loads(l) for l in config.index_path().read_text().splitlines()]
     index = {e["conversation"]: e for e in lines()}
-    assert steps[0][0] != steps[4][0]
+    assert steps[0][0] != steps[2][0]
     assert layers("r1") == steps[0]
-    assert layers("r2")[0] == layers("r2")[1] == steps[4][0] == list(range(12))
-    assert layers("r3")[0] == steps[4][0]
-    assert [index[r]["lens_step"] for r in ("r1", "r2", "r3")] == [0, 4, 4]
+    assert layers("r2")[0] == layers("r2")[1] == steps[2][0] == list(range(1, 12, 2))   # large: half of 12
+    assert layers("r3")[0] == steps[2][0]
+    assert [index[r]["lens_step"] for r in ("r1", "r2", "r3")] == ["small", "large", "large"]
+    # How many layers the J-lens read, in the index entry (the size's speed is matched on it: web._lens_layers).
+    assert [index[r]["lens_layers"] for r in ("r1", "r2", "r3")] == [len(steps[0][0]), 6, 6]
     assert index["r2"]["decode_tps"] == pytest.approx(100.0) and index["r1"]["decode_tps"] is None   # 2 tokens: too few
     start("r4"); end("r4")                                # none in flight: the setting now
     wait_saved(mgr, 4)
     assert layers("r4")[0] == steps[1][0]
     # A request that ends unfinished (released, aborted) holds the step no longer.
-    config.save_settings(lens_step=3)
+    config.save_settings(lens_step="large")
     start("r5")
-    config.save_settings(lens_step=0)
+    config.save_settings(lens_step="small")
     start("r6")
-    assert mgr.requests["r6"].meta["lens_step"] == 3
+    assert mgr.requests["r6"].meta["lens_step"] == "large" and mgr.requests["r6"].meta["lens_layers"] == len(steps[2][0])
     mgr.release("r5"); mgr.release("r6")
     start("r7")
-    assert mgr.requests["r7"].meta["lens_step"] == 0 and tracer.capture.config.jlens_layers == steps[0][0]
+    assert mgr.requests["r7"].meta["lens_step"] == "small" and tracer.capture.config.jlens_layers == steps[0][0]
     mgr.release("r7")
 
 
 def test_lens_step_setting_is_checked_when_set_and_a_bad_stored_one_reads_as_the_default(home):
-    for bad in ("3", 2.0, True, -2, 5, None):
-        with pytest.raises(ValueError, match="lens_step"):
+    for bad in ("3", "huge", 2.0, True, 0, 1, -1, None):
+        with pytest.raises(ValueError, match="lens_step must be one of small, medium, large or off"):
             config.save_settings(lens_step=bad)
-    for k in [config.LENS_OFF, *range(config.LENS_STEPS)]:
-        assert config.save_settings(lens_step=k)["lens_step"] == k
+    for name in ["off", "small", "medium", "large"]:
+        assert config.save_settings(lens_step=name)["lens_step"] == name
+        assert TraceManager().lens_step() == config.lens_index(name) == {"off": -1, "small": 0, "medium": 1, "large": 2}[name]
     p = config.settings_path()
-    p.write_text(json.dumps(dict(json.loads(p.read_text()), lens_step=9)))      # by hand, or a later version's
+    p.write_text(json.dumps(dict(json.loads(p.read_text()), lens_step="huge")))      # by hand, or a later version's
     mgr = TraceManager()
     assert mgr.lens_step() == config.LENS_STEP_DEFAULT
-    assert config.save_settings(mode="off")["lens_step"] == config.LENS_STEP_DEFAULT      # other changes still save
-    assert json.loads(p.read_text())["lens_step"] == config.LENS_STEP_DEFAULT
+    assert config.save_settings(mode="off")["lens_step"] == "medium"      # other changes still save
+    assert json.loads(p.read_text())["lens_step"] == "medium"
+
+
+@pytest.mark.parametrize("old, size", [(0, "small"), (1, "small"), (2, "medium"), (3, "medium"), (4, "large"), (-1, "off"), (9, "medium")])
+def test_a_stored_step_of_the_five_reads_as_the_nearest_size_and_is_saved_so_once(home, old, size):
+    """settings.json from before the three sizes: the index of one of five steps (4, 8, 15, 24 and 47 layers on Flash
+    Next) is the size nearest it in layers, written back the first time it is read; nothing else changes."""
+    config.save_settings(mode="on")
+    p = config.settings_path()
+    before = dict(json.loads(p.read_text()), lens_step=old)
+    p.write_text(json.dumps(before))
+    assert TraceManager().lens_step() == config.lens_index(size)
+    assert json.loads(p.read_text()) == dict(before, lens_step=size)
+    written = p.stat().st_mtime_ns
+    assert TraceManager().lens_step() == config.lens_index(size) and p.stat().st_mtime_ns == written, "read again: not rewritten"
+
+
+def test_a_stored_step_of_the_five_reads_as_its_size_where_the_settings_cannot_be_saved(home):
+    """Another setting invalid (edited by hand): the save that writes the size back fails, the read does not."""
+    config.save_settings(mode="on")
+    p = config.settings_path()
+    before = dict(json.loads(p.read_text()), lens_step=4, trace_budget="lots")
+    p.write_text(json.dumps(before))
+    assert TraceManager().lens_step() == 2
+    assert json.loads(p.read_text()) == before, "nothing written"
+
+
+def test_lens_name_says_a_size_for_any_step_a_server_may_be_at():
+    """A server from before the sizes (bench's put back, doctor --live): one of its five steps as the nearest size."""
+    assert [config.lens_name(k) for k in (-1, 0, 1, 2)] == ["off", "small", "medium", "large"]
+    assert [config.lens_name(k) for k in (3, 4)] == ["medium", "large"]
+    assert config.lens_name(9) == "step 9" and config.lens_name(None) == "step None"
 
 
 def test_with_the_lenses_off_a_traced_reply_reads_no_lens_and_keeps_its_probabilities(home):
@@ -1687,7 +1732,7 @@ def test_with_the_lenses_off_a_traced_reply_reads_no_lens_and_keeps_its_probabil
     from metalscope import jlens
     jlens.save(jlens.Lens({l: mx.eye(64) for l in range(12)}, dict(source="test", checkpoint="deep")), jlens.lenses_dir("deep") / "deep-learned")
     jlens.use("deep-learned", "deep")
-    config.save_settings(mode="on", lens_step=config.LENS_OFF)
+    config.save_settings(mode="on", lens_step="off")
     mgr = TraceManager()
     model = tiny_llama(12)
     tracer = mgr.attach(model, "deep", WordTok())
@@ -1709,8 +1754,8 @@ def test_with_the_lenses_off_a_traced_reply_reads_no_lens_and_keeps_its_probabil
     assert {e["rid"] for e in toks} == {"r1", "r2"} and all(e.get("p") is not None for e in toks)
     assert not any(e.get("lens") or e.get("lens_logit") or e.get("lens10") for e in toks)
     index = [json.loads(l) for l in config.index_path().read_text().splitlines()]
-    assert [e["lens_step"] for e in index] == [config.LENS_OFF] * 2
-    config.save_settings(lens_step=0)                  # + : the fewest layers again
+    assert [e["lens_step"] for e in index] == ["off"] * 2
+    config.save_settings(lens_step="small")            # + : the fewest layers again
     reply("r3")
     wait_saved(mgr, 3)
     assert tracer.read_layers() == tracer.lens_steps()[0]

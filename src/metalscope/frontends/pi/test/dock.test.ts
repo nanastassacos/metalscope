@@ -99,7 +99,7 @@ test("dock edge: it leans toward whoever has the keyboard, the content's columns
 	d.stepIn(-1);
 	const inn = d.render(104);
 	assert.ok(inn.every((l) => l.includes("\x1b[38;2;240;162;58m▐")), "stepped in: an orange edge on the dock's side");
-	assert.ok(inn.every((l) => !l.includes("▌")), "no chat-side edge left");
+	assert.ok(inn.every((l) => !plain(l).startsWith("▌")), "no chat-side edge left");
 	const body = (ls: string[]) => ls.map((l) => plain(l).slice(2));
 	assert.deepEqual(inn.map((l) => plain(l).length), out.map((l) => plain(l).length), "the same widths");
 	assert.equal(body(inn)[1], body(out)[1], "the content in the same columns");

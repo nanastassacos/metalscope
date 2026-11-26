@@ -886,7 +886,7 @@ def main(argv=None) -> None:
     p.add_argument("--app", default=str(omlx_install.DEFAULT_APP))
     p.add_argument("--live", action="store_true",
                    help="also a traced and a steered completion on each backend serving a model (after an engine update)")
-    p = sub.add_parser("bench", help="time the served model: writing speed with tracing off and at each lens step, a "
+    p = sub.add_parser("bench", help="time the served model: writing speed with tracing off and at each lens size, a "
                                      "one-word edit, the engram inspection (best effort: other requests to the server "
                                      "skew the numbers)")
     p.set_defaults(func=cmd_bench)

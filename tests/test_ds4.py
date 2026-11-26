@@ -12,7 +12,6 @@ import numpy as np
 import pytest
 
 from metalscope import config, models, vectors
-from metalscope.capture import CaptureConfig, capture_config
 from metalscope.ds4.backend import Ds4Tracer, Run
 from metalscope.ds4.frames import ScopeReader, write_steering
 from metalscope.ds4.vocab import GgufTokenizer, _byte_decoder
@@ -127,7 +126,7 @@ class ScopeWriter:
 def write_request(path, prompt, replies, chunk=4):
     """A request as ds4 records it: the prompt in chunks of ``chunk`` (each chunk's last row predicts), then
     one forward per fed reply token; the last sampled token (a stop token) is never fed."""
-    lens = CaptureConfig(lens_every=4, lens_last=2).lens_layers(L)
+    lens = [0, 4, 5]                                    # the layers a ds4 trace's logit lens read: some of L
     w = ScopeWriter(path, lens)
     w.prompt(prompt)
     for i in range(0, len(prompt), chunk):
@@ -304,7 +303,7 @@ def test_a_request_that_reused_a_prompt_prefix_keeps_the_whole_prompt_and_record
     mgr.register("rid-p", "on", dict(conversation="cp", turn=2))
     path = tmp_path / "r.bin"
     prompt, replies, N = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10], [11, 12, 13, 0], 6
-    lens = CaptureConfig(lens_every=4, lens_last=2).lens_layers(L)
+    lens = [0, 4, 5]                                    # the layers a ds4 trace's logit lens read: some of L
     w = ScopeWriter(path, lens)
     w.prompt(prompt)
     w.step(N, prompt[N:], out_top=replies[0])           # the new prompt suffix, in one forward
@@ -454,7 +453,7 @@ def test_proxy_passes_requests_through_and_traces_a_traced_one(tmp_path):
             r = client.post("/v1/chat/completions", json=msg, headers={"X-Scope-Trace": "on", "X-Scope-Trace-Client": "t1"})
             assert r.status_code == 200 and b"[DONE]" in r.content
             scope = seen[-1]["scope"]
-            assert scope["topk"] == 10 and scope["lens"] == capture_config().lens_layers(L) and scope["trace"].endswith(".bin")
+            assert scope["topk"] == 10 and scope["lens"] == t.lens_steps()[config.LENS_STEP_DEFAULT][1] == [0, 2, 3, 5] and scope["trace"].endswith(".bin")
             wait_saved(MANAGER, saved + 1)
             entry = read_index()[0]
             assert entry["model"] == "proxy-ds4" and entry["client"] == "t1"
@@ -553,6 +552,7 @@ def test_two_requests_at_two_lens_steps_ask_ds4_for_two_layer_sets(monkeypatch, 
     J.save(J.Lens({l: mx.full((E, HC * E), 0.01) for l in range(L)}, dict(checkpoint="steps-ds4")), J.lenses_dir("steps-ds4") / "steps-learned")
     J.use("steps-learned", "steps-ds4")
     monkeypatch.setattr(vocab, "gguf_rows", lambda gguf, tensor, ids: np.ones((len(ids), E), np.float32))
+    monkeypatch.setattr(config, "LENS_SMALL", 2)                # L layers: small would read as many as large
     config.save_settings(mode="on")
     asked = {}
 
@@ -585,9 +585,9 @@ def test_two_requests_at_two_lens_steps_ask_ds4_for_two_layer_sets(monkeypatch, 
     try:
         app = build_app(Served("steps-ds4", tmp_path / "x.gguf", "http://ds4", t), transport=httpx.MockTransport(chat))
         steps = t.lens_steps()
-        assert steps[0][0] != steps[4][0]
+        assert len(steps) == 3 and steps[0][0] != steps[2][0]
         with TestClient(app, base_url=PROXY, client=("127.0.0.1", 50000)) as client:     # the /scope routes: this machine
-            for k, step in enumerate((0, 4)):
+            for k, step in enumerate((0, 2)):
                 saved = MANAGER.saved
                 r = client.post("/scope/api/lens/layers", json=dict(step=step))
                 assert r.status_code == 200 and r.json()["at"] == step, r.text
@@ -595,24 +595,34 @@ def test_two_requests_at_two_lens_steps_ask_ds4_for_two_layer_sets(monkeypatch, 
                     {"role": "user", "content": f"turn {k}"}]}).status_code == 200
                 wait_saved(MANAGER, saved + 1)
             by = {e["title"]: e for e in read_index()[:2]}
-            for k, step in enumerate((0, 4)):
+            for k, (step, name) in enumerate([(0, "small"), (2, "large")]):
                 e = by[f"turn {k}"]
                 assert asked[f"turn {k}"] == (steps[step][0], steps[step][1])
-                assert e["lens_step"] == step and e["decode_tps"] == pytest.approx(25.0, rel=0.15)
+                assert e["lens_step"] == name and e["lens_layers"] == len(steps[step][0]) and e["decode_tps"] == pytest.approx(25.0, rel=0.15)
             got = client.get("/scope/api/lens/layers", params=dict(model="steps-ds4")).json()
-            assert got["at"] == 4 and [s["n"] for s in got["steps"]] == [len(j) for j, _ in steps]
-            assert got["steps"][4]["replies"] == 1 and got["steps"][4]["tps"] == by["turn 1"]["decode_tps"]
-            assert got["steps"][1]["tps"] is None and client.post("/scope/api/lens/layers", json=dict(step=5)).status_code == 400
+            assert got["at"] == 2 and [s["n"] for s in got["steps"]] == [len(j) for j, _ in steps]
+            assert [s["name"] for s in got["steps"]] == ["small", "medium", "large"]
+            assert got["steps"][2]["replies"] == 1 and got["steps"][2]["tps"] == by["turn 1"]["decode_tps"]
+            assert got["steps"][1]["tps"] is None
+            bad = client.post("/scope/api/lens/layers", json=dict(step=3))
+            assert bad.status_code == 400 and bad.json()["detail"] == "step must be 0 to 2, or -1 (off)"
+            assert client.post("/scope/api/lens/layers", json=dict(step="large")).status_code == 400, "the index, not the name"
             from metalscope import jlens
             assert t.lens is not None and got["edit_band"] == list(jlens.workspace_band(L))      # where the word edit acts
             # A step's speed: the mean of the newest 5 unsteered replies read at it.
             from metalscope.store import append_index
             for k, tps in enumerate([10.0, 20.0, 30.0, 40.0, 50.0, 60.0, 99.0]):
                 (tmp_path / f"t{k}").mkdir()
-                append_index(dict(id=f"t{k}", path=str(tmp_path / f"t{k}"), time=time.time() + 10 + k, model="steps-ds4", lens_step=1,
-                                  decode_tps=tps, steer="joy 0.3" if tps == 99.0 else None))
+                append_index(dict(id=f"t{k}", path=str(tmp_path / f"t{k}"), time=time.time() + 10 + k, model="steps-ds4", lens_step="medium",
+                                  lens_layers=len(steps[1][0]), decode_tps=tps, steer="joy 0.3" if tps == 99.0 else None))
+            # Not this size's: read at an index of the five steps before; "medium" at the sizes before (another count);
+            # "medium" saved without a count.
+            for name, step, n in [("old", 1, None), ("older-medium", "medium", len(steps[1][0]) + 3), ("uncounted", "medium", None)]:
+                (tmp_path / name).mkdir()
+                append_index(dict(id=name, path=str(tmp_path / name), time=time.time() + 20, model="steps-ds4", lens_step=step,
+                                  lens_layers=n, decode_tps=5.0))
             s1 = client.get("/scope/api/lens/layers", params=dict(model="steps-ds4")).json()["steps"][1]
-            assert s1 == dict(n=len(steps[1][0]), layers=steps[1][0], tps=40.0, replies=5)       # 20-60, newest first
+            assert s1 == dict(name="medium", n=len(steps[1][0]), layers=sorted({*steps[1][0], *steps[1][1]}), tps=40.0, replies=5)       # 20-60, newest first
     finally:
         MANAGER.tracers.pop(id(t), None)
 
@@ -672,7 +682,7 @@ def test_with_the_lenses_off_ds4_is_asked_for_no_lens_and_the_trace_keeps_routin
             wait_saved(MANAGER, saved + 1)
         assert asked[0]["lens"] == [] and "jlens" not in asked[0] and t.read_layers() == ([], [])
         e = read_index()[0]
-        assert e["lens_step"] == config.LENS_OFF
+        assert e["lens_step"] == "off"
         assert "router_ids" in Trace.load(e["path"]).kinds()
         loop.run_until_complete(asyncio.sleep(0.05))
         events = []
@@ -711,7 +721,7 @@ def test_the_proxy_starts_on_the_saved_lens_step_and_keeps_only_its_j_lens_file(
     monkeypatch.setattr(vocab, "gguf_rows", lambda gguf, tensor, ids: np.ones((len(ids), E), np.float32))
     monkeypatch.setattr(proxy, "model_shape", lambda gguf: dict(family="qwen4", n_layer=L, n_hc=HC, n_embd=E, k=K_EXP, n_expert=N_EXP))
     monkeypatch.setattr(proxy, "tokenizer_for", lambda gguf: Tok())
-    config.save_settings(lens_step=4)
+    config.save_settings(lens_step="large")
     stale = config.home() / "ds4" / "scope" / "jlens-keep-learned-old.bin"
     stale.parent.mkdir(parents=True, exist_ok=True)
     stale.write_bytes(b"x")
@@ -719,8 +729,8 @@ def test_the_proxy_starts_on_the_saved_lens_step_and_keeps_only_its_j_lens_file(
     try:
         t = served.tracer
         kept = t.jlens_file()
-        assert t.lens_step == 4 and not stale.exists() and kept.exists()
-        assert struct.unpack_from("<I", kept.read_bytes(), 12)[0] == len(t.lens_steps()[4][0])
+        assert t.lens_step == 2 and not stale.exists() and kept.exists()
+        assert struct.unpack_from("<I", kept.read_bytes(), 12)[0] == len(t.lens_steps()[2][0])
         stamp = kept.stat().st_mtime_ns
         MANAGER.tracers.pop(id(t), None)
         again = proxy.make_served(Path("x.gguf"), "keep-ds4", "http://ds4")
@@ -878,7 +888,7 @@ def test_the_j_lens_reaches_the_live_stream(tmp_path):
     config.save_settings(mode="on")
     mgr, t = TraceManager(), tracer()
     lens = J.Lens({0: mx.zeros((E, HC * E)), 3: mx.zeros((E, HC * E)), 4: mx.zeros((E, HC * E))})
-    t.lens = J.LensSetup(lens, [3], name="tiny-lens")
+    t.lens = J.LensSetup(lens, name="tiny-lens")
     t._loaded = True                      # set by hand: install() would read them from the (empty) home
     mgr.tracers[id(t)] = t
     loop = asyncio.new_event_loop()
@@ -919,9 +929,8 @@ def test_a_ds4_tracer_reads_its_checkpoints_j_lens(monkeypatch):
     t = Ds4Tracer("lens-ds4", Tok(), "qwen4", L, HC, E, K_EXP, N_EXP, gguf=Path("x.gguf"))
     t.install(None)
     assert t.lens is not None and t.lens.name == "tiny-learned"
-    ws = t.lens.workspace
     jl = t.read_layers()[0]
-    assert jl == sorted({0, 4} | set(ws) | {5})                # the default step: the layers traces always read
+    assert jl == [0, 2, 3, 5]                                  # the default step: 4 of the 6, spread, the last
     f = t.jlens_file()
     assert f.parent == config.home() / "ds4" / "scope"         # where ds4-server may open it (--scope-dir)
     head = f.read_bytes()[:24]
@@ -1063,7 +1072,7 @@ def test_a_typed_word_gets_its_lens_direction_on_ds4_from_the_ggufs_head(monkeyp
     t = Ds4Tracer("word-ds4", Pieces(), "qwen4", L, HC, E, K_EXP, N_EXP, gguf=Path("x.gguf"))
     jac = {l: mx.array(np.random.default_rng(l).standard_normal((E, HC * E)).astype(np.float32)) for l in (2, 3)}
     mx.eval(list(jac.values()))                                    # no lazy arrays across threads
-    t.lens = J.LensSetup(J.Lens(jac), [3], name="tiny-lens")
+    t.lens = J.LensSetup(J.Lens(jac), name="tiny-lens")
     MANAGER.tracers[id(t)] = t
     try:
         app = FastAPI()

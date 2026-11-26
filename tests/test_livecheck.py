@@ -92,7 +92,7 @@ class FakeServer:
             return self.state["concepts"]
         if path.startswith("/scope/api/lens/layers"):      # with a J-lens, the band the word edit acts over
             band = self.state.get("band", [18, 44]) if self.state.get("lens_by", "jlens") == "jlens" else None
-            return dict(model="M", at=self.state.get("at", 0), steps=[dict(n=2, layers=[24, 31, 47])],
+            return dict(model="M", at=self.state.get("at", 0), steps=[dict(name="small", n=2, layers=[24, 31, 47])],
                         **({"edit_band": band} if band else {}))
         if "/routing" in path:
             L = self.state["moe"]
@@ -192,6 +192,7 @@ def test_a_working_backend_passes_every_finding(server, capsys):
     ok, out, found = check(server, capsys)
     assert ok and "✗" not in out, out
     assert "applied (calm@0.3/24)" in out and "differs" in out
+    assert "lens layers: small 2" in out, "each size by its name"
     assert "J-lens rows on 12/12 tokens (2 layers), top 10s on 12" in out and "logit lens rows on 12/12 tokens (3 layers)" in out
     assert "routing on 12/12 tokens of the feed; 11 tokens x 48 layers x top 2" in out
     assert "  ✓ layer writes on 12/12 tokens of the feed (3 layers x 4 streams), shares beside them" in out
@@ -221,7 +222,7 @@ def test_a_server_left_with_the_lenses_off_is_checked_at_the_default_step_then_p
     ok, out, found = check(server, capsys)
     assert ok and "✗" not in out, out
     assert server["steps_set"] == [config.LENS_STEP_DEFAULT, config.LENS_OFF] and server["at"] == config.LENS_OFF
-    assert f"  · the lenses are off here: checked at step {config.LENS_STEP_DEFAULT}, then off again" in out
+    assert "  · the lenses are off here: checked at medium, then off again" in out
     assert livecheck.verdict(found["lens rows"]) == "passed"
 
 

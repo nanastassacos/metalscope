@@ -126,7 +126,7 @@ def test_words_route_loads_no_lens_of_its_own_and_one_for_calls_at_once(client, 
         time.sleep(0.2)                                                # the other call arrives meanwhile
         jac = {l: mx.eye(64) for l in range(2)}
         mx.eval(list(jac.values()))                                    # no lazy arrays across threads
-        return jlens.LensSetup(jlens.Lens(jac), [1], name="tiny-lens")
+        return jlens.LensSetup(jlens.Lens(jac), name="tiny-lens")
     monkeypatch.setattr(ModelTracer, "_load_lens", load)
     monkeypatch.setattr(jlens, "load", lambda *a: pytest.fail("a lens loaded for the call"))
     out = {}
@@ -604,6 +604,18 @@ def test_steering_chats_route_gives_each_turn_plain_and_steered_with_why_not(cli
     assert t4["steered"]["why_not"] == ["after a break"]
     assert c.get("/scope/api/steering/toy/chats", params=dict(model="tiny-ds4", dose=0.8)).status_code == 404   # not tried
     assert c.get("/scope/api/steering/nope/chats", params=dict(model="tiny-ds4")).status_code == 404
+
+
+def test_a_lens_size_set_where_another_setting_is_invalid_answers_400(client):
+    """settings.json edited by hand (a trace budget no number): the lens POST says why, as a 400, not a 500."""
+    import json
+    c, home = client
+    MANAGER.attach(tiny_llama(), "tiny", Tok())
+    config.save_settings(mode="on")
+    p = config.settings_path()
+    p.write_text(json.dumps(dict(json.loads(p.read_text()), trace_budget="lots")))
+    r = c.post("/scope/api/lens/layers", json=dict(model="tiny", step=0))
+    assert r.status_code == 400 and "trace_budget" in r.json()["detail"]
 
 
 def test_lens_layers_route_answers_409_without_a_loaded_model(client):

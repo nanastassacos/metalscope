@@ -202,11 +202,6 @@ def use(lens: str, model_name: str) -> dict:
                 path=None if target is None else str(target), was=was.name if was else LOGIT, edited=edited)
 
 
-def workspace_layers(n_layers: int, fractions=(0.5, 0.65, 0.8)) -> list[int]:
-    """Layers inside the paper's workspace band (~38-92% of depth)."""
-    return sorted({min(n_layers - 2, max(0, round(f * (n_layers - 1)))) for f in fractions})
-
-
 def workspace_band(n_layers: int) -> tuple[int, int]:
     """The first and last layer of the paper's workspace band (38-92% of depth): 18-44 of 48, where removing a word
     moved Flash Next's one-word answer to another 5 of 5 (24-31: 1 of 5)."""
@@ -271,14 +266,12 @@ def norm_gain(model) -> Optional[mx.array]:
 
 @dataclass
 class LensSetup:
-    """The J-lens a tracer reads: the lens, its workspace layers (read by default: tracer.jlens_read_layers) and its
-    directory's name."""
+    """The J-lens a tracer reads: the lens and its directory's name."""
     lens: Lens
-    workspace: list[int]
     name: str = ""
 
 
-def setup_for(model_name: str, n_layers: int) -> Optional[LensSetup]:
+def setup_for(model_name: str) -> Optional[LensSetup]:
     """The J-lens the MLX tracer reads (``find_for``), loaded; None for the logit lens. ValueError when it is not as
     wide as the model's checkpoint (``width_error``: lens.json's width before loading, the weights' after)."""
     path = find_for(model_name)
@@ -289,12 +282,7 @@ def setup_for(model_name: str, n_layers: int) -> Optional[LensSetup]:
     why = why or width_error(path.name, lens.d_model, model_name)
     if why:
         raise ValueError(why)
-    return LensSetup(lens, workspace_of(lens, n_layers), name=path.name)
-
-
-def workspace_of(lens: Lens, n_layers: int) -> list[int]:
-    """The lens's layers among ``workspace_layers``; its last three when it has none of them."""
-    return [l for l in workspace_layers(n_layers) if l in lens.jacobians] or lens.layers[-3:]
+    return LensSetup(lens, name=path.name)
 
 
 def status(model_name: str) -> dict:

@@ -10,9 +10,9 @@ in the [Pi](https://github.com/earendil-works/pi) coding agent or from the comma
 
 ![Pi on the left with a pancake recipe; metalscope's dock on the right, paused on one token](https://raw.githubusercontent.com/nanastassacos/metalscope/main/docs/dock.png)
 
-**The dock.** Pi with the dock beside it, paused on one token of a pancake recipe. The model wrote "whip" as its
-third choice (17%; "beat" 48%, "fold" 18%), and the J-lens at layer 46 still read "beat". MAP colours each token by
-confidence, LENS shows the word forming layer by layer, TOKENS the ten likeliest, EXPERTS which experts fired and
+**The dock.** Pi with the dock beside it, paused on one token of a pancake recipe. The model wrote "mashed" as its
+second choice (28%; "banana" 54%, "sliced" 16%), and the J-lens at layer 46 still read "banana". MAP colours each token by
+confidence, LENS shows the word forming layer by layer, TOKENS the five likeliest, EXPERTS which experts fired and
 RESIDUAL STREAM where a layer changed the model's state far more than usual.
 
 ## Requirements
@@ -49,7 +49,8 @@ What each one shows, and roughly how. Which model each runs on: [What works on e
 - **Experts.** On a mixture-of-experts model, which experts each token went to at each layer, recorded from the
   router as it chooses.
 - **Residual stream.** How much each layer changed the model's running state at each token, with the spikes marked:
-  the places a layer changed it far more than it usually does; or only the five layers that changed it most for its size.
+  the places a layer changed it far more than it usually does; or how much each layer changed it for its size.
+  On hyper-connection models, each also per stream.
 - **Engram inspection.** On a model with an n-gram lookup, a second pass over a finished reply with the lookup
   switched off, to see which tokens it helped.
 - **Word swap (experimental).** Change one word of a reply and let the model carry on from there: the new word's

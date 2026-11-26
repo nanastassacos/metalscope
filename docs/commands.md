@@ -58,10 +58,10 @@ metalscope vector list NAME
 metalscope vector norms NAME [--refresh]
 ```
 
-`metalscope bench` times the model a backend serves now: writing speed with tracing off and at each lens step, the
+`metalscope bench` times the model a backend serves now: writing speed with tracing off and at each lens size, the
 dock's one-word edit, and engram inspection after conversations of each `--contexts` length (`""`: none). It is best
 effort: other requests to the server skew the numbers. Each measurement starts after a `--rest` (60 s; the Mac slows
-itself under sustained load) and tracing off is measured again after the lens steps to show any drift. It marks a
+itself under sustained load) and tracing off is measured again after the lens sizes to show any drift. It marks a
 part the model or server cannot do as n/a with the reason; `--json` keeps every repeat.
 
 In Pi:
@@ -96,11 +96,11 @@ The dock's keys (`?` in the dock explains the panel in focus):
 | Anywhere in Pi | `ctrl+\` opens the dock, again steps in, again closes it; `alt+i` steps straight in (where the terminal sends Option as Alt); `option+x` (`alt+x`) stops the running job, asked first |
 | Stepped in | ←/→ or `h`/`l` a token, shift ←/→ ten, alt or cmd ←/→ or `H`/`L` a sentence, page up/down 25, home the first, `f` (or `end`) the newest, followed; `u`/`U` the next or previous unsure token |
 | | `tab` the next panel, `?` what it shows, `s` the other lens (RESIDUAL STREAM: its view), `m` the mini dock, `6` the Steer page, `g` engram inspection, esc back, `q` out at once; the key line names the numbers that do something as one, `1-6 panel` |
-| The board | `1` MAP, `2` LENS, `3` TOKENS, `4` EXPERTS, `5` RESIDUAL STREAM open that panel over the board; the same number again, the board |
+| The board | `1` TOKENS, `2` MAP, `3` LENS, `4` EXPERTS, `5` RESIDUAL STREAM open that panel over the board; the same number again, the board |
 | The one-panel board | `tab` cycles the panels; a number picks one |
-| LENS | ↑/↓ a layer, `-` `+` fewer or more layers read, enter edits a word (experimental), `x` steering off |
-| EXPERTS | `[`/`]` its layers; `4`, then enter a layer's page, then an expert's; `a` all chats or this session |
-| RESIDUAL STREAM | `s` the next view (spikes, largest, layers, reads: what the model records) |
+| LENS | ↑/↓ a layer, `-` `+` fewer or more layers read (small 4, medium 16, large 24 on Flash Next; past small, off), enter edits a word (experimental), `x` steering off |
+| EXPERTS | `[`/`]` its layers; `{`/`}` a layer less or more, RESIDUAL STREAM the lines; `4`, then enter a layer's page, then an expert's; `a` all chats or this session |
+| RESIDUAL STREAM | `s` the next view (spikes and largest by hc stream, then by layers; Inkling 2 spikes by writes and reads: what the model records); `{`/`}` as on EXPERTS |
 | TOKENS | ↑/↓ the next or previous unsure token |
 | Steer page | ↑/↓ a concept, ←/→ a dose, enter steers, `x` off, `d` then `y` deletes it (to the trash), `n`/`N` a turn of its test chats, `6` the board; with nothing learned, `l` links a same-shape model |
 | Mini dock | `[`/`]` more layers, `s` the next RESIDUAL STREAM view, `m` the whole dock |

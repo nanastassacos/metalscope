@@ -182,7 +182,8 @@ def hooked(monkeypatch):
     its hooks in and its steering plans not built."""
     monkeypatch.setattr(patches, "APPLIED", patches.APPLIED | patches._CORE)
     tracer = types.SimpleNamespace(name="m", installed=True, mtp=False, adapter_name="generic",
-                                   install=lambda manager: None, lens_step=2, use_lens_step=lambda step: None)
+                                   install=lambda manager: None, lens_step=2, use_lens_step=lambda step: None,
+                                   read_layers=lambda: ([], [0, 1]))
     monkeypatch.setitem(MANAGER.tracers, id("model"), tracer)
     monkeypatch.setattr(MANAGER, "_ensure_plan", lambda rt, t: None)
     return tracer

@@ -1,9 +1,9 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import { CONCEPT_SUBCOMMANDS } from "../concept.ts";
-import { EXPLAIN, streamExplain } from "../draw.ts";
+import { EXPLAIN } from "../draw.ts";
 import { helpBody, helpLine } from "../entries.ts";
-import { COMMANDS, HELP_STREAMS, TOPICS, commandHelpLines, describe, guideLines, helpTopics, overviewHelp } from "../help.ts";
+import { COMMANDS, HELP_STREAMS, TOPICS, streamHelp, commandHelpLines, describe, guideLines, helpTopics, overviewHelp } from "../help.ts";
 import { SCOPE_SUBCOMMANDS } from "../scope.ts";
 
 const plain = { fg: (_: string, s: string) => s, bold: (s: string) => s };
@@ -83,7 +83,7 @@ test("/scope help <topic>: by name or its start; else what mentions the word", (
 	assert.equal(guideLines("tracing")[0], "## Tracing");
 	const tracing = guideLines("tracing").join("\n");
 	assert.match(tracing, /^off \(\/scope off\)/m);
-	assert.match(tracing, /a traced reply writes at 47% of untraced speed on oMLX and 58% on ds4 at the default lens step/);
+	assert.match(tracing, /a traced reply writes at 47% of untraced speed on oMLX and 58% on ds4 at medium \(the default lens size\), 77% and 80% at small/);
 	assert.match(tracing, /92% on both with the lenses off/);
 	assert.doesNotMatch(drawn(overviewHelp()).join("\n") + commandHelpLines("scope").join("\n") + TOPICS.map((t) => guideLines(t.name).join("\n")).join("\n"),
 		/\/scope on lens|lens level/);                                    // one trace level everywhere
@@ -132,7 +132,7 @@ test("/scope help dock: the board, the one-panel board, the mini dock, steering 
 	assert.ok(!/\nSETTLING\n/.test(dock));
 	assert.ok(dock.includes(`\nREPLY\n    ${EXPLAIN.REPLY}`));
 	assert.deepEqual(HELP_STREAMS, [[4, 0], [1, 0], [1, 5]], "four streams, one, then one with reads");
-	assert.ok(dock.includes(`\nSTREAM\n    ${HELP_STREAMS.map(([k, rk]) => streamExplain(k, rk)).join("\n    ")}`), "STREAM: each in order");
+	assert.ok(dock.includes(`\nSTREAM\n    ${HELP_STREAMS.flatMap(([k, rk]) => streamHelp(k, rk)).join("\n    ")}`), "STREAM: each in order");
 	// "100 columns" says whose: the terminal's, or the dock's (a terminal 181 wide).
 	assert.match(dock, /in a terminal 100 columns wide/);
 	assert.match(dock, /A dock 100 columns wide and 36 lines tall \(a terminal 181 wide\)/);

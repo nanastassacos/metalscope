@@ -58,6 +58,7 @@ export interface Prefs {
 	hinted?: boolean; // the first-run hint was shown
 	mini?: boolean; // the mini dock (m, /scope dock mini)
 	stream?: StreamView; // STREAM's view (s on it)
+	split?: number; // the board's divider between EXPERTS and STREAM ({ })
 }
 
 /** Said once, at the first session start with a UI after install: where the tracing shows. */
@@ -205,6 +206,7 @@ export function createUi({ pi, live, api, servers }: Ext, prefs = prefsPath(), r
 		unfocus: () => life.dockHandle?.unfocus(),
 		mini: readPrefs(prefs).mini === true,
 		stream: storedView(readPrefs(prefs).stream),   // unset until chosen
+		split: Number.isInteger(readPrefs(prefs).split) ? readPrefs(prefs).split : undefined,   // unset until moved
 		layoutChanged: () => life.layoutChanged(),
 		roomChanged: () => queueMicrotask(() => life.askLive()),   // not while rendering
 		steerModel: served,
@@ -531,9 +533,9 @@ class DockLife {
 	constructor(private live: Live, private dockHost: DockHost, private prefs: string, private resubscribe: () => void, private opened: { dockCtx?: any },
 		private chats: { clear(): void }, private asked: { clear(): void }) {}
 
-	// m and STREAM's view: remembered; the stream asks for what is shown; the room beside Pi's content follows the width.
+	// m, STREAM's view and the divider over it: remembered; the stream asks for what is shown; the room beside Pi's content follows the width.
 	layoutChanged() {
-		writePrefs({ mini: !!this.dockHost.mini, ...(this.dockHost.stream && { stream: this.dockHost.stream }) }, this.prefs);
+		writePrefs({ mini: !!this.dockHost.mini, ...(this.dockHost.stream && { stream: this.dockHost.stream }), ...(this.dockHost.split !== undefined && { split: this.dockHost.split }) }, this.prefs);
 		this.askLive();
 		const cols = this.termCols();
 		if (typeof cols === "number") {

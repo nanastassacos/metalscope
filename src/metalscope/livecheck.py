@@ -125,8 +125,8 @@ def restore(set_step, was, log) -> dict:
         except client.ServerError as exc:
             why = str(exc)
             break
-    log("  " + config.mark("warn", f"could not put the lens step back to {was} ({why}): set it with - + in the dock's LENS"))
-    return dict(lens_step=f"not put back to {was} ({why})")
+    log("  " + config.mark("warn", f"could not put the lens back to {config.lens_name(was)} ({why}): set it with - + in the dock's LENS"))
+    return dict(lens_step=f"not put back to {config.lens_name(was)} ({why})")
 
 
 def _bare(s: str) -> str:
@@ -172,7 +172,7 @@ def check(server: client.Client, log=print, found: Optional[dict] = None) -> boo
             if server.get(f"/scope/api/lens/layers?model={q}").get("at") == config.LENS_OFF:
                 set_step(config.LENS_STEP_DEFAULT)
                 off = True
-                say(None, f"the lenses are off here: checked at step {config.LENS_STEP_DEFAULT}, then off again")
+                say(None, f"the lenses are off here: checked at {config.lens_name(config.LENS_STEP_DEFAULT)}, then off again")
         except client.ServerError:
             pass                                      # the lens layers' check below says why
         if not srv.alive:
@@ -217,8 +217,8 @@ def check(server: client.Client, log=print, found: Optional[dict] = None) -> boo
             lens = say(False, f"lens layers: {exc}", "lens layers") or {}
         steps, band = lens.get("steps") or [], lens.get("edit_band")
         if steps:
-            say(all(s.get("layers") for s in steps),
-                f"lens layers: {len(steps)} steps of {', '.join(str(s.get('n')) for s in steps)} layers", "lens layers")
+            sizes = ", ".join(f"{s.get('name')} {s.get('n')}" for s in steps)
+            say(all(s.get("layers") for s in steps), f"lens layers: {sizes}", "lens layers")
         if L:
             _experts(server, q, L, say)
         _lookup(server, entry, say, log)

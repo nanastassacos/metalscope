@@ -2,13 +2,13 @@
 
 Chat requests as Pi sends them (streamed, under the client ``bench``, each saying whether to trace it: the header
 overrides the global mode, which bench leaves alone), one prompt at temperature 0 capped at ``max_tokens``: the
-writing speed untraced, then traced with the lenses off and at each lens step (how many layers the lenses read);
-the dock's one-token edit, timed to its new token and to its end (``edit_at``); and the engram inspection of a short
-reply after conversations of several lengths (``lookup``). Writing speed is the gaps between streamed tokens over
-the time from the first piece of text to the last, so reading the prompt is left out. The Mac slows itself under
-sustained load, so each measurement starts after a rest (``rest``) and tracing off is measured again after the lens steps.
-Best effort: it refuses a server tracing a request when it starts, but other requests meanwhile skew the numbers. It
-puts back the lens step, also on an error or ctrl+c.
+writing speed untraced, then traced with the lenses off and at each lens size (small, medium, large: how many layers
+the lenses read); the dock's one-token edit, timed to its new token and to its end (``edit_at``); and the engram
+inspection of a short reply after conversations of several lengths (``lookup``). Writing speed is the gaps between
+streamed tokens over the time from the first piece of text to the last, so reading the prompt is left out. The Mac
+slows itself under sustained load, so each measurement starts after a rest (``rest``) and tracing off is measured
+again after the lens sizes. Best effort: it refuses a server tracing a request when it starts, but other requests
+meanwhile skew the numbers. It puts back the lens size, also on an error or ctrl+c.
 """
 
 from __future__ import annotations
@@ -154,7 +154,7 @@ def run(server: client.Client, res: dict, repeats: int = REPEATS, contexts=CONTE
         def speed(row: dict) -> None:
             traced = row["traced"]
             how = ("off" + (", again" if row.get("again") else "") if not traced
-                   else "on, lenses off" if row["step"] == config.LENS_OFF else f"on, step {row['step']}")
+                   else "on, lenses off" if row["step"] == "off" else f"on, {row['step']}")
             log(config.paint(f"  writing, tracing {how} ...", "2"))
             res["speed"].append(row)              # kept as far as it got
             row["runs"] = []
@@ -172,10 +172,10 @@ def run(server: client.Client, res: dict, repeats: int = REPEATS, contexts=CONTE
         speed(dict(traced=False, step=None))
         changed = True
         set_step(config.LENS_OFF)
-        speed(dict(traced=True, step=config.LENS_OFF, layers=0))
+        speed(dict(traced=True, step="off", layers=0))
         for k, s in enumerate(lens.get("steps") or []):
             set_step(k)
-            speed(dict(traced=True, step=k, layers=s.get("n"), layer_ids=s.get("layers")))
+            speed(dict(traced=True, step=s.get("name"), layers=s.get("n"), layer_ids=s.get("layers")))
         speed(dict(traced=False, step=None, again=True))      # the drift since the first
         set_step(config.LENS_STEP_DEFAULT)        # the edit and the engram inspection at the default step
         res["edit"] = edit(server, model, ask, max_tokens, lens, log, pause)
@@ -284,9 +284,9 @@ def table(res: dict) -> list[str]:
         off = next((r.get("tps") for r in rows if not r["traced"]), None)
         for r in rows:
             label = ("tracing off, again" if r.get("again") else "tracing off" if not r["traced"]
-                     else "tracing on, lenses off" if r["step"] == config.LENS_OFF
-                     else f"tracing on, {r.get('layers')} layers read (step {r['step']})")
-            note = f"  read at step {', '.join(map(str, r['read_at']))}, not {r['step']}" if r.get("read_at") else ""
+                     else "tracing on, lenses off" if r["step"] == "off"
+                     else f"tracing on, {r.get('layers')} layers read ({r['step']})")
+            note = f"  read at {', '.join(map(str, r['read_at']))}, not {r['step']}" if r.get("read_at") else ""
             v = r.get("tps")
             b = bar(v, top) if v else ""
             pct = f"{(v / off - 1) * 100:+.0f}%" if (r["traced"] or r.get("again")) and v and off else ""
@@ -340,7 +340,7 @@ def main(backend: Optional[str] = None, repeats: Optional[int] = None, contexts=
         if json_path and res:
             config.atomic_write(json_path, json.dumps(res, indent=1))
     if isinstance((res.get("restored") or {}).get("lens_step"), int):       # else restore said what was not
-        log(config.paint(f"put back: lens step {res['restored']['lens_step']}", "2"))
+        log(config.paint(f"put back: lens {config.lens_name(res['restored']['lens_step'])}", "2"))
     print()
     print("\n".join(table(res)))
     if res.get("error"):

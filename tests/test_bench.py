@@ -8,7 +8,7 @@ import pytest
 
 from metalscope import bench, cli, client, config, livecheck
 
-STEPS = [dict(n=n, layers=list(range(48 - n, 48))) for n in (4, 8, 15, 24, 47)]
+STEPS = [dict(name=name, n=n, layers=list(range(48 - n, 48))) for name, n in zip(config.LENS_SIZES, (4, 15, 47))]
 CALM = dict(name="angry", reader=dict(layer=8), steer=dict(layer=8, strength=0.6, basis="chat"))
 
 
@@ -19,7 +19,7 @@ class FakeServer:
 
     def __init__(self, **kw):
         self.url = "http://x"
-        self.s = dict(caps=["edit_at", "lookup", "token_prompts"], active=0, step=3, read_step=None, band=[18, 44],
+        self.s = dict(caps=["edit_at", "lookup", "token_prompts"], active=0, step=2, read_step=None, band=[18, 44],
                       steer_enabled=True, concepts=[CALM], words=["tiger"], lookup_fails=[], edit_fails=None,
                       too_long=10_000, fail_at=None, step_fails=[], finish="length", posts=[], chats=[], fresh=[])
         self.s.update(kw)
@@ -72,7 +72,7 @@ class FakeServer:
             raise client.ServerError("HTTP 400", 400, "the prompt is longer than the context")
         if traced:
             self.s["last"] = dict(id=f"t{len(self.s['chats'])}", decode_tps=50.0,
-                                  lens_step=self.s["step"] if self.s["read_step"] is None else self.s["read_step"])
+                                  lens_step=config.lens_name(self.s["step"] if self.s["read_step"] is None else self.s["read_step"]))
         n, dt = body["max_tokens"], 0.02 if traced else 0.01
         streamed = n if self.s["finish"] == "length" else n - 1
         for i in range(streamed):
@@ -128,14 +128,13 @@ def test_a_full_run_measures_everything_and_puts_back_the_lens_step(finish):
     res = run(srv, repeats=2, contexts=[1000, 4000])
     assert srv.s["fresh"][0] is True                                # the idle check reads status afresh
     assert [(r["traced"], r["step"], r.get("layers")) for r in res["speed"]] == \
-        [(False, None, None), (True, config.LENS_OFF, 0)] + [(True, k, s["n"]) for k, s in enumerate(STEPS)] + \
-        [(False, None, None)]
-    assert [r.get("again") for r in res["speed"]] == [None] * 7 + [True] and res["speed"][-1]["tps"] == 100.0
+        [(False, None, None), (True, "off", 0)] + [(True, s["name"], s["n"]) for s in STEPS] + [(False, None, None)]
+    assert [r.get("again") for r in res["speed"]] == [None] * 5 + [True] and res["speed"][-1]["tps"] == 100.0
     assert all(len(r["runs"]) == 2 and "warmup" in r and "read_at" not in r for r in res["speed"])
     assert res["speed"][0]["tps"] == 100.0 and res["speed"][1]["tps"] == 50.0
-    assert res["speed"][1]["runs"][0]["server_tps"] == 50.0 and res["speed"][1]["runs"][0]["lens_step"] == config.LENS_OFF
-    assert res["speed"][2]["runs"][0]["lens_step"] == 0
-    assert srv.s["chats"][0][:2] == (False, 3) and srv.s["chats"][3][:2] == (True, config.LENS_OFF)
+    assert res["speed"][1]["runs"][0]["server_tps"] == 50.0 and res["speed"][1]["runs"][0]["lens_step"] == "off"
+    assert res["speed"][2]["runs"][0]["lens_step"] == "small"
+    assert srv.s["chats"][0][:2] == (False, 2) and srv.s["chats"][3][:2] == (True, config.LENS_OFF)
     assert srv.s["chats"][6][:2] == (True, 0)
     assert all(p != "/scope/api/mode" for p, _ in srv.s["posts"])     # the global mode is left alone
     ed = res["edit"]
@@ -144,16 +143,16 @@ def test_a_full_run_measures_everything_and_puts_back_the_lens_step(finish):
     rows = res["lookup"]["rows"]
     assert [r["target"] for r in rows] == [1000, 4000] and all("seconds" in r and r["read"] == 3 for r in rows)
     assert abs(rows[0]["prompt_tokens"] - 1000) < 60
-    assert srv.s["step"] == 3 and res["restored"] == dict(lens_step=3)
+    assert srv.s["step"] == 2 and res["restored"] == dict(lens_step=2)
     lines = bench.table(res)
     assert lines[0].startswith("M · ds4 · Test Mac, 64 GB") and "http://x" not in lines[0]
     text = "\n".join(lines)
     assert "—" not in text and "watch" not in text and "tracing off" in text
-    assert "tracing on, 47 layers read (step 4)" in text and "fewest" not in text
+    assert "tracing on, 47 layers read (large)" in text and "fewest" not in text
     at = [k for k, line in enumerate(lines) if line.startswith(("  tracing off ", "  tracing on, lenses off ", "  tracing on, 4 layers"))]
     assert len(at) == 3 and at == list(range(at[0], at[0] + 3)) and " 50.0  " + "█" * 8 + " " * 8 + "  -50%" in lines[at[1]]
     again = [line for line in lines if line.startswith("  tracing off, again ")]
-    assert len(again) == 1 and again[0].endswith("+0%") and lines.index(again[0]) == at[0] + 7
+    assert len(again) == 1 and again[0].endswith("+0%") and lines.index(again[0]) == at[0] + 5
     assert "Engram inspection (the conversation read twice)" in text and "until the new word appears" in text
 
 
@@ -167,9 +166,9 @@ def test_an_error_or_ctrl_c_midway_still_puts_back_the_lens_step(exc, tmp_path, 
     assert srv.s["step"] == 1
     saved = json.loads((tmp_path / "b.json").read_text())
     assert saved["restored"] == dict(lens_step=1) and len(saved["speed"]) == 4 and saved["error"]
-    assert saved["speed"][-1]["runs"] == [] and "warmup" not in saved["speed"][-1]       # step 1 cut short
+    assert saved["speed"][-1]["runs"] == [] and "warmup" not in saved["speed"][-1]       # medium cut short
     out = capsys.readouterr().out
-    assert "put back: lens step 1" in out and "stopped early" in out
+    assert "put back: lens medium" in out and "stopped early" in out
 
 
 def test_the_restore_survives_ctrl_c_once_and_says_what_it_could_not_put_back():
@@ -183,21 +182,31 @@ def test_the_restore_survives_ctrl_c_once_and_says_what_it_could_not_put_back():
         return put, calls
     logs = []
     put, calls = putter(KeyboardInterrupt())
-    assert livecheck.restore(put, 3, logs.append) == dict(lens_step=3) and calls == [3, 3] and logs == []
+    assert livecheck.restore(put, 2, logs.append) == dict(lens_step=2) and calls == [2, 2] and logs == []
     put, calls = putter(KeyboardInterrupt(), KeyboardInterrupt())
-    assert livecheck.restore(put, 3, logs.append) == dict(lens_step="not put back to 3 (interrupted)")
+    assert livecheck.restore(put, 2, logs.append) == dict(lens_step="not put back to large (interrupted)")
     put, calls = putter(client.ServerError("HTTP 409: gone", 409))           # a refusal: not asked again
-    assert livecheck.restore(put, 3, logs.append) == dict(lens_step="not put back to 3 (HTTP 409: gone)") and calls == [3]
-    assert logs == ["  ! could not put the lens step back to 3 (interrupted): set it with - + in the dock's LENS",
-                    "  ! could not put the lens step back to 3 (HTTP 409: gone): set it with - + in the dock's LENS"]
+    assert livecheck.restore(put, 2, logs.append) == dict(lens_step="not put back to large (HTTP 409: gone)") and calls == [2]
+    assert logs == ["  ! could not put the lens back to large (interrupted): set it with - + in the dock's LENS",
+                    "  ! could not put the lens back to large (HTTP 409: gone): set it with - + in the dock's LENS"]
+    # A server from before the sizes, found at its step 4: said as the nearest size, not an IndexError.
+    put, calls = putter(client.ServerError("HTTP 409: gone", 409))
+    assert livecheck.restore(put, 4, logs.append) == dict(lens_step="not put back to large (HTTP 409: gone)")
+
+
+def test_a_server_from_before_the_sizes_is_put_back_and_said_so(monkeypatch, tmp_path, capsys):
+    srv = fake(step=3)                                              # one of its five steps
+    monkeypatch.setattr(bench, "pick", lambda backend, model=None: (srv, "M"))
+    bench.main(repeats=1, contexts=[], max_tokens=20)
+    assert srv.s["step"] == 3 and "put back: lens medium" in capsys.readouterr().out
 
 
 def test_ctrl_c_midway_then_inside_the_restore_still_puts_the_step_back():
-    srv = fake(step=3, fail_at=4, fail_with=KeyboardInterrupt())     # stopped at step 0's warm-up
+    srv = fake(step=2, fail_at=4, fail_with=KeyboardInterrupt())     # stopped at small's warm-up
     put, first = srv.post, []
 
     def post(path, body, timeout=60):
-        if body.get("step") == 3 and not first:
+        if body.get("step") == 2 and not first:
             first.append(1)
             raise KeyboardInterrupt()
         return put(path, body, timeout)
@@ -205,12 +214,12 @@ def test_ctrl_c_midway_then_inside_the_restore_still_puts_the_step_back():
     res = {}
     with pytest.raises(KeyboardInterrupt):
         bench.run(srv, res, repeats=1, contexts=[1000], max_tokens=20, log=lambda s: None)
-    assert srv.s["step"] == 3 and res["restored"] == dict(lens_step=3)
+    assert srv.s["step"] == 2 and res["restored"] == dict(lens_step=2)
 
 
 def test_each_measurement_starts_after_a_rest():
     res = run(fake(), rest=7, contexts=[1000, 4000])
-    assert SLEPT == [7] * (8 + 1 + 2) and res["rest"] == 7          # 8 speed rows, the edit, each conversation
+    assert SLEPT == [7] * (6 + 1 + 2) and res["rest"] == 7          # 6 speed rows, the edit, each conversation
     SLEPT.clear()
     assert run(fake(), rest=0)["rest"] == 0 and SLEPT == []
 
@@ -225,9 +234,9 @@ def test_a_busy_server_is_refused_and_nothing_changed():
 def test_a_reply_read_at_another_step_is_flagged():
     srv = fake(read_step=2)
     res = run(srv)
-    assert [r.get("read_at") for r in res["speed"]] == [None, [2], [2], [2], None, [2], [2], None]
+    assert [r.get("read_at") for r in res["speed"]] == [None, ["large"], ["large"], ["large"], None, None]
     text = "\n".join(bench.table(res))
-    assert "read at step 2, not 0" in text and "read at step 2, not -1" in text and "read at step 2, not 2" not in text
+    assert "read at large, not small" in text and "read at large, not off" in text and "read at large, not large" not in text
 
 
 def test_na_where_the_server_cannot():
@@ -309,15 +318,15 @@ def test_client_stream_yields_each_event_with_its_time(monkeypatch):
 def test_writing_speeds_get_a_bar_against_the_fastest_and_the_change_from_tracing_off():
     res = dict(max_tokens=300, repeats=3, speed=[
         dict(traced=False, step=None, tps=16.0),
-        dict(traced=True, step=config.LENS_OFF, layers=0, tps=15.7),
-        dict(traced=True, step=0, layers=3, tps=15.3),
-        dict(traced=True, step=1, layers=7, tps=None, read_at=[2]),
+        dict(traced=True, step="off", layers=0, tps=15.7),
+        dict(traced=True, step="small", layers=3, tps=15.3),
+        dict(traced=True, step="medium", layers=7, tps=None, read_at=["large"]),
         dict(traced=False, step=None, again=True, tps=15.8)])
     assert bench.table(res) == [
         f"{'Writing speed (300 tokens, median of 3)':<46} tokens/s",
         f"  {'tracing off':<44}     16.0  " + "█" * 16,
         f"  {'tracing on, lenses off':<44}     15.7  " + "█" * 15 + "▊   -2%",
-        f"  {'tracing on, 3 layers read (step 0)':<44}     15.3  " + "█" * 15 + "▎   -4%",
-        f"  {'tracing on, 7 layers read (step 1)':<44}        ?" + " " * 24 + "  read at step 2, not 1",
+        f"  {'tracing on, 3 layers read (small)':<44}     15.3  " + "█" * 15 + "▎   -4%",
+        f"  {'tracing on, 7 layers read (medium)':<44}        ?" + " " * 24 + "  read at large, not medium",
         f"  {'tracing off, again':<44}     15.8  " + "█" * 15 + "▊   -1%"]        # the drift from the first
     assert max(map(len, bench.table(res)[:4])) < 80

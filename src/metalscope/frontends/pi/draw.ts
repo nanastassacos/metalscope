@@ -22,7 +22,7 @@ export const LABELS = {
 	times: (x: string) => `×${x}: ${x} times more often than chance`,
 	tokens: ITS.toUpperCase(), mixed: "MIXED WITH", mixedTag: "same tokens", reply: "IN THIS REPLY",
 	// LENS's - + line.
-	reads: (n: number) => `reads ${n} layers`, layers: (n: number) => `${n} layers`, layersKey: "-/+ layers",
+	reads: (name: string, n: number) => `${name} · reads ${n} layers`, layers: (name: string, n: number) => `${name} · ${n} layers`, layersKey: "-/+ layers",
 	// LENS dulled: the lenses off (- past the fewest layers; + on again), or none read for the reply shown.
 	linkNoAnswer: "no answer: the link may have gone through",
 	lensOff: "off", lensOn: "+ lenses", notRead: "not read for this reply",
@@ -64,6 +64,7 @@ export const EDIT_HINT = " enter: remove or swap a word (experimental).";
 export const EXPLAIN: Record<string, string> = {
 	REPLY: `Each token coloured by its probability: green ${SURE * 100}%+, yellow ${UNSURE * 100}-${SURE * 100}%, red under ${UNSURE * 100}%. ▸: the edited token, on orange where it changed.`,
 	EXPERTS: "Layers of experts through the depth, as many as fit. Following, the glow of the newest tokens; paused on a token, its experts, each lit by its share of the mix.",
+	SPLIT: " { }: a layer less or more.",
 	EXPERTS_WINDOW: "Consecutive layers of experts, ▸ the layer in focus, lit as the board's; under them the token's experts there, each its share of the mix. enter: the layer, then an expert.",
 	TELESCOPE: `The token in focus at each layer, deep on top: its top word (green: written; ▸ settled), the written word's probability. in: the input.${EDIT_HINT} -/+: layers read.`,
 	BOARD_LENS: `SETTLING: where tokens settled. Then the token in focus at each layer, deep on top: its likeliest word (green: written; ▸ settled).${EDIT_HINT} -/+: layers read.`,
@@ -71,17 +72,24 @@ export const EXPLAIN: Record<string, string> = {
 	STEER: "Concepts ranked by the chat test (★ top five; 15/18 @0.3: good replies of 18 at its dose). The one under the cursor: a column per dose, no steering first.",
 	STEER_EXAMPLES: "The chat test's turns from this one at the dose under the cursor: no steering beside steered, graded 0-3.",
 	STEER_LINK: "l: use a same-shape model's concepts and J-lens; doses stay this build's own.",
-	TOKENS: "The model's top 10 choices for the token in focus, ▸ the one written (green 90%+, yellow 50-90%, red under 50%). off-top: sampling chose it (under 50%, another over 50%).",
+	TOKENS: "The model's top choices for the token in focus (1: all 10), ▸ the one written (green 90%+, yellow 50-90%, red under 50%). off-top: sampling chose it (under 50%, another over 50%).",
 	SETTLING: "SETTLING: a column a token, the layers the lens in use read, deep on top. Bright: settled on the written word; dim: it tops a lower layer; faint: only in a top 10. Grey: the token in focus.",
 	MAP: "A token a cell (green 90%+, yellow 50-90%, red under 50%), thinking darker, white in focus: the reply, sliding by lines; full size, the session, each reply on a new row (amber: another model).",
 	ENGRAM: "g: the reply read again without the engram. Blue: tokens it helped (brighter: more). Block: what the cursor's token looked up; underlined/white: that token. TOKENS: its top choices without and with.",
 };
-/** What ? says on STREAM, by what the model has: `k` residual streams written, `rk` sources read (one stream with reads:
- * a block's sum, Inkling 2's). */
-export function streamExplain(k: number, rk: number): string {
-	if (k > 1) return `Each colour is one of the model's ${k} residual streams (hyper-connections); a column is a layer, shallow left, newest token lowest. Spikes: a layer changed a stream far more than usual in this reply. Largest: the stream each layer changed most. Layers: the five biggest relative changes.`;
-	if (!rk) return "A column is a layer, shallow left, newest token lowest. Spikes: a layer changed the residual far more than usual in this reply. Layers: the five that changed the stream most for its size.";
-	return `A column is a layer visit, shallow left, newest token lowest. Spikes: a visit added far more to its block's sum than usual in this reply. Reads: a visit drew on one of its ${rk} sources far more than usual; each colour is a source.`;
+/** What ? says on STREAM, by what the model has (`k` residual streams written, `rk` sources read; one stream with reads:
+ * a block's sum, Inkling 2's): a line for the model, and a line a view by its name (board.ts viewName). */
+export function streamExplain(k: number, rk: number): [shared: string, views: Record<string, string>] {
+	const largest = "How much each layer changed the residual for its size. Brighter is more.";
+	if (k > 1) return [`Hyper-connections give each layer ${k} residual streams. The newest token is the lowest row.`, {
+		"spikes (hc)": "One stream's change in a layer was far above its usual. Each colour is a stream.",
+		"largest (hc)": "Each layer in the colour of the stream it changed most.",
+		"spikes (layers)": `A layer's change across all ${k} streams was far above its usual in this reply.`,
+		"largest (layers)": largest }];
+	if (!rk) return ["The newest token is the lowest row.", { spikes: "A layer changed the residual far more than it usually does in this reply.", largest }];
+	return ["A column is a layer visit. Each block of layers keeps its own sum.", {
+		"spikes (writes)": "A visit added far more than usual to its block's sum.",
+		"spikes (reads)": "A visit drew far more than usual on one source: the embedding, a finished block, or its own sum. Each colour is a source." }];
 }
 
 export function confColor(p: number | null): string {

@@ -53,12 +53,12 @@ test("no experts: EXPERTS not drawn on the board, the one-panel board or the min
 
 test("no experts: the mini dock gives the lights' room to MAP and SETTLING, no blank lines", () => {
 	const lines = view(dockAt(52, { dense: true, mini: true }).d, MINI_WIDTH);
-	const map = lines.findIndex((l) => /^MAP /.test(l)), settle = lines.findIndex((l) => /^SETTLING /.test(l));
+	const map = lines.findIndex((l) => /^MAP /.test(l)), settle = lines.findIndex((l) => /^SETTLING\b/.test(l));
 	assert.ok(map === 1 && settle > map + MINI_MAP[2], `MAP right under the token, past its most:\n${lines.join("\n")}`);
 	assert.ok(!lines.slice(settle, -1).some((l) => l === ""), "SETTLING to the key line");
 	assert.ok(view(dockAt(52, { moe: true, mini: true }).d, MINI_WIDTH).some((l) => /^[▸ ] layer \d+ of \d+$/.test(l)), "experts: the lights");
 	// Without lights MAP takes the lines, past its most, at any height.
-	const tall = view(dockAt(120, { dense: true, mini: true }).d, MINI_WIDTH), m = tall.findIndex((l) => /^MAP /.test(l)), s = tall.findIndex((l) => /^SETTLING /.test(l));
+	const tall = view(dockAt(120, { dense: true, mini: true }).d, MINI_WIDTH), m = tall.findIndex((l) => /^MAP /.test(l)), s = tall.findIndex((l) => /^SETTLING\b/.test(l));
 	assert.ok(tall.length === 120 && m === 1 && s - m - 1 > 60 && tall.slice(m + 1, s).every((l) => /^▀+$/.test(l)), `120 rows: MAP ${s - m - 1} lines`);
 	assert.deepEqual(miniSplit(40, 0, 0, MINI_MAP, [3, 6, 13]), { n: 0, map: 27, settle: 13 });
 	assert.deepEqual(miniSplit(40, 0, 0, MINI_MAP), { n: 0, map: 40, settle: 0 });
@@ -140,7 +140,7 @@ test("one lens: LENS's page draws it across the width under its name; the senten
 		const { d } = dockAt(52, { ...o, panel: "LENS" });
 		d.stepIn(15);
 		d.render(100);
-		d.handleInput("2");
+		d.handleInput("3");
 		return view(d);
 	};
 	const one = page({}), mixed = page({ mixed: true }), two = page({ two: true });

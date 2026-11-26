@@ -1,5 +1,20 @@
 # Changelog
 
+## Unreleased
+
+- The dock's board is laid out again: TOKENS, MAP and LENS on the left, EXPERTS over RESIDUAL STREAM on the right
+  (`{` `}` move the divider between them). On a model without experts TOKENS sits over RESIDUAL STREAM. The panel
+  keys follow the order: `1` TOKENS, `2` MAP, `3` LENS, `4` EXPERTS, `5` RESIDUAL STREAM, `6` the Steer page.
+- The lenses read at three sizes, by name: small (4 layers), medium (a third of the depth, at most 16; the default)
+  and large (half, at most 24), spread evenly with the last layer always read. A number saved by 0.1.0 is mapped
+  once. LENS grows with its size: small is compact, medium fills its panel, large takes MAP's spare lines.
+- The residual stream is recorded on models with one stream too (Qwen3.5 2B, Qwen3.8 27B, Qwen3.6 35B).
+- RESIDUAL STREAM's views are named by what they measure and over what: spikes or largest, by hyper-connection
+  stream or by layer (Inkling 2: spikes by writes or by reads). Largest is drawn by each layer's share of the change,
+  not as a top five. The panel fills its width, and `?` explains the view on screen.
+- LENS's speed line per size counts only replies read at that size's number of layers.
+- Engram inspection keeps the written token's row however short TOKENS is.
+
 ## 0.1.0 (2026-11-24)
 
 First public version.

@@ -786,18 +786,20 @@ def _lens_tracer(model: str | None):
 
 def _lens_layers(model: str | None) -> dict:
     """LENS's - + in the dock: the step the next traced reply reads the lenses at (``at``; -1 none, the lenses off)
-    and, a step each, fewest first: how many layers it reads (``n``, the J-lens's where there is one), every layer
-    either lens reads (``layers``), and the decode speed of this model's last unsteered replies read at it on this server (``tps``,
-    tok/s, over ``replies``; None without one). With a J-lens (Inkling 2's too), ``edit_band``: where the
+    and, a step each, fewest first: its name (``name``: small, medium, large), how many layers it reads (``n``, the
+    J-lens's where there is one), every layer either lens reads (``layers``), and the decode speed of this model's last
+    unsteered replies read at it on this server (``tps``, tok/s, over ``replies``; None without one): at its name and as
+    many layers (a reply saved without the count, or read at the sizes before, is not this size's). With a J-lens (Inkling 2's too), ``edit_band``: where the
     dock's word edit acts (``_edit_band``), shown before it is sent."""
     tracer = _lens_tracer(model)
     short = config.short_name(tracer.name)
     seen = [e for e in read_index() if e.get("model") == short and not e.get("steer") and e.get("decode_tps")]   # newest first
     out = []
     for i, (jl, logit) in enumerate(tracer.lens_steps()):
-        last = [e["decode_tps"] for e in seen if e.get("lens_step") == i][:LENS_SPEED_REPLIES]
-        out.append(dict(n=len(jl or logit), layers=sorted({*jl, *logit}), tps=round(sum(last) / len(last), 1) if last else None,
-                        replies=len(last)))
+        n = len(jl or logit)
+        last = [e["decode_tps"] for e in seen if e.get("lens_step") == config.lens_name(i) and e.get("lens_layers") == n][:LENS_SPEED_REPLIES]
+        out.append(dict(name=config.lens_name(i), n=n, layers=sorted({*jl, *logit}),
+                        tps=round(sum(last) / len(last), 1) if last else None, replies=len(last)))
     return dict(model=short, at=MANAGER.lens_step(), steps=out,
                 **({"edit_band": list(_edit_band(tracer))} if tracer.lens is not None else {}))
 
@@ -813,9 +815,11 @@ def set_lens_layers(body: dict) -> dict:
     settings' lens_step, for every model; LENS's - + in the dock. What GET answers then; 409 without the model loaded,
     nothing saved."""
     _lens_tracer(body.get("model"))
+    if not config.lens_step_ok(step := body.get("step")):
+        raise HTTPException(status_code=400, detail=f"step must be 0 to {config.LENS_STEPS - 1}, or {config.LENS_OFF} (off)")
     try:
-        config.save_settings(lens_step=body.get("step"))
-    except ValueError as exc:
+        config.save_settings(lens_step=config.lens_name(step))
+    except ValueError as exc:                     # another setting invalid (edited by hand): said, not a 500
         raise HTTPException(status_code=400, detail=str(exc))
     return _lens_layers(body.get("model"))
 
