@@ -55,7 +55,7 @@ def test_residual_norms_match_manual_forward():
     for i, layer in enumerate(model.model.layers):
         h = layer(h, mask="causal", cache=None)
         expected[i] = np.linalg.norm(np.array(h.astype(mx.float32)), axis=-1)
-    assert set(recs) == {("resid_norm", 0), ("resid_norm", 2)}
+    assert set(recs) == {(k, l) for k in ("resid_norm", "resid_write_norm") for l in (0, 2)}
     np.testing.assert_allclose(recs[("resid_norm", 2)], expected[2], rtol=1e-5)
 
 
@@ -422,6 +422,43 @@ def test_flash_next_records_what_each_layer_wrote_into_each_stream():
                     assert ("hc_stream_norm", l) in recs
                 assert {k for k, _ in recs} == {"hc_stream_norm", "resid_write_norm"}
     assert (want > 0).all() and not np.allclose(want[0], want[1])
+
+
+def test_a_conventional_decoder_records_what_each_layer_wrote_into_its_one_stream():
+    """The generic adapter's resid_write_norm: a layer's output less the residual it read (layer 0 reads the
+    embedding), one stream [B, T, 1], on the stacked path (a decode step) and the per-layer one (a prompt chunk), for
+    selected rows and a layer subset. A session with no rows to record records nothing."""
+    model = tiny_llama()
+    batch = mx.array([[3, 17, 5, 42, 9] * 5, [7, 1, 8, 2, 6] * 5])
+    for T in (1, 3, 24):                                        # 24 > BATCH_MAX_TOKENS: reduced layer by layer
+        ids = batch[:, :T]
+        h, want = model.model.embed_tokens(ids), []
+        for layer in model.model.layers:
+            out = layer(h, mask="causal" if T > 1 else None, cache=None)
+            want.append(np.linalg.norm(np.array((out - h).astype(mx.float32)), axis=-1)[..., None])
+            h = out
+        for layers, rows in ((None, None), ([0, 2], [1])):
+            s = CaptureSession(CaptureConfig(layers=layers))
+            assert install(s, model) == "generic"
+            s.set_rows(rows)
+            model(ids)
+            mx.eval(s.pending_arrays())
+            s.end_step()
+            recs = {(r.kind, r.layer): np.array(r.value) for r in s.drain()}
+            s.close()
+            for l in layers or range(3):
+                got = recs[("resid_write_norm", l)]
+                assert got.shape == (len(rows or (0, 1)), T, 1) and got.dtype == np.float32
+                np.testing.assert_allclose(got, want[l][rows or slice(None)], rtol=1e-4, atol=1e-6,
+                                           err_msg=f"T={T} layer {l} rows {rows}")
+            assert {k for k, _ in recs} == {"resid_norm", "resid_write_norm"}
+            assert {l for k, l in recs if k == "resid_write_norm"} == set(layers or range(3))
+    s = CaptureSession(CaptureConfig())
+    install(s, model)
+    s.set_rows([])
+    model(batch[:, :3])
+    assert s.pending_arrays() == [] and s._stash == {}
+    s.close()
 
 
 def test_a_forward_stopped_part_way_leaves_nothing_of_its_streams_past_its_step():

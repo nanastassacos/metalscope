@@ -3,6 +3,7 @@
 import base64
 import json
 import time
+import zipfile
 
 import pytest
 
@@ -58,12 +59,17 @@ N_TOK = 12
 P_LEN = 5
 
 
-def events(rid, experts=True, lens_by="jlens"):
-    """A reply's token events as the feed sends them to a client that asked for routing and the lens top 10s."""
+def events(rid, experts=True, lens_by="jlens", stream="shares"):
+    """A reply's token events as the feed sends them to a client that asked for routing, the lens top 10s and the
+    writes: ``stream`` "shares" each layer's writes (3 layers, 4 streams) and their shares, "writes" the writes alone,
+    "some" shares on every other token, anything else none."""
     tops = dict(l=[24, 31], k=10, i=[1], w=["a"], c=[0] * 20, p=[0] * 20)
+    writes = lambda i: dict(writes=[0.5] * 12, write_k=4, **(dict(shares=[0, 0.1, 0.2]) if stream == "shares"
+                                                             or stream == "some" and i % 2 else {}))
     return [dict(type="token", rid=rid, i=i, text=f"t{i}", p=0.9, lens_by=lens_by, lens=[[24, 1, "a"], [31, 2, "b"]],
                  lens_logit=[[24, 1, "a"], [31, 2, "b"], [47, 3, "c"]], lens10=tops, lens10_logit=tops,
-                 **(dict(experts=[1, 2], expert_w=[200, 55], expert_k=2) if experts else {})) for i in range(N_TOK)]
+                 **(dict(experts=[1, 2], expert_w=[200, 55], expert_k=2) if experts else {}),
+                 **(writes(i) if stream in ("shares", "writes", "some") else {})) for i in range(N_TOK)]
 
 
 class FakeServer:
@@ -132,7 +138,7 @@ def server(monkeypatch):
     """A fake client.Session, a trace index written as the server would, and the server's concepts."""
     state = dict(concepts=concepts(dict(name="calm", reader=dict(layer=24), steer=dict(layer=24, strength=0.3, basis="chat"))),
                  steered_text="steered", steer_label="calm@0.3/24", partial=None, alive=True, sent=[], caps=["load_copy"],
-                 moe=48, made=[], edit_keeps=True)
+                 moe=48, made=[], edit_keeps=True, stream="shares")
 
     def write_trace(steer, meta=None, rid=None):
         rid = rid or f"r{len(state['sent']) - 1}"
@@ -141,6 +147,9 @@ def server(monkeypatch):
         meta = {**dict(request_id=rid, prompt_len=P_LEN, tokens=P_LEN * [0] + list(range(N_TOK - 1)),
                        token_text=P_LEN * ["p"] + [f"t{i}" for i in range(N_TOK - 1)]), **(meta or {})}
         (d / "meta.json").write_text(json.dumps(dict(meta, partial=state["partial"]) if state["partial"] else meta))
+        if state["stream"]:                           # the trace records the writes ("lost": the feed sends none)
+            with zipfile.ZipFile(d / "arrays.npz", "w") as z:
+                z.writestr("resid_write_norm/0.npy", b"")
         entry = dict(id=d.name, path=str(d), time=time.time(), model="M", client=livecheck.CLIENT,
                      steer=steer or None, readout=True)
         config.index_path().parent.mkdir(parents=True, exist_ok=True)
@@ -149,8 +158,8 @@ def server(monkeypatch):
     state["write"] = write_trace
 
     class FakeSession:
-        def __init__(self, server, client_id, experts=False, lens=False):
-            assert experts and lens                       # the feed as the dock asks for it
+        def __init__(self, server, client_id, experts=False, lens=False, writes=False):
+            assert experts and lens and writes            # the feed as the dock asks for it
             self.alive = state["alive"]
 
         def complete(self, model, prompt, steer, max_tokens, timeout=900, temperature=None):
@@ -158,7 +167,7 @@ def server(monkeypatch):
             write_trace(state["steer_label"] if steer.startswith("calm") else steer)
             rid = f"r{len(state['sent']) - 1}"
             text = state["steered_text"] if steer else "plain"
-            evs = events(rid, bool(state["moe"]), state.get("lens_by", "jlens"))
+            evs = events(rid, bool(state["moe"]), state.get("lens_by", "jlens"), state["stream"])
             for i, said in state.get("said", {}).items():
                 evs[i]["text"] = said
             return dict(text=text, seconds=0.1, tok_text=[e["text"] for e in evs], events=evs, rid=rid,
@@ -185,6 +194,7 @@ def test_a_working_backend_passes_every_finding(server, capsys):
     assert "applied (calm@0.3/24)" in out and "differs" in out
     assert "J-lens rows on 12/12 tokens (2 layers), top 10s on 12" in out and "logit lens rows on 12/12 tokens (3 layers)" in out
     assert "routing on 12/12 tokens of the feed; 11 tokens x 48 layers x top 2" in out
+    assert "  ✓ layer writes on 12/12 tokens of the feed (3 layers x 4 streams), shares beside them" in out
     assert "expert 7: 30 tokens" in out and "made a word vector for tiger" in out and server["made"] == ["tiger", "lion"]
     assert server["sent"] == [("", 0.0), ("calm@0.3/24", 0.0)]                 # a word changes one token: the edit's
     assert server["edit"] == "r0@8 remove~tiger/18-44"
@@ -248,6 +258,10 @@ def test_the_edit_removes_the_word_over_the_servers_band(server, capsys):
     (dict(concepts=concepts()), False, "  · no concept profiled for M"),
     (dict(concepts=concepts(dict(name="calm", reader=dict(layer=24)), steer_enabled=False)), False, "steering is off"),
     (dict(moe=0), False, "  · no experts (a dense model)"),
+    (dict(stream=None), False, "  · no layer writes (a model that records none): RESIDUAL STREAM not checked"),
+    (dict(stream="writes"), False, "  ✓ layer writes on 12/12 tokens of the feed (3 layers x 4 streams), no shares"),
+    (dict(stream="lost"), True, "  ✗ layer writes on 0/12 tokens of the feed"),
+    (dict(stream="some"), True, "  ✗ layer writes on 12/12 tokens of the feed in 2 shapes"),
     (dict(caps=["load_copy"]), False, "  · the server lists no edit_at"),
     (dict(caps=["edit_at"]), False, "  · no n-gram lookup on this model: not checked"),
     (dict(caps=["lookup"], lookup_fails=True), True, "  ✗ the lookup: POST /scope/api/lookup: HTTP 503"),

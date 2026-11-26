@@ -38,10 +38,12 @@ export interface TokenEvent {
 	// What each layer changed in each residual stream while this token was chosen (the stream's `writes`), and where each
 	// layer read from (`reads`), sent only while the dock shows STREAM (Live.writes); decided as they came against the
 	// reply's usual (packWrites) and kept in brief: `strikes` the spikes view's, [layer, stream, beam length] a layer
-	// struck; `largest` the largest view's, a layer its stream and brightness (packLargest); `readStrikes` the reads
-	// view's, as `strikes` with a source for the stream.
+	// struck; `largest` the largest view's, a layer its stream and brightness (packLargest); `layers` the layers view's,
+	// as `largest` from the writes' `shares` (topLayers); `readStrikes` the reads view's, as `strikes` with a source for
+	// the stream.
 	strikes?: Uint16Array;
 	largest?: Uint16Array;
+	layers?: Uint16Array;
 	readStrikes?: Uint16Array;
 }
 
@@ -145,9 +147,10 @@ export interface Live {
 	lens?: boolean; // ask the stream for each read layer's top 10 (while the dock shows LENS)
 	writes?: boolean; // ask the stream for each token's writes and reads (while the dock shows STREAM)
 	// The last word on a model's writes and reads: its layers (`L`) and how many streams it writes into (`k`) and sources
-	// it reads from (`rk`; 0: none sent) from a token with either, L 0 once a token of a reply asked for them came without
-	// and none of that reply's had any (a model that records none: STREAM not drawn). Kept until the next.
-	streams?: { model: string; L: number; k: number; rk: number };
+	// it reads from (`rk`; 0: none sent), and whether the writes came with their `shares`, from a token with either, L 0
+	// once a token of a reply asked for them came without and none of that reply's had any (a model that records none:
+	// STREAM not drawn). Kept until the next.
+	streams?: { model: string; L: number; k: number; rk: number; shares: boolean };
 	dense?: string; // a model whose reply (2 own tokens or more) streamed with routing asked for and none came: EXPERTS not drawn, routing not asked of its traces
 	ended?: string[]; // the replies whose end arrived, newest last (ENDED_KEPT): a second stream's copies of their events are dropped
 	edit?: Edited; // the dock's word edit, until the next run after its own starts (provider.ts editStarts)
@@ -246,6 +249,19 @@ export const beamOf = (z: number) => 1 + Math.min(WRITE_BEAM - 1, Math.floor((z 
 export const packLargest = (stream: number, v: number) => (stream << 5) | Math.round(v * 31);
 export const unpackLargest = (x: number): [stream: number, v: number] => [x >> 5, (x & 31) / 31];
 
+/** The layers view's brightness for the layers lit, by rank. */
+export const LAYERS_LIT = [1, 0.85, 0.7, 0.55, 0.4];
+/** A token's `shares` (livestream._writes: each layer's write over the residual it read, layer 0 0) as its `layers`: the
+ * LAYERS_LIT.length largest over 0 lit by rank (packLargest, stream 0; the shallower first on a tie), the rest 0.
+ * Undefined when malformed. */
+export function topLayers(x: unknown): Uint16Array | undefined {
+	if (!Array.isArray(x) || !x.length || x.length > 2047 || !x.every((v) => typeof v === "number" && Number.isFinite(v) && v >= 0)) return undefined;
+	const out = new Uint16Array(x.length);
+	x.map((v, l) => [v, l]).filter(([v]) => v > 0).sort((a, b) => b[0] - a[0] || a[1] - b[1]).slice(0, LAYERS_LIT.length)
+		.forEach(([, l], r) => (out[l] = packLargest(0, LAYERS_LIT[r])));
+	return out;
+}
+
 /** One flow of token event `t` (`list` [L * k] layer-major, shallow to deep, `k` its streams or sources), dropped from
  * the event, decided against usual `u` before it and then added to it (a new usual where `u` is of another shape):
  * `strikes` (a layer whose stream z is over WRITE_Z and whose share of the layer is WRITE_FLOOR or more, the highest
@@ -282,12 +298,16 @@ function decideFlow(u: Usual | undefined, t: any, list: "writes" | "reads", kOf:
 	return { u, strikes: Uint16Array.from(strikes), largest };
 }
 
-/** Token event `t`'s writes (`writes`, `write_k`) and reads (`reads`, `read_k`: each layer's shares of its sources)
- * decided in place against reply `r`'s usuals (decideFlow): `strikes` and `largest` from the writes, `readStrikes`
- * from the reads; the raw lists dropped, each whole when malformed. Whether it had either. */
+/** Token event `t`'s writes (`writes`, `write_k`, `shares`) and reads (`reads`, `read_k`: each layer's shares of its
+ * sources) decided in place against reply `r`'s usuals (decideFlow): `strikes` and `largest` from the writes, `layers`
+ * from their shares (topLayers, its layers the writes'), `readStrikes` from the reads; the raw lists dropped, each whole
+ * when malformed. Whether it had either. */
 export function packWrites(r: Reply, t: any): boolean {
+	const lit = topLayers(t.shares);
+	delete t.shares;
 	const w = decideFlow(r.usual, t, "writes", "write_k", true), rd = decideFlow(r.readUsual, t, "reads", "read_k", false);
 	if (w) [r.usual, t.strikes, t.largest] = [w.u, w.strikes, w.largest];
+	if (w && lit?.length === w.u.L) t.layers = lit;
 	if (rd) [r.readUsual, t.readStrikes] = [rd.u, rd.strikes];
 	return !!(w || rd);
 }
@@ -378,8 +398,8 @@ function addToken(live: Live, r: Reply, ev: any, from: EventSource): boolean {
 	// The writes: a token with them says the model has streams; one asked for that came without, before any of its
 	// reply's had them, says it has none (one missing later is a stray, not a verdict).
 	const had = !!(r.usual || r.readUsual);
-	if (packWrites(r, ev)) live.streams = { model: r.model ?? "", L: (r.usual ?? r.readUsual)!.L, k: r.usual?.k ?? 0, rk: r.readUsual?.k ?? 0 };
-	else if (r.askedWrites && !had) live.streams = { model: r.model ?? "", L: 0, k: 0, rk: 0 };
+	if (packWrites(r, ev)) live.streams = { model: r.model ?? "", L: (r.usual ?? r.readUsual)!.L, k: r.usual?.k ?? 0, rk: r.readUsual?.k ?? 0, shares: !!ev.layers };
+	else if (r.askedWrites && !had) live.streams = { model: r.model ?? "", L: 0, k: 0, rk: 0, shares: false };
 	// Kept without what every token repeats (a fresh object: V8 keeps one with deleted fields as a slower, larger dictionary).
 	const { type: _type, rid: _rid, client: _client, ...t } = ev;
 	toks.splice(at, 0, t as TokenEvent);

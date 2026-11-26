@@ -983,7 +983,7 @@ export class Dock {
 	/** The views reply `r`'s model has (board.ts streamViews). */
 	private streamViews(r: Reply): StreamView[] {
 		const s = this.streamData(r);
-		return s ? streamViews(s.k, s.rk) : [];
+		return s ? streamViews(s.k, s.rk, s.shares) : [];
 	}
 	/** RESIDUAL STREAM for reply `r` at token `sel`, `lines` lines of history (`full`: drawn full size, one of them its
 	 * legend's where it has one), `w` wide (streamPanel; ` · s` in its title where `swap` and the model has more than

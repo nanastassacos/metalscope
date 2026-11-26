@@ -237,9 +237,9 @@ class CaptureSession:
             self._stream_reductions([layer], streams[None], None if before is None else before[None])
 
     def record_write(self, layer: int, out: mx.array, before: Optional[mx.array] = None) -> None:
-        """A residual that is one stream [batch, tokens, hidden] (Inkling 2's running sum): the layer's output less its
-        input ``before`` (None: the layer starts the residual afresh, so its whole output is its write),
-        ``resid_write_norm`` with one stream."""
+        """A residual that is one stream [batch, tokens, hidden] (a conventional decoder's; Inkling 2's running sum):
+        the layer's output less its input ``before`` (None: the layer starts the residual afresh, so its whole output
+        is its write), ``resid_write_norm`` with one stream."""
         if not self._defer("wrote", layer, out, before):
             self._write_reductions([layer], out[None], None if before is None else before[None])
 

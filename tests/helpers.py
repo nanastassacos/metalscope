@@ -133,19 +133,22 @@ class FlashNextLike(nn.Module):
         return self.lm_head(self.model(inputs, cache))
 
 
-def flash_next_writes(model, ids):
+def flash_next_writes(model, ids, sizes=False):
     """A ``FlashNextLike`` model's layers run by hand over ``ids`` (no cache): each layer's output streams less the
-    streams it read (pending writes applied), a norm per stream, [L, B, T, hc] (CaptureSession's resid_write_norm)."""
+    streams it read (pending writes applied), a norm per stream, [L, B, T, hc] (CaptureSession's resid_write_norm);
+    ``sizes``: with each layer's output streams' norms beside them, the same shape (hc_stream_norm)."""
     inner = model.model
-    h, write, out = mx.tile(inner.embed_tokens(ids), (1, 1, inner.args.hc_count)), None, []
+    hc = inner.args.hc_count
+    h, write, out, size = mx.tile(inner.embed_tokens(ids), (1, 1, hc)), None, [], []
     mask = "causal" if ids.shape[1] > 1 else None
+    per_stream = lambda x: np.linalg.norm(np.array(x, np.float32).reshape(*x.shape[:-1], hc, -1), axis=-1)
     for layer in inner.layers:
         before = h if write is None else hc_write(h, *write)
         r = layer(h, mask=mask, write=write, defer_write=True)
         h, write = r[0], r[1:]
-        d = np.array(hc_write(*r) - before, np.float32)
-        out.append(np.linalg.norm(d.reshape(*d.shape[:-1], inner.args.hc_count, -1), axis=-1))
-    return np.stack(out)
+        out.append(per_stream(hc_write(*r) - before))
+        size.append(per_stream(hc_write(*r)))
+    return (np.stack(out), np.stack(size)) if sizes else np.stack(out)
 
 
 def drain(loop, q):

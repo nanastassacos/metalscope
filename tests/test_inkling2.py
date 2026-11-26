@@ -1002,9 +1002,10 @@ def test_inkling_writes_and_reads_reach_the_trace_and_the_live_stream_under_mtp(
     assert [e["id"] for e in tokens] == outputs and W.shape == (n, VISITS, 1)
     for i, e in enumerate(tokens):                           # token i was chosen at position P - 1 + i
         assert e["write_k"] == 1 and e["read_k"] == 5 and len(e["writes"]) == VISITS and len(e["reads"]) == VISITS * 5
+        assert "shares" not in e                             # reads, no shares: no layers view
         np.testing.assert_allclose(e["writes"], W[P - 1 + i].ravel(), rtol=6e-3, err_msg=f"token {i}")
         np.testing.assert_allclose(e["reads"], R[P - 1 + i].ravel(), rtol=6e-3, atol=1e-9, err_msg=f"token {i}")
         assert all(x == float(f"{x:.3g}") for x in e["reads"])
     others = [e for e in drain(loop, plain) if e["type"] == "token"]
     assert [e["id"] for e in others] == outputs
-    assert not any(k in e for e in others for k in ("writes", "write_k", "reads", "read_k"))
+    assert not any(k in e for e in others for k in ("writes", "write_k", "shares", "reads", "read_k"))

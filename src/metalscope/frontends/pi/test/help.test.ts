@@ -131,7 +131,7 @@ test("/scope help dock: the board, the one-panel board, the mini dock, steering 
 	assert.ok(dock.includes(`\nLENS\n    ${EXPLAIN.SETTLING}\n    ${EXPLAIN.TELESCOPE}`), "SETTLING in LENS's entry, first, not one of its own");
 	assert.ok(!/\nSETTLING\n/.test(dock));
 	assert.ok(dock.includes(`\nREPLY\n    ${EXPLAIN.REPLY}`));
-	assert.deepEqual(HELP_STREAMS, [[4, 0], [1, 5]], "four streams, then one with reads");
+	assert.deepEqual(HELP_STREAMS, [[4, 0], [1, 0], [1, 5]], "four streams, one, then one with reads");
 	assert.ok(dock.includes(`\nSTREAM\n    ${HELP_STREAMS.map(([k, rk]) => streamExplain(k, rk)).join("\n    ")}`), "STREAM: each in order");
 	// "100 columns" says whose: the terminal's, or the dock's (a terminal 181 wide).
 	assert.match(dock, /in a terminal 100 columns wide/);

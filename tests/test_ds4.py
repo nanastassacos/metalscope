@@ -522,7 +522,12 @@ def test_through_the_proxy_each_layers_writes_reach_the_trace_and_a_writes_subsc
         for e, row in zip(tokens, (2, 3)):         # 11 was chosen at the prompt's last row, 12 at 11's
             assert len(e["writes"]) == L * HC
             assert e["writes"] == pytest.approx(write_norm(row, np.arange(L)[:, None], np.arange(HC)).ravel().tolist())
-        assert [e["id"] for e in got[plain]] == [11, 12] and not any("writes" in e for e in got[plain])
+            # Each layer's whole write over the whole of the streams it read (the layer before's: row + (l - 1) / 10
+            # each, ScopeWriter.step); layer 0's not recorded.
+            whole = np.linalg.norm(write_norm(row, np.arange(L)[:, None], np.arange(HC)), axis=-1)
+            assert e["shares"][0] == 0
+            assert e["shares"][1:] == pytest.approx(whole[1:] / (np.sqrt(HC) * (row + np.arange(L - 1) / 10)), rel=5e-3)
+        assert [e["id"] for e in got[plain]] == [11, 12] and not any("writes" in e or "shares" in e for e in got[plain])
     finally:
         MANAGER.hub.unsubscribe(want)
         MANAGER.hub.unsubscribe(plain)

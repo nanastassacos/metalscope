@@ -1,14 +1,15 @@
 """``metalscope doctor --live``: a served model end to end, on each backend that serves one.
 
 Short completions of one prompt, traced under the client ``doctor`` with the live feed asked for what the dock asks
-for (routing, the lens top 10s): plain, then steered by one of the model's concepts, then the plain reply edited at
-one token (``X-Scope-Edit``, a word removed there over the server's ``edit_band``) where the server lists ``edit_at``,
-and the plain reply's n-gram lookup measured (the tokens it helped most) where it lists ``lookup``. They show the trace saved whole (no ``meta.partial``), what
-the dock draws from it (both lenses' rows, the MAP's per-token probabilities, the expert routing on the feed and from
-the saved trace), LENS's steps and the EXPERTS pages' tally routes, every steer applied (not FAILED or
-PARTIAL), and the edit's one stream and two traces. These are the parts an engine update breaks
-first, oMLX's patched internals or ds4's capture, so this is the check after either moves (docs/backends.md,
-"Updating the engines"). Each backend ends with a summary line; two backends add a feature-by-engine table.
+for (routing, the lens top 10s, the layer writes): plain, then steered by one of the model's concepts, then the plain
+reply edited at one token (``X-Scope-Edit``, a word removed there over the server's ``edit_band``) where the server
+lists ``edit_at``, and the plain reply's n-gram lookup measured (the tokens it helped most) where it lists ``lookup``.
+They show the trace saved whole (no ``meta.partial``), what the dock draws from it (both lenses' rows, the MAP's
+per-token probabilities, the expert routing on the feed and from the saved trace, RESIDUAL STREAM's layer writes),
+LENS's steps and the EXPERTS pages' tally routes, every steer applied (not FAILED or PARTIAL), and the edit's one
+stream and two traces. These are the parts an engine update breaks first, oMLX's patched internals or ds4's capture,
+so this is the check after either moves (docs/backends.md, "Updating the engines"). Each backend ends with a summary
+line; two backends add a feature-by-engine table.
 """
 
 from __future__ import annotations
@@ -18,6 +19,7 @@ import json
 import re
 import time
 import urllib.parse
+import zipfile
 from pathlib import Path
 from typing import Optional
 
@@ -31,7 +33,7 @@ DOSE = 0.3          # a concept without a chat calibration: a dose that changes 
 WORDS = ("tiger", "lion", "Asia", "Africa", "America", "jaguar")   # one-token words with vectors here already
 EDIT_AT = 8         # the plain reply's token the edit answers again from
 FEATURES = ("traced reply", "live feed", "trace saved", "lens rows", "token probabilities", "expert routing",
-            "lens layers", "experts pages", "concept steer", "one-token edit", "lookup")
+            "residual stream", "lens layers", "experts pages", "concept steer", "one-token edit", "lookup")
 
 
 def pick_concept(concepts: dict) -> Optional[tuple[str, int, float]]:
@@ -163,7 +165,7 @@ def check(server: client.Client, log=print, found: Optional[dict] = None) -> boo
     log("")
     log(config.paint(f"Live · {status.get('engine')} · {model}", "1"))
     log("  " + config.mark("info", f"{server.url} · caps: {', '.join(server.caps()) or 'none'}"))
-    srv = client.Session(server, CLIENT, experts=True, lens=True)
+    srv = client.Session(server, CLIENT, experts=True, lens=True, writes=True)
     set_step, off = lambda k: server.post("/scope/api/lens/layers", dict(step=k, model=model)), False
     try:
         try:   # the lenses off on this server: checked at the default step, then off again (restore)
@@ -207,6 +209,7 @@ def check(server: client.Client, log=print, found: Optional[dict] = None) -> boo
         p = [x for x in plain["p"] if x is not None]
         say(n > 0 and len(p) == n, f"token probabilities on {len(p)}/{n} tokens (the MAP)", "token probabilities")
         L = _routing(server, evs, entry, say)
+        _stream(evs, entry, say)
 
         try:
             lens = server.get(f"/scope/api/lens/layers?model={q}")
@@ -261,6 +264,27 @@ def _routing(server, evs: list, entry: Optional[dict], say) -> int:
     say(live > 0 and whole, f"routing on {live}/{len(evs)} tokens of the feed; {m} tokens x {L} layers x top "
         f"{k} from the saved trace", "expert routing")
     return L
+
+
+def _stream(evs: list, entry: Optional[dict], say) -> None:
+    """RESIDUAL STREAM's feed: each layer's writes on every token in one shape, the layers' shares beside them on every
+    token or on none (a model with reads has none). Not checked where neither the feed nor the saved trace has
+    writes."""
+    live = [e for e in evs if e.get("writes")]
+    try:
+        with zipfile.ZipFile(Path(entry["path"]) / "arrays.npz") as z:
+            saved = any(n.startswith("resid_write_norm/") for n in z.namelist())
+    except (TypeError, KeyError, OSError, zipfile.BadZipFile):
+        saved = False
+    if not saved and not live:
+        return say(None, "no layer writes (a model that records none): RESIDUAL STREAM not checked", "residual stream")
+    shapes = {(len(e["writes"]), e.get("write_k") or 0, len(e.get("shares") or ())) for e in live}
+    w, k, s = next(iter(shapes)) if shapes else (0, 0, 0)
+    L = w // k if k else 0
+    shape = f"in {len(shapes)} shapes" if len(shapes) > 1 else \
+        f"({L} layers x {k} streams), " + ("shares beside them" if s else "no shares (no layers view)")
+    say(len(live) == len(evs) and len(shapes) == 1 and L > 0 and s in (0, L),
+        f"layer writes on {len(live)}/{len(evs)} tokens of the feed {shape}", "residual stream")
 
 
 def _experts(server, q: str, L: int, say) -> None:

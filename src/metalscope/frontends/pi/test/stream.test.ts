@@ -9,7 +9,7 @@ import { BOARD_MIN_WIDTH, FULL_FADE, MINI_WIDTH, PLAY_JUMP_MS, PLAY_LAG_MS, PLAY
 import { Dock } from "../dock.ts";
 import { COLOURS, LABELS, colourCode, dockTheme, streamExplain } from "../draw.ts";
 import { mix } from "../lights.ts";
-import { type Live, type Reply, WRITE_FLOOR, WRITE_WARM, liveUrl, onEvent, packLargest, packWrites, unpackLargest, writeSd } from "../state.ts";
+import { type Live, type Reply, LAYERS_LIT, WRITE_FLOOR, WRITE_WARM, liveUrl, onEvent, packLargest, packWrites, topLayers, unpackLargest, writeSd } from "../state.ts";
 import { createUi, readPrefs } from "../widget.ts";
 
 // STREAM (RESIDUAL STREAM): a key a layer, last in the board's right column, lit by what each layer changed in the
@@ -25,9 +25,9 @@ const tick = () => new Promise((r) => setTimeout(r, 0));
 /** `L` layers' writes into 4 streams, every value `v` but those in `at` ([layer, stream] -> value). */
 const flat = (L: number, v: (l: number, s: number) => number, at: Record<string, number> = {}) =>
 	Array.from({ length: L * 4 }, (_, j) => at[`${Math.floor(j / 4)},${j % 4}`] ?? v(Math.floor(j / 4), j % 4));
-/** A token of a reply with writes `w` (k 4). */
-const decide = (r: Reply, w: number[]) => {
-	const t: any = { writes: w, write_k: 4 };
+/** A token of a reply with writes `w` (k 4) and their `shares`. */
+const decide = (r: Reply, w: number[], shares?: number[]) => {
+	const t: any = { writes: w, write_k: 4, shares };
 	packWrites(r, t);
 	return t;
 };
@@ -99,6 +99,57 @@ test("packWrites: largest, each layer's largest stream as bright as its whole ch
 	}
 });
 
+test("topLayers: the five largest shares lit by rank, 1 down to 0.4, in the first stream's colour; ties to the shallower; fewer where fewer are over 0; layer 0 (0: not recorded) never", () => {
+	const lit = (x: number[]) => [...topLayers(x)!].map((v, l) => [l, ...unpackLargest(v)]).filter(([, , b]) => b > 0);
+	const at = (v: number) => Math.round(v * 31) / 31;
+	assert.deepEqual(LAYERS_LIT, [1, 0.85, 0.7, 0.55, 0.4]);
+	// Eight layers: the five largest of layers 1-7, the rest dark.
+	assert.deepEqual(lit([0, 0.1, 0.5, 0.2, 0.05, 0.3, 0.4, 0.15]), [[2, 0, at(1)], [3, 0, at(0.55)], [5, 0, at(0.7)], [6, 0, at(0.85)], [7, 0, at(0.4)]]);
+	assert.equal(topLayers([0, 0.1, 0.5, 0.2, 0.05, 0.3, 0.4, 0.15])![4], 0, "the sixth: dark");
+	// Ties: the shallower first (layers 3 and 5 tie for the second place; 1, 2 and 4 for the fifth).
+	assert.deepEqual(lit([0, 0.1, 0.1, 0.2, 0.1, 0.2, 0.3, 0.15]), [[1, 0, at(0.4)], [3, 0, at(0.85)], [5, 0, at(0.7)], [6, 0, at(1)], [7, 0, at(0.55)]]);
+	// Fewer than five layers, or fewer over 0: those only; layer 0 (sent 0) is never lit.
+	assert.deepEqual(lit([0, 0.2, 0.3]), [[1, 0, at(0.85)], [2, 0, at(1)]]);
+	assert.deepEqual(lit([0, 0, 0.3, 0, 0, 0, 0]), [[2, 0, at(1)]]);
+	assert.deepEqual(lit([0, 0, 0]), []);
+	for (const bad of [undefined, [], [0, -1], [0, NaN], "x", [0, "1"]]) assert.equal(topLayers(bad), undefined, JSON.stringify(bad));
+});
+
+test("packWrites: layers from the writes' shares (its layers the writes'), the raw list dropped; none without shares or with malformed ones", () => {
+	const r = { rid: "r", tokens: [], done: false, prefill: 0 } as Reply;
+	const t = decide(r, flat(3, () => 1), [0, 0.2, 0.1]);
+	assert.ok(!("shares" in t) && t.layers.length === 3 && unpackLargest(t.layers[1])[1] === 1 && t.layers[0] === 0);
+	assert.equal(decide(r, flat(3, () => 1)).layers, undefined, "no shares: none");
+	for (const bad of [[0, 0.2], [0, -1, 0], "x"]) {
+		const x = decide(r, flat(3, () => 1), bad as any);
+		assert.ok(x.largest && !x.layers && !("shares" in x), `${JSON.stringify(bad)}: the writes kept, no layers`);
+	}
+	const lone: any = { shares: [0, 1] };
+	assert.equal(packWrites(r, lone), false, "shares without writes: nothing");
+	assert.ok(!lone.layers && !("shares" in lone));
+});
+
+test("streamPanel layers: only each token's five lit, in stream 0's colour, at their rank's brightness; the keys the newest token's five", () => {
+	const th = dockTheme(), L = 12, k = 15;
+	const toks = Array.from({ length: k + 1 }, (_, i) => ({ layers: topLayers(Array.from({ length: L }, (_, l) => (l ? 1 + ((l + i) % L) : 0))) }));
+	const lines = streamPanel(th, toks, k, { L, k: 4, rk: 0 }, "layers", 97, 8);
+	assert.equal(lines.length, 8 + 3);
+	assert.ok(lines.every((l) => plain(l).length === 97), "every line its width");
+	assert.equal(plain(lines[0]).trimEnd(), "RESIDUAL STREAM  hyper-connections: 4 residual streams · tracking layers");
+	// The newest token: layers 4 to 8 lit (1 + (l + 15) % 12 is largest there).
+	const keys = lines[9], newest = [...toks[k].layers!].map((v) => unpackLargest(v)[1]);
+	assert.deepEqual(newest.map((v, l) => (v ? l : -1)).filter((l) => l >= 0), [4, 5, 6, 7, 8]);
+	const rgb = (c: number[]) => `\x1b[38;2;${c.join(";")}m▆▆`;
+	assert.ok(keys.includes(rgb(STREAM_RGB[0])), "the brightest key: stream 0's colour, full");
+	for (const other of STREAM_RGB.slice(1)) assert.ok(!keys.includes(rgb(other)), "no other stream's colour");
+	assert.equal(keys.split("▆▆").length - 1, L, "a key a layer");
+	// Seven of every line's twelve layers dark, each token: a line's two tokens light at most ten keys' halves.
+	for (const l of lines.slice(1, 9).map(plain)) {
+		const n = l.slice(0, 2 * L).replace(/ /g, "").length;
+		assert.ok(n >= 2 * 5 && n <= 2 * 10 && !l.slice(0, 2).trim(), `${l}: five to ten keys' columns, layer 0 never`);
+	}
+});
+
 test("liveUrl: the writes only while asked for", () => {
 	const live: Live = { base: "http://o:1", clientId: "pi-x", level: "on", connected: true };
 	assert.equal(liveUrl(live), "http://o:1/scope/api/live?client=pi-x");
@@ -107,15 +158,17 @@ test("liveUrl: the writes only while asked for", () => {
 });
 
 /** Reply token `i` of a model of `L` layers (48 where L is 0 or null): writes of `L` layers into `k` streams (a fixed
- * pseudo-random spread, stream 1 the largest where there are several; none: L 0 or null), reads from `rk` sources
- * where `rk` is given, and with `moe` routing at every layer, 10 of `moe` experts a token (true: 512, Flash Next's). */
+ * pseudo-random spread, stream 1 the largest where there are several; none: L 0 or null) with their shares where
+ * `shares` (as the server sends them: without reads; layer 0's 0), reads from `rk` sources where `rk` is given, and with
+ * `moe` routing at every layer, 10 of `moe` experts a token (true: 512, Flash Next's). */
 /** Token `i`'s lens readings (both lenses, every fourth of 48 layers), for a board whose LENS is not shut. */
 const LENS_READ = (i: number) => ({ lens: Array.from({ length: 12 }, (_, j) => [j * 4, 100 + i, ` w${i}`]), lens_by: "jlens",
 	lens_logit: Array.from({ length: 12 }, (_, j) => [j * 4, 100 + i, ` w${i}`]) });
-const tok = (i: number, L: number | null = 48, rid = "r", k = 4, rk = 0, moe: boolean | number = false): any => ({ type: "token", rid, i, id: 100 + i, text: ` w${i}`, p: 0.9, entropy: 0.4,
+const tok = (i: number, L: number | null = 48, rid = "r", k = 4, rk = 0, moe: boolean | number = false, shares = !rk): any => ({ type: "token", rid, i, id: 100 + i, text: ` w${i}`, p: 0.9, entropy: 0.4,
 	alts: [[" a", 0.05]], n_layers: L || 48,
 	...(moe ? { experts: Array.from({ length: 10 * (L || 48) }, (_, j) => (i * 37 + j * 53) % (moe === true ? 512 : moe)), expert_w: Array.from({ length: 10 * (L || 48) }, (_, j) => (j % 10 ? 20 : 120)), expert_k: 10 } : {}),
 	...(L ? { writes: Array.from({ length: L * k }, (_, j) => (j % k === 1 ? 3 : 1) + (((i * 31 + j * 7) % 13) / 13) ** 4 * 6), write_k: k } : {}),
+	...(L && shares ? { shares: Array.from({ length: L }, (_, l) => (l ? 0.05 + ((i * 7 + l * 11) % 19) / 100 : 0)) } : {}),
 	...(L && rk ? { reads: Array.from({ length: L * rk }, (_, j) => (1 + (((i * 17 + j * 5) % 11) / 11) ** 4 * 4) / rk), read_k: rk } : {}) });
 
 test("onEvent: writes and reads packed as they come; a model's streams known from its first token with them, none from one asked for that came without", () => {
@@ -123,20 +176,20 @@ test("onEvent: writes and reads packed as they come; a model's streams known fro
 	onEvent(live, { type: "start", rid: "r", model: "Flash" });
 	onEvent(live, tok(0));
 	const t = live.reply!.tokens[0] as any;
-	assert.ok(t.largest?.length === 48 && t.strikes && !("writes" in t), "packed, the raw list dropped");
-	assert.deepEqual(live.streams, { model: "Flash", L: 48, k: 4, rk: 0 });
+	assert.ok(t.largest?.length === 48 && t.layers?.length === 48 && t.strikes && !("writes" in t) && !("shares" in t), "packed, the raw lists dropped");
+	assert.deepEqual(live.streams, { model: "Flash", L: 48, k: 4, rk: 0, shares: true });
 	onEvent(live, tok(1, null));
-	assert.deepEqual(live.streams, { model: "Flash", L: 48, k: 4, rk: 0 }, "one missing once the reply had some: a stray");
+	assert.deepEqual(live.streams, { model: "Flash", L: 48, k: 4, rk: 0, shares: true }, "one missing once the reply had some: a stray");
 	onEvent(live, { type: "end", rid: "r", n_tokens: 2 });
 	onEvent(live, { type: "start", rid: "i", model: "Inkling" });
 	onEvent(live, tok(0, 48, "i", 1, 5));
 	const ti = live.reply!.tokens[0] as any;
 	assert.ok(ti.readStrikes && !("reads" in ti) && !("read_k" in ti), "the reads packed too");
-	assert.deepEqual(live.streams, { model: "Inkling", L: 48, k: 1, rk: 5 });
+	assert.deepEqual(live.streams, { model: "Inkling", L: 48, k: 1, rk: 5, shares: false });
 	onEvent(live, { type: "end", rid: "i", n_tokens: 1 });
 	onEvent(live, { type: "start", rid: "s", model: "Other" });
 	onEvent(live, tok(0, null, "s"));
-	assert.deepEqual(live.streams, { model: "Other", L: 0, k: 0, rk: 0 }, "asked for and none came: none recorded");
+	assert.deepEqual(live.streams, { model: "Other", L: 0, k: 0, rk: 0, shares: false }, "asked for and none came: none recorded");
 	live.writes = false;   // not asked for: no word on the model
 	onEvent(live, { type: "start", rid: "u", model: "Another" });
 	onEvent(live, tok(0, null, "u"));
@@ -172,9 +225,9 @@ test("packWrites: reads strike as writes do, by source: z over 2 against the rep
 test("streamPanel: lines + 3 lines (title, history, keys, depth marks); two columns a key, one, none; the reads view by source", () => {
 	const th = dockTheme();
 	const r = { rid: "r", tokens: [], done: false, prefill: 0 } as Reply;
-	const toks = Array.from({ length: 30 }, (_, i) => decide(r, tok(i).writes));
+	const toks = Array.from({ length: 30 }, (_, i) => decide(r, tok(i).writes, tok(i).shares));
 	assert.deepEqual([keyWidth(97, 48), keyWidth(60, 48), keyWidth(40, 48), keyWidth(97, 0)], [2, 1, 0, 0]);
-	for (const [w, kw] of [[97, 2], [60, 1]]) for (const view of ["spikes", "largest"] as const) {
+	for (const [w, kw] of [[97, 2], [60, 1]]) for (const view of ["spikes", "largest", "layers"] as const) {
 		const lines = streamPanel(th, toks, 29, S4, view, w, 8);
 		assert.equal(lines.length, 8 + 3, `${w} ${view}`);
 		assert.ok(lines.every((l: string) => plain(l).length === w), `${w} ${view}: every line its width`);
@@ -185,7 +238,7 @@ test("streamPanel: lines + 3 lines (title, history, keys, depth marks); two colu
 	}
 	assert.match(plain(streamPanel(th, toks, 29, S4, "spikes", 97, 8, { focused: true })[0]), /^ RESIDUAL STREAM  {2}hyper-connections/, "in focus: inverse, padded");
 	// Full size: the same count (the legend one of its lines) and width, every view, four streams and one with sources.
-	for (const [shape, views] of [[S4, ["spikes", "largest"]], [{ L: 48, k: 1, rk: 5 }, ["spikes", "reads"]]] as const) for (const view of views) {
+	for (const [shape, views] of [[S4, ["spikes", "largest", "layers"]], [{ L: 48, k: 1, rk: 0 }, ["spikes", "layers"]], [{ L: 48, k: 1, rk: 5 }, ["spikes", "reads"]]] as const) for (const view of views) {
 		const full = streamPanel(th, toks, 29, shape, view, 97, 20, { full: true });
 		assert.equal(full.length, 20 + 3, `full size ${shape.k} ${view}`);
 		assert.ok(full.every((l: string) => plain(l).length === 97), `full size ${shape.k} ${view}: every line its width`);
@@ -208,14 +261,18 @@ test("streamPanel: lines + 3 lines (title, history, keys, depth marks); two colu
 });
 
 test("views: each where the model's data has it; a stored one it lacks drawn as its first, the pref kept", () => {
-	assert.deepEqual(streamViews(4, 0), ["spikes", "largest"], "writes into four streams");
-	assert.deepEqual(streamViews(1, 5), ["spikes", "reads"], "one stream, reads from five sources: no largest");
-	assert.deepEqual(streamViews(1, 0), ["spikes"]);
-	assert.deepEqual(streamViews(0, 5), ["reads"]);
-	assert.deepEqual([viewOf(undefined, ["spikes", "largest"]), viewOf("reads", ["spikes", "largest"]), viewOf("reads", ["spikes", "reads"])], ["spikes", "spikes", "reads"]);
-	assert.deepEqual([nextView(undefined, ["spikes", "largest"]), nextView("largest", ["spikes", "largest"]), nextView("reads", ["spikes", "largest"]), nextView(undefined, ["spikes"])],
-		["largest", "spikes", "largest", "spikes"]);
-	assert.deepEqual([storedView("reads"), storedView("largest"), storedView("off"), storedView(3)], ["reads", "largest", undefined, undefined]);
+	assert.deepEqual(streamViews(4, 0, true), ["spikes", "largest", "layers"], "writes into four streams, their shares");
+	assert.deepEqual(streamViews(4, 0, false), ["spikes", "largest"], "no shares: no layers");
+	assert.deepEqual(streamViews(1, 0, true), ["spikes", "layers"], "one stream");
+	assert.deepEqual(streamViews(1, 0, false), ["spikes"]);
+	assert.deepEqual(streamViews(1, 5, false), ["spikes", "reads"], "one stream, reads from five sources: no largest, no layers");
+	assert.deepEqual(streamViews(0, 5, false), ["reads"]);
+	const four = streamViews(4, 0, true);
+	assert.deepEqual([viewOf(undefined, ["spikes", "largest"]), viewOf("reads", ["spikes", "largest"]), viewOf("reads", ["spikes", "reads"]), viewOf("layers", ["spikes", "largest"])],
+		["spikes", "spikes", "reads", "spikes"]);
+	assert.deepEqual([nextView(undefined, four), nextView("largest", four), nextView("layers", four), nextView("reads", four), nextView(undefined, ["spikes"]), nextView("layers", ["spikes", "layers"])],
+		["largest", "layers", "spikes", "largest", "spikes", "spikes"]);
+	assert.deepEqual([storedView("reads"), storedView("largest"), storedView("layers"), storedView("off"), storedView(3)], ["reads", "largest", "layers", undefined, undefined]);
 });
 
 test("STREAM full size: its full title, the legend line under it (none for one stream's spikes), the history a line shorter for it", () => {
@@ -256,15 +313,16 @@ test("? on STREAM by what the model has: four streams, one stream with reads, on
 		"cut (the cut marked) only in the column at 39 to 41 rows, the keys under it");
 	assert.match(streamExplain(4, 0), /hyper-connections/);
 	assert.match(streamExplain(1, 5), /5 sources/);
-	assert.doesNotMatch(streamExplain(1, 0), /Reads|colour/);
+	assert.doesNotMatch(streamExplain(1, 0), /Reads|colour|visit/);
 });
 
 /** A board `rows` lines tall on a 30-token reply of model "Flash" with `L` layers' writes into `k` streams (none: 0),
- * reads from `rk` sources, routing where `moe` (tok); `dense`: the model known to have no experts. */
-function boardAt(rows: number, o: { width?: number; L?: number; k?: number; rk?: number; moe?: boolean | number; dense?: boolean; host?: Record<string, any>; done?: boolean; lens?: boolean } = {}) {
+ * their shares unless `shares` is false, reads from `rk` sources, routing where `moe` (tok); `dense`: the model known
+ * to have no experts. */
+function boardAt(rows: number, o: { width?: number; L?: number; k?: number; rk?: number; shares?: boolean; moe?: boolean | number; dense?: boolean; host?: Record<string, any>; done?: boolean; lens?: boolean } = {}) {
 	const live: Live = { base: "http://h", clientId: "me", level: "on", connected: true, writes: true };
 	onEvent(live, { type: "start", rid: "r", model: "Flash" });
-	for (let i = 0; i < 30; i++) onEvent(live, { ...tok(i, o.L ?? 48, "r", o.k ?? 4, o.rk ?? 0, o.moe), ...(o.lens && LENS_READ(i)) });
+	for (let i = 0; i < 30; i++) onEvent(live, { ...tok(i, o.L ?? 48, "r", o.k ?? 4, o.rk ?? 0, o.moe, o.shares ?? !o.rk), ...(o.lens && LENS_READ(i)) });
 	if (o.done !== false) onEvent(live, { type: "end", rid: "r", n_tokens: 30, trace_id: "T" });
 	if (o.dense) live.dense = "Flash";
 	const host: any = { live, captions: false, close() {}, unfocus() {}, panel: "LENS", fetchJson: async () => null, layoutChanged() {}, ...o.host };
@@ -445,21 +503,22 @@ test("STREAM a panel: tab reaches it after EXPERTS, its title inverse in focus; 
 	assert.ok(streamIn(view()).at > 0 && !d.full, "2 again: the board");
 });
 
-test("STREAM's s switches the view the model's data has: four streams spikes and largest, one stream with reads spikes and reads, without only spikes; enter nothing; s elsewhere the lens", () => {
-	for (const [k, rk, want] of [[4, 0, ["largest", "spikes"]], [1, 5, ["reads", "spikes"]], [1, 0, ["spikes", "spikes"]]] as const) {
-		const { d, host, view } = boardAt(63, { k, rk, lens: true, host: { panel: "STREAM" } });
+test("STREAM's s switches the view the model's data has: four streams spikes, largest and layers, one stream spikes and layers, one with reads spikes and reads, without shares or reads only spikes; enter nothing; s elsewhere the lens", () => {
+	for (const [k, rk, shares, want] of [[4, 0, true, ["largest", "layers", "spikes"]], [1, 0, true, ["layers", "spikes", "layers"]], [1, 5, false, ["reads", "spikes", "reads"]],
+		[4, 0, false, ["largest", "spikes", "largest"]], [1, 0, false, ["spikes", "spikes", "spikes"]]] as const) {
+		const { d, host, view } = boardAt(63, { k, rk, shares, lens: true, host: { panel: "STREAM" } });
 		view();
 		d.stepIn(-1);
 		d.handleInput("\r");
 		assert.equal(host.stream, undefined, "enter: nothing");
 		const seen: string[] = [];
-		for (let i = 0; i < 2; i++) {
+		for (let i = 0; i < 3; i++) {
 			d.handleInput("s");
 			assert.equal(host.lensView, undefined, "not the lens");
 			seen.push(/RESIDUAL STREAM .* (\w+)$/.exec(view().map(right).find((l) => /RESIDUAL STREAM/.test(l))!)![1]);
 		}
-		assert.deepEqual(seen, [...want], `k ${k}, rk ${rk}`);
-		assert.equal(host.stream, want[1], "remembered as chosen");
+		assert.deepEqual(seen, [...want], `k ${k}, rk ${rk}, shares ${shares}`);
+		assert.equal(host.stream, want[2], "remembered as chosen");
 	}
 	for (const panel of ["LENS", "MAP"]) {   // the lens read on both: s swaps it
 		const lens = boardAt(63, { lens: true, host: { panel } });
@@ -766,11 +825,11 @@ test("STREAM not drawn for a frame (a token without writes, a short board): the 
 });
 
 test("s view only where STREAM has more than one view", () => {
-	for (const [k, rk, has] of [[4, 0, true], [1, 5, true], [1, 0, false]] as const) {
-		const { d, view } = boardAt(63, { k, rk, host: { panel: "STREAM" } });
+	for (const [k, rk, shares, has] of [[4, 0, true, true], [1, 5, false, true], [1, 0, true, true], [1, 0, false, false]] as const) {
+		const { d, view } = boardAt(63, { k, rk, shares, host: { panel: "STREAM" } });
 		view();
 		d.stepIn(-1);
-		assert.equal(view().at(-1)!.includes("s view"), has, `k ${k}, rk ${rk}`);
+		assert.equal(view().at(-1)!.includes("s view"), has, `k ${k}, rk ${rk}, shares ${shares}`);
 	}
 });
 
@@ -804,6 +863,7 @@ test("spread: column c the layers floor(c L / W) up to floor((c + 1) L / W); two
 	const big = spread({ largest: b }, 48, 32).largest!;
 	assert.equal(big.length, 32);
 	assert.deepEqual([big[1], big[31]], [b[2], b[47]], "the brighter; the last column the last layer");
+	assert.deepEqual([...spread({ layers: b }, 48, 32).layers!], [...big], "layers the same way");
 });
 
 test("streamPanel past its width (51 or more layers in the right column's 50): the layers spread over it, a key a column; at or under it exact, one or two columns a key", () => {
@@ -812,8 +872,8 @@ test("streamPanel past its width (51 or more layers in the right column's 50): t
 		64: "L0           L16         L32          L48", 97: "L0      L16      L32     L48     L64     L80", 128: "L0          L32          L64         L96" };
 	for (const L of [24, 42, 48, 64, 97, 128]) {   // 42: L40 past the last key, inside the line
 		const r = { rid: "r", tokens: [], done: false, prefill: 0 } as Reply;
-		const toks = Array.from({ length: 30 }, (_, i) => decide(r, tok(i, L).writes));
-		for (const view of ["spikes", "largest"] as const) {
+		const toks = Array.from({ length: 30 }, (_, i) => decide(r, tok(i, L).writes, tok(i, L).shares));
+		for (const view of ["spikes", "largest", "layers"] as const) {
 			const t = streamPanel(th, toks, 29, { L, k: 4, rk: 0 }, view, RIGHT_W, 8).map(plain), what = `${L} layers, ${view}`, cols = L > RIGHT_W ? RIGHT_W : L * keyWidth(RIGHT_W, L);
 			assert.equal(t.length, 8 + 3, what);
 			assert.ok(t.every((l) => l.length === RIGHT_W), `${what}: every line its width`);
@@ -832,6 +892,9 @@ test("STREAM's title: what the model has, then what is tracked; tracking goes fi
 			"RESIDUAL STREAM  1 residual stream · tracking spikes", "RESIDUAL STREAM  5 sources · tracking reads"], "full size");
 	assert.deepEqual([title(S4, "spikes", 50), title(S1, "spikes", 50), title(R5, "reads", 50)],
 		["RESIDUAL STREAM  4 streams · tracking spikes", "RESIDUAL STREAM  1 stream · tracking spikes", "RESIDUAL STREAM  5 sources · tracking reads"], "the right column");
+	assert.deepEqual([title(S4, "layers", 97), title(S1, "layers", 97), title(S4, "layers", 50), title(S1, "layers", 50, { swap: true })],
+		["RESIDUAL STREAM  hyper-connections: 4 residual streams · tracking layers", "RESIDUAL STREAM  1 residual stream · tracking layers",
+			"RESIDUAL STREAM  4 streams · tracking layers", "RESIDUAL STREAM  1 stream · tracking layers · s"], "layers");
 	assert.deepEqual([title(R5, "spikes", 97), title(R5, "spikes", 50), title(R5, "spikes", 36)],
 		["RESIDUAL STREAM  block sum · tracking spikes", "RESIDUAL STREAM  block sum · tracking spikes", "RESIDUAL STREAM  block sum · spikes"], "one stream with reads (Inkling 2): a block's sum, full size too");
 	assert.deepEqual([title(S4, "largest", 50, { swap: true }), title(R5, "spikes", 50, { swap: true }), title(S4, "spikes", 50, { note: LABELS.notRecorded }), title(S4, "spikes", 50, { swap: true, note: LABELS.notRecorded }), title(S4, "spikes", 30, { note: LABELS.notRecorded })],
@@ -846,7 +909,9 @@ test("STREAM's legend (full size): a swatch and a name a colour in use; none for
 	assert.ok(four[1].includes("\x1b[38;2;255;180;84m■") && four[1].includes("\x1b[38;2;155;229;100m■"), "each in its stream's colour");
 	assert.equal(plain(at({ L: 48, k: 1, rk: 5 }, "reads")[1]).trimEnd(), "■ embedding  ■ block 1  ■ block 2  ■ block 3  ■ running sum");
 	assert.equal(at({ L: 48, k: 1, rk: 5 }, "spikes").length, 3 + 3, "one stream's spikes: none");
-	assert.deepEqual([hasLegend("spikes", 4), hasLegend("spikes", 1), hasLegend("reads", 1)], [true, false, true]);
+	const layers = at(S4, "layers");
+	assert.ok(layers.length === 3 + 3 && !/■/.test(plain(layers[1])), "layers, one colour: none, its line the history's");
+	assert.deepEqual([hasLegend("spikes", 4), hasLegend("spikes", 1), hasLegend("reads", 1), hasLegend("layers", 4), hasLegend("layers", 1)], [true, false, true, false, false]);
 });
 
 test("STREAM full size: the band as the right column draws its keys (two columns a layer up to 25, one up to the width, spread past it); nothing beside it", () => {
@@ -886,7 +951,7 @@ test("STREAM full size fades old lines part way (FULL_FADE); the right column an
 });
 
 test("STREAM full size, every view and both shapes: each frame exactly its rows and width, 36 to 63 rows, on an even and an odd token", () => {
-	for (const o of [{}, { k: 1, rk: 5 }] as const) for (const view of ["spikes", "largest", "reads"] as const) for (let rows = 36; rows <= 63; rows += 3) for (const sel of [20, 21]) {
+	for (const o of [{}, { k: 1 }, { k: 1, rk: 5 }] as const) for (const view of ["spikes", "largest", "layers", "reads"] as const) for (let rows = 36; rows <= 63; rows += 3) for (const sel of [20, 21]) {
 		const { d } = boardAt(rows, { ...o, host: { panel: "STREAM", stream: view } });
 		d.render(BOARD_MIN_WIDTH);
 		d.stepIn(sel);
@@ -931,15 +996,15 @@ test("s on STREAM with a clock: the switch drawn as the lens swap is (streamFram
 			assert.deepEqual(frames[8], sharp.largest, "the last frame: the new view sharp, as without a clock");
 			assert.equal((b.d as any).anim, undefined, "stopped there");
 		}
-		// s again mid-way: as the lens's, from the view the pref now has, back; a key stops it; dispose leaves nothing.
+		// s again mid-way: as the lens's, from the view the pref now has, on; a key stops it; dispose leaves nothing.
 		const b = at({ clock: true });
 		b.d.handleInput("s");
 		mock.timers.tick(140);
 		b.d.handleInput("s");
-		assert.equal(b.host.stream, "spikes");
+		assert.equal(b.host.stream, "layers");
 		assert.match(b.title(), /tracking largest/, "starting over from the view the pref had");
 		mock.timers.tick(70 * 8);
-		assert.match(b.title(), /tracking spikes/);
+		assert.match(b.title(), /tracking layers/);
 		b.d.handleInput("s");
 		b.d.handleInput("\x1b[D");
 		assert.equal((b.d as any).anim, undefined, "a key: stopped");
@@ -1079,12 +1144,21 @@ test("mini dock: s switches STREAM's view (remembered, as the board's), named in
 	assert.equal(host.stream, "largest");
 	assert.ok(view().includes("RESIDUAL STREAM  4 streams · tracking largest · s"));
 	d.handleInput("s");
+	assert.equal(host.stream, "layers");
+	assert.ok(view().includes("RESIDUAL STREAM  4 streams · tracking layers · s"));
+	d.handleInput("s");
 	assert.equal(host.stream, "spikes");
 	assert.ok(!view().at(-1)!.includes(" s "), "the key line without it");
 	const single = miniAt(40, { k: 1 });
 	single.view();
 	single.d.stepIn(-1);
-	assert.ok(single.view().includes("RESIDUAL STREAM  1 stream · tracking spikes"), "one view: no s");
+	assert.ok(single.view().includes("RESIDUAL STREAM  1 stream · tracking spikes · s"), "one stream: spikes and layers");
+	single.d.handleInput("s");
+	assert.ok(single.view().includes("RESIDUAL STREAM  1 stream · tracking layers · s"));
+	const bare = miniAt(40, { k: 1, shares: false });
+	bare.view();
+	bare.d.stepIn(-1);
+	assert.ok(bare.view().includes("RESIDUAL STREAM  1 stream · tracking spikes"), "one view: no s");
 	const inkling = miniAt(40, { k: 1, rk: 5 });
 	inkling.view();
 	inkling.d.stepIn(-1);

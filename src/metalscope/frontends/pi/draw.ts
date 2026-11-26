@@ -79,10 +79,9 @@ export const EXPLAIN: Record<string, string> = {
 /** What ? says on STREAM, by what the model has: `k` residual streams written, `rk` sources read (one stream with reads:
  * a block's sum, Inkling 2's). */
 export function streamExplain(k: number, rk: number): string {
-	if (k > 1) return `Each colour is one of the model's ${k} residual streams (hyper-connections); a column is a layer, shallow left, newest token lowest. Spikes: a layer changed a stream far more than usual in this reply. Largest: the stream each layer changed most, much the same on every token.`;
-	const visit = "A column is a layer visit, shallow left, newest token lowest. Spikes: a visit";
-	return rk ? `${visit} added far more to its block's sum than usual in this reply. Reads: a visit drew on one of its ${rk} sources far more than usual; each colour is a source.`
-		: `${visit} changed the residual far more than usual in this reply.`;
+	if (k > 1) return `Each colour is one of the model's ${k} residual streams (hyper-connections); a column is a layer, shallow left, newest token lowest. Spikes: a layer changed a stream far more than usual in this reply. Largest: the stream each layer changed most. Layers: the five biggest relative changes.`;
+	if (!rk) return "A column is a layer, shallow left, newest token lowest. Spikes: a layer changed the residual far more than usual in this reply. Layers: the five that changed the stream most for its size.";
+	return `A column is a layer visit, shallow left, newest token lowest. Spikes: a visit added far more to its block's sum than usual in this reply. Reads: a visit drew on one of its ${rk} sources far more than usual; each colour is a source.`;
 }
 
 export function confColor(p: number | null): string {

@@ -972,13 +972,14 @@ export function examplesPanel(th: any, ex: Examples, i: number, scroll: number, 
 // -- STREAM: what each layer changed in the residual stream (RESIDUAL STREAM, a piano roll under EXPERTS) -----------
 
 /** STREAM's views, in the order s steps through them, each where the model's data has it (streamViews). */
-export const STREAM_VIEWS = ["spikes", "largest", "reads"] as const;
+export const STREAM_VIEWS = ["spikes", "largest", "layers", "reads"] as const;
 export type StreamView = (typeof STREAM_VIEWS)[number];
 /** A remembered view (pi.json), undefined for anything else. */
 export const storedView = (x: unknown): StreamView | undefined => (STREAM_VIEWS.includes(x as StreamView) ? (x as StreamView) : undefined);
 /** The views a model's data allows: spikes with writes (into `k` streams), largest with writes into more than one,
- * reads with reads (from `rk` sources). */
-export const streamViews = (k: number, rk: number): StreamView[] => STREAM_VIEWS.filter((v) => (v === "spikes" ? k > 0 : v === "largest" ? k > 1 : rk > 0));
+ * layers with the writes' `shares`, reads with reads (from `rk` sources). */
+export const streamViews = (k: number, rk: number, shares: boolean): StreamView[] =>
+	STREAM_VIEWS.filter((v) => (v === "spikes" ? k > 0 : v === "largest" ? k > 1 : v === "layers" ? shares : rk > 0));
 /** The view drawn: the one stored where the model has it, else the first it has (spikes where it writes). */
 export const viewOf = (stored: StreamView | undefined, views: StreamView[]): StreamView => (stored && views.includes(stored) ? stored : views[0]);
 /** The view after the one drawn (s). */
@@ -1018,7 +1019,7 @@ export const keyWidth = (w: number, L: number) => (L < 1 ? 0 : w >= 2 * L ? 2 : 
  * too), STREAM drawn over `L` layers (0: not drawn): its keys' edge where they fall short of `w` by 4 columns at most,
  * the grids then full rectangles that wide (expertsStack's plate); else 0, the column's width as ever. */
 export const keysEdge = (w: number, L: number) => { const k = L * keyWidth(w, L); return k && w - k <= 4 ? k : 0; };
-type StreamLights = Pick<TokenEvent, "strikes" | "largest" | "readStrikes">;
+type StreamLights = Pick<TokenEvent, "strikes" | "largest" | "layers" | "readStrikes">;
 /** `L` layers on `W` columns, more layers than columns: column c's layers from `from(c)` up to `to(c)`, floor(c L / W)
  * to floor((c + 1) L / W), one at least. */
 const span = (L: number, W: number) => {
@@ -1026,7 +1027,7 @@ const span = (L: number, W: number) => {
 	return { from, to: (c: number) => from(c + 1) };
 };
 /** Token `t`'s lights of `L` layers spread over `W` columns, fewer than the layers (span), each column the strongest
- * of its layers: a strike (the longest beam), the brightest largest. */
+ * of its layers: a strike (the longest beam), the brightest largest (layers' too). */
 export function spread(t: StreamLights, L: number, W: number): StreamLights {
 	const { from, to } = span(L, W);
 	const strikes = (x?: Uint16Array) => {
@@ -1039,19 +1040,20 @@ export function spread(t: StreamLights, L: number, W: number): StreamLights {
 		}
 		return Uint16Array.from(out);
 	};
-	const b = t.largest, top = (c: number) => {
-		let m = b![from(c)] ?? 0;
-		for (let l = from(c) + 1; l < to(c); l++) if (unpackLargest(b![l] ?? 0)[1] > unpackLargest(m)[1]) m = b![l];
+	const lit = (b?: Uint16Array) => b && Uint16Array.from({ length: W }, (_, c) => {
+		let m = b[from(c)] ?? 0;
+		for (let l = from(c) + 1; l < to(c); l++) if (unpackLargest(b[l] ?? 0)[1] > unpackLargest(m)[1]) m = b[l];
 		return m;
-	};
-	return { strikes: strikes(t.strikes), readStrikes: strikes(t.readStrikes), largest: b && Uint16Array.from({ length: W }, (_, c) => top(c)) };
+	});
+	return { strikes: strikes(t.strikes), readStrikes: strikes(t.readStrikes), largest: lit(t.largest), layers: lit(t.layers) };
 }
 
 /** The names of `n` read sources (Inkling 2's resid_read_share slots): the embedding, the finished blocks, the
  * running sum. */
 const sourceNames = (n: number) => Array.from({ length: n }, (_, j) => (!j ? "embedding" : j === n - 1 ? "running sum" : `block ${j}`));
-/** Whether STREAM full size has a legend line in `view` on a model writing `k` streams: a colour a stream, or a source. */
-export const hasLegend = (view: StreamView, k: number) => view === "reads" || k > 1;
+/** Whether STREAM full size has a legend line in `view` on a model writing `k` streams: a colour a stream, or a source
+ * (layers: one colour, none). */
+export const hasLegend = (view: StreamView, k: number) => view === "reads" || (k > 1 && view !== "layers");
 
 /** RESIDUAL STREAM's title, `w` wide (inverse `focused`): what the model has (`s`: `k` streams written, `rk` sources
  * read; one stream with reads is a block's sum, Inkling 2's) and what is tracked (the view; ` · s`, faint, with
@@ -1073,7 +1075,8 @@ function streamTitle(th: any, s: { k: number; rk: number }, view: StreamView, w:
  * column a key. Each token's lights as packWrites decided them. `spikes` (TokenEvent.strikes) and `reads`
  * (readStrikes, by source): a struck layer's beam trails behind its head, the head whiter, all fading with age; a key
  * glows a few tokens after its strike. `largest`: every layer lit in its largest stream's colour at its brightness,
- * fading with age; the keys as the newest token (STREAM_LOOK). `full` (full size): a swatch and a name for each colour
+ * fading with age; the keys as the newest token (STREAM_LOOK). `layers` (TokenEvent.layers) the same way, the top few
+ * lit in the first stream's colour. `full` (full size): a swatch and a name for each colour
  * in use (hasLegend); the keys as the right column draws them (RIGHT_W: two columns a layer up to 25, one up to the
  * width, spread past it); the age fading only part way (FULL_FADE). `fog` (1 or 2, the view switch: streamFrames):
  * every layer's lights and key toward the background (SETTLE_FOG) but the deepest `clear` share (0-1) of them. */
@@ -1092,12 +1095,12 @@ export function streamPanel(th: any, toks: StreamLights[], k: number, s: { L: nu
 		for (let j = 0; j < kw; j++) cells[at + j] = c;
 	};
 	const rgb = (stream: number) => STREAM_RGB[stream % STREAM_RGB.length];
-	if (view === "largest")
+	if (view === "largest" || view === "layers")
 		for (let a = 0; a < R; a++) {
-			const b = tok(k - a)?.largest;
+			const b = tok(k - a)?.[view];
 			if (b) for (let l = 0; l < Math.min(nKeys, b.length); l++) {
 				const [st, v] = unpackLargest(b[l]);
-				paint(a, l, rgb(st), v * Math.pow(1 - (fade * a) / R, look.age));
+				if (v) paint(a, l, rgb(st), v * Math.pow(1 - (fade * a) / R, look.age));   // layers: the unlit dark
 				if (a === 0) [glow[l], hue[l]] = [v, st];
 			}
 		}

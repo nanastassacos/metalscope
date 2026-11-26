@@ -23,10 +23,14 @@ A token's fields:
 - ``experts`` (MoE): the top-k experts of the forward the token was fed into (as /api/traces/ID/routing gives a saved reply's),
   every MoE layer in order, flattened [L * k]; ``expert_w`` each one's share of its layer's top-k router
   probability, 0-255; ``expert_k`` is k. Absent for the last token (never fed back) and without router records.
-- ``writes`` (for subscribers that ask; models with residual streams or Inkling 2's running sum): how much each layer
-  of the forward that chose the token (as ``lens``) changed each residual stream, the norm of its output less its
-  input per stream (``resid_write_norm``), every layer in order, flattened [L * hc], 3 significant digits;
-  ``write_k`` is hc (Inkling 2: 1, by visit).
+- ``writes`` (for subscribers that ask): how much each layer of the forward that chose the token (as ``lens``)
+  changed each residual stream, the norm of its output less its input per stream (``resid_write_norm``), every layer
+  in order, flattened [L * hc], 3 significant digits; ``write_k`` is hc (1 for a single residual; Inkling 2: its
+  running sum, by visit).
+- ``shares`` (beside ``writes``, where the residual's size is recorded and there are no ``reads``): each layer's whole
+  write (the root of the sum of its streams' squares) over the whole residual it read, the layer before's output
+  (``hc_stream_norm``, else ``resid_norm``), [L], 3 significant digits; layer 0's is 0 (it reads the embedding, whose
+  size is not recorded).
 - ``reads`` (beside ``writes``, Inkling 2): where each visit's inputs read from, each source's share
   (``resid_read_share``): the finished blocks in order (the first the embedding's; 0 while not finished), the running
   sum last, flattened [L * k] the same way; ``read_k`` is k (5 on the Mini).
@@ -53,13 +57,14 @@ from .mtp import MtpLive
 
 LIVE_KINDS = frozenset(("input_ids", "logit_ids", "logit_logp", "logit_entropy", "lens_ids", "lens_logp",
                         "jlens_ids", "jlens_logp", "router_ids", "router_probs", "resid_write_norm",
-                        "resid_read_share"))
+                        "resid_read_share", "hc_stream_norm", "resid_norm"))
 PER_LAYER = frozenset(("lens_ids", "lens_logp", "jlens_ids", "jlens_logp"))
 ROUTING_FIELDS = ("experts", "expert_w", "expert_k")
 LENS_FIELDS = ("lens10", "lens10_logit")   # sent only to subscribers that asked (``lens``)
-WRITES_FIELDS = ("writes", "write_k", "reads", "read_k")     # sent only to subscribers that asked (``writes``)
+WRITES_FIELDS = ("writes", "write_k", "shares", "reads", "read_k")   # sent only to subscribers that asked (``writes``)
 LENS_P_SCALE = 20           # lens10 p as round(-log p * LENS_P_SCALE), the saved expert map payload's byte
-STACKED_KINDS = frozenset(("router_ids", "router_probs", "resid_write_norm", "resid_read_share"))
+STACKED_KINDS = frozenset(("router_ids", "router_probs", "resid_write_norm", "resid_read_share", "hc_stream_norm",
+                           "resid_norm"))
 N_ALTS = 10  # runners-up per token in the live stream: the whole output top 10 the trace reads (both engines read 10),
              # less the token written when it is among them; ~0.1 KB a token over five (Pi's TOKENS)
 QUEUE_MAX = 4096
@@ -112,7 +117,7 @@ class LiveHub:
         self._lock = threading.Lock()
         self.experts = False   # some subscriber asked for routing (``experts``: ~3 KB per token)
         self.lens = False      # some subscriber asked for each read layer's top 10 (``lens``: ~2 KB per token)
-        self.writes = False    # some subscriber asked for each layer's writes (``writes``: ~1 KB a token, Inkling 2 ~2)
+        self.writes = False    # some subscriber asked for the writes (``writes``: ~1.3 KB a token, Inkling 2 ~2)
 
     def active(self) -> bool:
         return bool(self._subs)
@@ -193,12 +198,22 @@ def _routing(refs: dict, t: int) -> dict:
 def _writes(refs: dict, t: int) -> dict:
     """What each layer of a step wrote into each stream at row ``t``, for the token that row chose: ``writes`` [L * hc]
     layer-major, 3 significant digits (they run from about 0.001 to 80), ``write_k`` hc; with read shares (Inkling 2)
-    ``reads`` [L * k] the same way, ``read_k`` k."""
-    out = {}
+    ``reads`` [L * k] the same way, ``read_k`` k; else, where every layer's output size is recorded, ``shares`` [L]."""
+    out, rows = {}, {}
+    sig = lambda a: [float(f"{x:.3g}") for x in a.ravel().tolist()]
     for kind, name in (("resid_write_norm", "write"), ("resid_read_share", "read")):
         if refs.get(kind):
-            w = np.nan_to_num(_stacked(refs, kind, t).astype(np.float32))         # [L, k]
-            out[f"{name}s"], out[f"{name}_k"] = [float(f"{x:.3g}") for x in w.ravel().tolist()], int(w.shape[-1])
+            rows[kind] = w = np.nan_to_num(_stacked(refs, kind, t).astype(np.float32))         # [L, k]
+            out[f"{name}s"], out[f"{name}_k"] = sig(w), int(w.shape[-1])
+    size = "hc_stream_norm" if refs.get("hc_stream_norm") else "resid_norm"
+    layers = lambda kind: sorted(l for ls, _, _ in refs.get(kind) or () for l in ls)
+    L = len(rows.get("resid_write_norm", ()))
+    if L and "reads" not in out and layers(size) == layers("resid_write_norm") == list(range(L)):
+        w = np.linalg.norm(rows["resid_write_norm"], axis=-1)
+        s = np.linalg.norm(np.nan_to_num(_stacked(refs, size, t).astype(np.float32)).reshape(L, -1), axis=-1)
+        share = np.zeros_like(w)
+        np.divide(w[1:], s[:-1], out=share[1:], where=s[:-1] > 0)        # layer l read layer l - 1's output
+        out["shares"] = sig(np.nan_to_num(share))                         # an overflowed write: a finite share, valid JSON
     return out
 
 

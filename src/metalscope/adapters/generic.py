@@ -167,13 +167,18 @@ def install(session: CaptureSession, model: nn.Module) -> None:
         session.hc_count, session.streams_to_resid = hyper
     for i, layer in enumerate(inner.layers):
         if session.wants_layer(i):
-            def on_layer(_m, _a, _k, out, i=i):
+            def on_layer(_m, a, _k, out, i=i):
                 if session.active:
-                    h = session.select(out[0] if isinstance(out, tuple) else out)
+                    o = out[0] if isinstance(out, tuple) else out
+                    h = session.select(o)
                     if hyper is not None:
                         session.record_streams(i, h.reshape(*h.shape[:2], -1))
                     else:
                         session.record_residual(i, h)
+                        # What the layer changed: its output less the residual it read (resid_write_norm, one stream).
+                        x = a[0] if a else None
+                        if cfg.residual_norm and isinstance(x, mx.array) and x.shape == o.shape:
+                            session.record_write(i, h, session.select(x))
             session.hook(layer, on_layer)
 
     if cfg.router:

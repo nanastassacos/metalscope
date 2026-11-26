@@ -14,8 +14,8 @@ shows words the model holds but never says.
 
 Any client can follow traced replies as they are written at `GET /scope/api/live` (server-sent events, see
 `livestream.py`); `experts=true` adds each token's expert routing, `lens=true` each read layer's top 10 and
-`writes=true` (Flash Next, DeepSeek V4.1 on ds4, Inkling 2 on oMLX) how much each layer changed each of its residual streams (Inkling 2:
-its running sum, and where each visit's inputs read from).
+`writes=true` how much each layer changed each of its residual streams (one on most models; Inkling 2: its running
+sum, and where each visit's inputs read from) and, without reads, that change's share of the residual it read.
 `GET /scope/api/traces/ID/routing[?last=N]` is a saved reply's routing in the same per-token form.
 
 One trace keeps at most 1.5 GB of records (`live.TRACE_MAX_BYTES`; Flash Next's whole 262k context fits, DeepSeek V4.1 on ds4 stops near 415k tokens). Past it the
@@ -69,8 +69,7 @@ again closes it. What it shows depends on its size:
 - **The board** (a dock 100 columns by 36 lines, so a terminal 181 columns wide): a header with the steer on as a
   solid `STEER` chip (or `no steering`), a dim `untested` for a model outside the [Backends](../README.md#backends) table and a
   status only when something is wrong; then the reply strip (its title names the steer the reply ran under), then
-  MAP and LENS (SETTLING over the telescope) on the left, TOKENS, EXPERTS and, on Flash Next on both engines,
-  DeepSeek V4.1 on ds4 and Inkling 2 on oMLX, RESIDUAL STREAM on the right.
+  MAP and LENS (SETTLING over the telescope) on the left, TOKENS, EXPERTS and RESIDUAL STREAM on the right.
 - **The one-panel board** (a smaller dock, down to 44 by 23): the reply's last lines and one panel at a time; `tab`
   cycles them.
 - **The mini dock** (`m`, `/scope dock mini`, or under 23 rows; 50 columns, the board's right column, in a terminal
@@ -82,12 +81,12 @@ The panels: **MAP** is the reply a token a cell, coloured by confidence. **LENS*
 logit lens or the J-lens, layer by layer (`s` switches lens where both were read; `-` `+` change how many layers the
 next traced reply reads). **SETTLING**, at the top of LENS, shows, for recent tokens, the layer where the lens
 settles on the written word. **TOKENS** is the token in focus: its probability and the model's top 10.
-**RESIDUAL STREAM** (Flash Next on both engines, DeepSeek V4.1 on ds4, Inkling 2 on oMLX; a board at least 40 lines
-tall, a mini dock about 20; `5` opens it full size) is a key a layer under the last tokens, its title naming the
-model's streams and the view, which `s` switches: `spikes` strikes a key where its layer changed the residual over 2
-standard deviations past what it had so far in the reply (from its 13th token), in the colour of the stream it
-changed; `largest` (Flash Next and V4.1, four streams) lights each key in the colour of the stream its layer changed
-most; `reads` (Inkling 2, one stream) strikes a key where its layer visit leaned on one of its five sources far more
+**RESIDUAL STREAM** (a board at least 40 lines tall, a mini dock about 20; `5` opens it full size) is a key a layer
+under the last tokens, its title naming the model's streams and the view, which `s` switches: `spikes` strikes a key
+where its layer changed the residual over 2 standard deviations past what it had so far in the reply (from its 13th
+token), in the colour of the stream it changed; `largest` (Flash Next and V4.1, four streams) lights each key in the colour of the stream its layer changed
+most; `layers` (where the writes come with the layers' shares: every model in backends.md's table but Inkling 2) lights only the five layers that changed the residual most for the size of
+the residual they read, brightest first, in one colour (layer 0, which reads the embedding, never); `reads` (Inkling 2, one stream) strikes a key where its layer visit leaned on one of its five sources far more
 than usual. A steered layer's change includes the steer's push. **EXPERTS** lights the experts each layer used; `4`,
 then enter, opens a layer's page and from it an expert's page, with the tokens each expert is most distinctive for,
 counted from your traced chats (`metalscope experts tally`; kept in

@@ -198,12 +198,12 @@ class Session:
     subscribes)."""
 
     def __init__(self, server: Client, client: str, wait: float = 10.0, experts: bool = False, lens: bool = False,
-                 feed: bool = True):
-        """``wait``: how long to wait for the live feed to connect; ``experts``, ``lens``: the feed's routing and top
-        10s too, as the dock asks for them (web.live); ``feed`` False: the replies' text only, no feed subscribed
-        (the server then publishes nothing for it)."""
+                 feed: bool = True, writes: bool = False):
+        """``wait``: how long to wait for the live feed to connect; ``experts``, ``lens``, ``writes``: the feed's
+        routing, top 10s and layer writes too, as the dock asks for them (web.live); ``feed`` False: the replies' text
+        only, no feed subscribed (the server then publishes nothing for it)."""
         self.server, self.client = server, client
-        self.asks = "".join(f"&{k}=true" for k, on in (("experts", experts), ("lens", lens)) if on)
+        self.asks = "".join(f"&{k}=true" for k, on in (("experts", experts), ("lens", lens), ("writes", writes)) if on)
         self.token_prompts = "token_prompts" in server.caps()
         self.events: list[dict] = []
         self.lock = threading.Lock()

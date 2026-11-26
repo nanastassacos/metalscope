@@ -321,8 +321,9 @@ def test_a_trace_stops_at_its_cap_and_keeps_its_first_tokens(home, monkeypatch, 
         path = max((home / "traces").rglob("meta.json"), key=lambda p: p.stat().st_mtime_ns).parent
         return Trace.load(path), drain(loop, q)
     whole, _ = run(10 ** 9)
-    # tiny_moe keeps 44 bytes a token (input_ids, two layers' resid_norm, router_ids and router_probs at k 2)
-    t, events = run(19 * 44 + 10 * 44)
+    # tiny_moe keeps 52 bytes a token (input_ids, two layers' resid_norm, resid_write_norm, router_ids and router_probs
+    # at k 2)
+    t, events = run(19 * 52 + 10 * 52)
     kept = 19 + (9 if mtp else 10)              # the prompt chunk and the decode steps that fit, whole windows under MTP
     assert t.meta["capped"] == kept and t.tokens == whole.tokens[:kept] and t.prompt_len == 20
     assert t.meta["completion"] == whole.meta["completion"] and t.meta["generated_tokens"] == 30
@@ -351,7 +352,7 @@ def test_records_line_up_with_their_tokens_past_a_cached_prefix_the_stop_token_a
     for cap in (None, 5, 12, 18, 24, 25):
         for cached in (0, 6):
             for extra in (0, 1):
-                monkeypatch.setattr(live, "TRACE_MAX_BYTES", 10 ** 12 if cap is None else cap * 44)   # 44 B a token
+                monkeypatch.setattr(live, "TRACE_MAX_BYTES", 10 ** 12 if cap is None else cap * 52)   # 52 B a token
                 rid, saved = f"c{cap}-{cached}-{extra}", mgr.saved
                 mgr.register(rid, "on", dict(client="me"))
                 cache = make_prompt_cache(model)
@@ -1107,7 +1108,7 @@ def test_a_reply_let_go_unfinished_holds_none_of_its_records(home, how):
         model(mx.array([ids]))
         mgr.clear_rows(tracer)
     held = [weakref.ref(e[1]) for v in mgr.requests["r"].parts.values() for e in v]
-    assert tracer.fresh and len(held) == 3 * 4          # input_ids and three stacked records a step
+    assert tracer.fresh and len(held) == 3 * 5          # input_ids and four stacked records a step
     if how == "release":
         assert mgr.release("r")
     else:
@@ -1149,7 +1150,7 @@ def test_a_record_that_cannot_be_copied_to_host_memory_never_breaks_the_next_ste
         mgr.clear_rows(tracer)
     monkeypatch.setattr(live, "np", np)
     assert len([r for r in caplog.records if "host memory" in r.getMessage()]) == 1
-    assert sorted(len(v) for v in mgr.requests["r"].parts.values()) == [5, 5, 5, 5]      # every step filed whole
+    assert sorted(len(v) for v in mgr.requests["r"].parts.values()) == [5] * 5          # every step filed whole
     assert mgr.requests["r"].step_tokens == [2, 1, 1, 1, 1] and not tracer.capture._pending
     mgr.finish("r", prompt, fed[1:] + [9], tracer)
     wait_saved(mgr, 1)
@@ -1183,9 +1184,9 @@ def test_a_traced_reply_keeps_one_step_of_mlx_arrays_however_long_it_runs(home, 
     fwd(prompt[:-1])
     for i in range(0, len(fed), 3 if mtp else 1):
         fwd(fed[i:i + 3] if mtp else fed[i:i + 1])
-    # A step's own records, never more: the prompt chunk's input_ids and each layer's resid_norm, router_ids and
-    # router_probs (7), then a decode step's input_ids and the three stacked over the layers (4).
-    assert held[0] == 7 and set(held[1:]) == {4}
+    # A step's own records, never more: the prompt chunk's input_ids and each layer's resid_norm, resid_write_norm,
+    # router_ids and router_probs (9), then a decode step's input_ids and the four stacked over the layers (5).
+    assert held[0] == 9 and set(held[1:]) == {5}
     mgr.finish("r", prompt, fed[1:] + [99], tracer)
     wait_saved(mgr, 1)
     t = Trace.load(next((home / "traces").rglob("meta.json")).parent)
@@ -1350,6 +1351,32 @@ def test_writes_flag_sends_each_layers_stream_writes_only_to_those_who_ask():
     assert not hub.writes and "writes" not in streamer._dist(refs, 1)
 
 
+def test_shares_are_each_layers_whole_write_over_the_whole_residual_it_read():
+    """``shares`` beside ``writes``: layer l's write (the root of the sum of its streams' squares) over layer l - 1's
+    output, the streams' sizes (hc_stream_norm) where recorded, else the one residual's (resid_norm), 3 significant
+    digits. Layer 0 reads the embedding, whose size is not recorded: 0; a layer that read a residual of size 0: 0. None
+    with reads (Inkling 2), without the sizes, or unless both cover every layer from 0."""
+    from metalscope.livestream import _writes
+    rng = np.random.default_rng(0)
+    w = rng.uniform(0.1, 2, (4, 2, 3, 4)).astype(np.float32)          # [L, B, T, hc]; batch row 1 the request's
+    hs, r = rng.uniform(5, 50, (4, 2, 3, 4)).astype(np.float32), rng.uniform(5, 50, (4, 2, 3)).astype(np.float32)
+    refs = dict(resid_write_norm=[([2, 3], w[2:], 1), ([0, 1], w[:2], 1)], hc_stream_norm=[([0, 1, 2, 3], hs, 1)],
+                resid_norm=[([1, 3], r[[1, 3]], 1), ([0, 2], r[[0, 2]], 1)])
+    whole = np.linalg.norm(w[:, 1, 2], axis=-1)
+    got = _writes(refs, 2)["shares"]
+    assert len(got) == 4 and got[0] == 0 and got == [float(f"{x:.3g}") for x in got]
+    np.testing.assert_allclose(got[1:], whole[1:] / np.linalg.norm(hs[:-1, 1, 2], axis=-1), rtol=5e-3)
+    del refs["hc_stream_norm"]                                          # one residual: its norm
+    np.testing.assert_allclose(_writes(refs, 2)["shares"][1:], whole[1:] / r[:-1, 1, 2], rtol=5e-3)
+    r[1, 1, 2] = 0
+    assert _writes({**refs, "resid_norm": [([0, 1, 2, 3], r, 1)]}, 2)["shares"][2] == 0, "layer 2 read nothing"
+    assert "shares" not in _writes({**refs, "resid_read_share": [([0, 1, 2, 3], w, 1)]}, 2), "reads: none"
+    assert "shares" not in _writes({"resid_write_norm": refs["resid_write_norm"]}, 2), "no sizes: none"
+    assert "shares" not in _writes({**refs, "resid_norm": [([0, 2], r[[0, 2]], 1)]}, 2), "some layers' sizes: none"
+    assert "shares" not in _writes({**refs, "resid_write_norm": [([1, 2, 3], w[1:], 1)],
+                                    "resid_norm": [([1, 2, 3], r[1:], 1)]}, 2), "not from layer 0: none"
+
+
 @pytest.mark.parametrize("mtp", [False, True])
 def test_flash_next_writes_reach_the_trace_and_the_live_stream(home, mtp):
     """A model with residual streams (the qwen4_exp adapter): every layer's write into each stream is saved in the trace
@@ -1402,14 +1429,67 @@ def test_flash_next_writes_reach_the_trace_and_the_live_stream(home, mtp):
     # Every position holds the writes of one causal pass over the kept tokens (under MTP, the rejected draft's row
     # overwritten by the forward that fed the emitted token there).
     # (a decode step from the cache against one pass: 0.2% apart on the GPU, measured)
-    np.testing.assert_allclose(W, flash_next_writes(model, mx.array([t.tokens]))[:, 0].transpose(1, 0, 2), rtol=1e-2)
+    wo, so = flash_next_writes(model, mx.array([t.tokens]), sizes=True)               # [L, 1, positions, hc]
+    np.testing.assert_allclose(W, wo[:, 0].transpose(1, 0, 2), rtol=1e-2)
+    # Each layer's share: its whole write over the whole of the streams it read, the layer before's output.
+    shares = np.linalg.norm(wo[1:, 0], axis=-1) / np.linalg.norm(so[:-1, 0], axis=-1)    # [L - 1, positions]
     tokens = [e for e in drain(loop, want) if e["type"] == "token"]
     assert [e["id"] for e in tokens] == outputs
     for i, e in enumerate(tokens):                    # token i was chosen at position P - 1 + i
         assert e["write_k"] == 4 and len(e["writes"]) == 3 * 4
         np.testing.assert_allclose(e["writes"], W[P - 1 + i].ravel(), rtol=6e-3, err_msg=f"token {i}")
+        assert len(e["shares"]) == 3 and e["shares"][0] == 0
+        np.testing.assert_allclose(e["shares"][1:], shares[:, P - 1 + i], rtol=1e-2, err_msg=f"token {i}")
     others = [e for e in drain(loop, plain) if e["type"] == "token"]
-    assert [e["id"] for e in others] == outputs and not any("writes" in e or "write_k" in e for e in others)
+    assert [e["id"] for e in others] == outputs and not any(k in e for e in others for k in ("writes", "write_k", "shares"))
+
+
+def test_a_conventional_decoders_writes_reach_the_trace_and_the_live_stream_as_one_stream(home):
+    """The generic adapter (one residual): each layer's write is saved (resid_write_norm [positions, 1]) and a
+    ``writes`` subscriber's token events carry the forward that chose it, ``write_k`` 1; no one else gets them."""
+    import asyncio
+    from mlx_lm.models.cache import make_prompt_cache
+    config.save_settings(mode="on")
+    model = tiny_llama()
+    mgr = TraceManager()
+    tracer = mgr.attach(model, "tiny", Tok())
+    assert tracer.adapter_name == "generic"
+    loop = asyncio.new_event_loop()
+    want, plain = mgr.hub.subscribe(loop, "me", writes=True), mgr.hub.subscribe(loop, "me", lens=True)
+    mgr.register("r1", "on", dict(client="me"))
+    prompt, cache = list(range(1, 21)), make_prompt_cache(model)
+    fed, outputs = prompt[-1], []
+
+    def fwd(ids):
+        mgr.rows_for(tracer, ["r1"])
+        out = model(mx.array([ids]), cache=cache)
+        mgr.clear_rows(tracer)
+        return int(mx.argmax(out[0, -1]).item())
+    fwd(prompt[:-1])
+    for _ in range(4):
+        fed = fwd([fed])
+        outputs.append(fed)
+    mgr.finish("r1", prompt, outputs, tracer)
+    wait_saved(mgr, 1)
+    t = Trace.load(next((home / "traces").rglob("meta.json")).parent)
+    W = np.stack([t.get("resid_write_norm", l) for l in range(3)], axis=1)          # [positions, L, 1]
+    h, offline, sizes = model.model.embed_tokens(mx.array([t.tokens])), [], []
+    for layer in model.model.layers:
+        out = layer(h, mask="causal", cache=None)
+        offline.append(np.linalg.norm(np.array((out - h).astype(mx.float32))[0], axis=-1))
+        sizes.append(np.linalg.norm(np.array(out.astype(mx.float32))[0], axis=-1))
+        h = out
+    assert W.shape == (len(t.tokens), 3, 1)
+    np.testing.assert_allclose(W[..., 0], np.stack(offline, axis=1), rtol=1e-2)
+    shares = np.stack(offline[1:]) / np.stack(sizes[:-1])           # [L - 1, positions]: over the residual read
+    tokens = [e for e in drain(loop, want) if e["type"] == "token"]
+    assert [e["id"] for e in tokens] == outputs
+    for i, e in enumerate(tokens):                    # token i was chosen at position P - 1 + i
+        assert e["write_k"] == 1 and "reads" not in e
+        np.testing.assert_allclose(e["writes"], W[len(prompt) - 1 + i].ravel(), rtol=6e-3, err_msg=f"token {i}")
+        assert len(e["shares"]) == 3 and e["shares"][0] == 0, "layer 0 read the embedding: not recorded"
+        np.testing.assert_allclose(e["shares"][1:], shares[:, len(prompt) - 1 + i], rtol=1e-2, err_msg=f"token {i}")
+    assert not any("writes" in e or "shares" in e for e in drain(loop, plain) if e["type"] == "token")
 
 
 class WordTok(Tok):

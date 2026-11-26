@@ -32,8 +32,8 @@ const calibrateRow = (s?: Served) => s ? calibrateTime(s.backend, s.model, "–"
 
 const row = ([form, what]: Row) => `| ${form}\t${what}`;
 /** The models STREAM's help explains, as streamExplain's [streams written, sources read]: hyper-connections (Flash
- * Next, DeepSeek V4.1: 4 streams), then one stream whose layer visits read 5 sources (Inkling 2). */
-export const HELP_STREAMS = [[4, 0], [1, 5]] as const;
+ * Next, DeepSeek V4.1: 4 streams), one stream (the rest), then one whose layer visits read 5 sources (Inkling 2). */
+export const HELP_STREAMS = [[4, 0], [1, 0], [1, 5]] as const;
 const note = (s: string) => `· ${s}`;
 
 /** Each command: what it is for (also its autocomplete description), its forms, a few notes. In daily-use order.

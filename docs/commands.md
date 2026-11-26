@@ -100,7 +100,7 @@ The dock's keys (`?` in the dock explains the panel in focus):
 | The one-panel board | `tab` cycles the panels; a number picks one |
 | LENS | ↑/↓ a layer, `-` `+` fewer or more layers read, enter edits a word (experimental), `x` steering off |
 | EXPERTS | `[`/`]` its layers; `4`, then enter a layer's page, then an expert's; `a` all chats or this session |
-| RESIDUAL STREAM | `s` the next view (spikes, largest, reads: what the model records) |
+| RESIDUAL STREAM | `s` the next view (spikes, largest, layers, reads: what the model records) |
 | TOKENS | ↑/↓ the next or previous unsure token |
 | Steer page | ↑/↓ a concept, ←/→ a dose, enter steers, `x` off, `d` then `y` deletes it (to the trash), `n`/`N` a turn of its test chats, `6` the board; with nothing learned, `l` links a same-shape model |
 | Mini dock | `[`/`]` more layers, `s` the next RESIDUAL STREAM view, `m` the whole dock |
