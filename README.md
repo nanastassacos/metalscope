@@ -8,12 +8,12 @@ in the [Pi](https://github.com/earendil-works/pi) coding agent or from the comma
 
 ## What it looks like
 
-![Pi on the left with a pancake recipe; metalscope's dock on the right, paused on one token](https://raw.githubusercontent.com/nanastassacos/metalscope/main/docs/dock.png)
+![Pi on the left planning a lazy weekend; metalscope's dock on the right, switched to the mini dock and back](https://raw.githubusercontent.com/nanastassacos/metalscope/main/docs/dock.gif)
 
-**The dock.** Pi with the dock beside it, paused on one token of a pancake recipe. The model wrote "mashed" as its
-second choice (28%; "banana" 54%, "sliced" 16%), and the J-lens at layer 46 still read "banana". MAP colours each token by
+**The dock.** Pi with the dock beside it while the model plans a lazy weekend. MAP colours each token by
 confidence, LENS shows the word forming layer by layer, TOKENS the five likeliest, EXPERTS which experts fired and
-RESIDUAL STREAM where a layer changed the model's state far more than usual.
+RESIDUAL STREAM where a layer changed the model's state far more than usual. `m` swaps it for the mini dock, a
+narrow column beside the chat.
 
 ## Requirements
 
